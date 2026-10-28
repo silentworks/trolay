@@ -9,3 +9,6 @@
 # Hashed build files never change.
 /_app/immutable/*
   Cache-Control: public, max-age=31536000, immutable
+# The label reader's files sit under a versioned folder and never change.
+/ocr/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Playwright
 /test-results
 /playwright-report
+
+# Tesseract.js files, copied by scripts/copy-ocr-assets.js
+/static/ocr

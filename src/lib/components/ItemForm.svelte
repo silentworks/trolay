@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { confident, MIN_FIELD_CONFIDENCE } from '#lib/capture/parse-label.ts';
 	import type { CaptureSession } from '#lib/capture/session.svelte.ts';
-	import type { Item } from '#lib/data/db.ts';
+	import type { ExtractedFields, Item } from '#lib/data/db.ts';
 	import type { ItemInput } from '#lib/data/items.ts';
 	import { formatGBP, lineTotals, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
@@ -12,7 +13,8 @@
 		capture?: CaptureSession;
 		defaultIncludesTax: boolean;
 		taxRateBps: number;
-		onsave: (input: ItemInput) => Promise<void>;
+		/** `extracted` holds what the label reader filled in, for a snapped label. */
+		onsave: (input: ItemInput, extracted?: ExtractedFields) => Promise<void>;
 		ondelete?: () => void;
 		onrevert?: () => Promise<void>;
 	}
@@ -32,6 +34,48 @@
 	let error = $state('');
 	let saving = $state(false);
 
+	// Readings never overwrite what the shopper has typed, even if they arrive later.
+	const touched = { description: false, price: false, vat: false, barcode: false };
+	// Fields the label reader tried but could not read with confidence: highlighted, left empty.
+	let unread = $state({ description: false, price: false });
+	let extracted: ExtractedFields | undefined;
+	let applied = false;
+
+	$effect(() => {
+		const reading = capture?.reading;
+		const stage = capture?.stage;
+		if (applied || !capture || (stage !== 'done' && stage !== 'failed')) return;
+		applied = true;
+		untrack(() => {
+			const read = {
+				description: confident(reading?.description),
+				unitPriceMinor: confident(reading?.unitPriceMinor),
+				priceIncludesTax: confident(reading?.priceIncludesTax)
+			};
+			if (read.description !== undefined && !touched.description) description = read.description;
+			if (read.unitPriceMinor !== undefined && !touched.price) {
+				price = minorToInput(read.unitPriceMinor);
+			}
+			if (read.priceIncludesTax !== undefined && !touched.vat) {
+				priceIncludesTax = read.priceIncludesTax;
+			}
+			unread = {
+				description: read.description === undefined,
+				price: read.unitPriceMinor === undefined
+			};
+			const used = [reading?.description, reading?.unitPriceMinor, reading?.priceIncludesTax]
+				.map((field) => field?.confidence ?? 0)
+				.filter((confidence) => confidence >= MIN_FIELD_CONFIDENCE);
+			if (used.length) extracted = { ...read, confidence: Math.min(...used) };
+		});
+	});
+
+	// A barcode can turn up in the still photo after the sheet has opened.
+	$effect(() => {
+		const code = capture?.barcode;
+		if (code) untrack(() => !touched.barcode && !barcode && (barcode = code));
+	});
+
 	const unitPriceMinor = $derived(parsePounds(price));
 	const preview = $derived(
 		unitPriceMinor === null
@@ -48,7 +92,7 @@
 		saving = true;
 		error = '';
 		try {
-			await onsave({ description, unitPriceMinor, priceIncludesTax, quantity, barcode });
+			await onsave({ description, unitPriceMinor, priceIncludesTax, quantity, barcode }, extracted);
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -68,36 +112,50 @@
 	{#if capture}
 		<figure class="photo">
 			<img src={capture.previewUrl} alt="The label you photographed" />
-			{#if capture.status === 'failed'}
-				<figcaption class="error">
-					The photo could not be processed ({capture.error}). The item can still be added.
-				</figcaption>
-			{/if}
+			<figcaption aria-live="polite" class:error={capture.stage === 'failed'}>
+				{#if capture.stage === 'compressing' || capture.stage === 'reading'}
+					<span class="spinner" aria-hidden="true"></span> Reading the label…
+				{:else if capture.stage === 'failed'}
+					{capture.error}. Fill in the details below; the item can still be added.
+				{:else}
+					Read from the label. Check before adding.
+				{/if}
+			</figcaption>
 		</figure>
 	{/if}
 
-	<div class="field">
+	<div class="field" class:needs-check={unread.description && !description}>
 		<label for="{uid}-description">Description</label>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input
 			id="{uid}-description"
 			class="input"
 			bind:value={description}
+			oninput={() => (touched.description = true)}
 			autocomplete="off"
-			autofocus={!item}
+			autofocus={!item && !capture}
+			aria-describedby={unread.description && !description ? `${uid}-description-check` : undefined}
 		/>
+		{#if unread.description && !description}
+			<p class="check-hint" id="{uid}-description-check">Couldn't read this. Please type it.</p>
+		{/if}
 	</div>
 
 	<div class="row">
-		<div class="field">
+		<div class="field" class:needs-check={unread.price && !price}>
 			<label for="{uid}-price">Unit price (£)</label>
 			<input
 				id="{uid}-price"
 				class="input"
 				bind:value={price}
+				oninput={() => (touched.price = true)}
 				inputmode="decimal"
 				aria-invalid={price !== '' && unitPriceMinor === null}
+				aria-describedby={unread.price && !price ? `${uid}-price-check` : undefined}
 			/>
+			{#if unread.price && !price}
+				<p class="check-hint" id="{uid}-price-check">Couldn't read the price. Please type it.</p>
+			{/if}
 		</div>
 
 		<div class="field">
@@ -122,7 +180,7 @@
 	</div>
 
 	<label class="check">
-		<input type="checkbox" bind:checked={priceIncludesTax} />
+		<input type="checkbox" bind:checked={priceIncludesTax} onchange={() => (touched.vat = true)} />
 		Price includes VAT
 	</label>
 
@@ -133,6 +191,7 @@
 				id="{uid}-barcode"
 				class="input"
 				bind:value={barcode}
+				oninput={() => (touched.barcode = true)}
 				inputmode="numeric"
 				autocomplete="off"
 			/>
@@ -167,6 +226,7 @@
 	mode="barcode"
 	onbarcode={(code) => {
 		barcode = code;
+		touched.barcode = true;
 		scanning = false;
 	}}
 	onclose={() => (scanning = false)}
@@ -175,6 +235,49 @@
 <style>
 	.photo {
 		margin: 0 0 12px;
+	}
+
+	.photo figcaption {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 6px;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+
+	.spinner {
+		width: 14px;
+		height: 14px;
+		border: 2px solid currentColor;
+		border-right-color: transparent;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			rotate: 360deg;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.spinner {
+			animation: none;
+		}
+	}
+
+	/* A field the label reader couldn't read: left empty and flagged for the shopper. */
+	.needs-check .input {
+		border-color: var(--warning-text);
+		background: var(--warning-bg);
+	}
+
+	.check-hint {
+		margin: 0;
+		color: var(--warning-text);
+		font-size: 0.9rem;
+		font-weight: 600;
 	}
 
 	.photo img {
@@ -195,6 +298,7 @@
 	.row {
 		display: grid;
 		grid-template-columns: 1fr auto;
+		align-items: start;
 		gap: 12px;
 	}
 

@@ -51,10 +51,17 @@
 <div class="page">
 	<header>
 		<h1>Where are you shopping?</h1>
-		<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
+		<nav class="links">
+			<a class="btn btn-ghost" href={resolve('/history')}>History</a>
+			<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
+		</nav>
 	</header>
 
-	{#if notice}<p class="notice" role="status">{notice}</p>{/if}
+	{#if notice}
+		<p class="notice" role="status">
+			{notice} <a href={resolve('/history')}>See it in History</a>
+		</p>
+	{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 
 	<div class="field">
@@ -90,6 +97,11 @@
 </Sheet>
 
 <style>
+	.links {
+		display: flex;
+		flex: none;
+	}
+
 	.notice {
 		padding: 10px 12px;
 		border-radius: var(--radius);

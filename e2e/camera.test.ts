@@ -226,7 +226,27 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('status')).toHaveText(
-		'Trip saved. Its photos are kept because the receipt did not match.'
+		'Trip saved. Its photos are kept because the receipt did not match. See it in History'
 	);
-	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+
+	// The kept photo shows in History until it is deleted.
+	await page.getByRole('link', { name: 'See it in History' }).click();
+	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Receipt +£4.72');
+	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Photos kept');
+	await page.getByRole('link', { name: /Tesco/ }).click();
+	await expect(page.getByText('The till charged £4.72 more than Trolay added up.')).toBeVisible();
+	await page.getByRole('button', { name: `Photo of ${DESCRIPTION}` }).click();
+	await expect(
+		page.getByRole('dialog', { name: `Photo of ${DESCRIPTION}` }).getByRole('img')
+	).toBeVisible();
+	await page.getByRole('button', { name: 'Close photo' }).click();
+	await page.getByRole('button', { name: 'Delete photos' }).click();
+	await page
+		.getByRole('dialog', { name: 'Delete photos?' })
+		.getByRole('button', { name: 'Delete photos' })
+		.click();
+	await expect(page.getByRole('button', { name: `Photo of ${DESCRIPTION}` })).toHaveCount(0);
+	await expect(page.getByText('The label photos are kept')).toBeHidden();
+	await page.getByRole('link', { name: '← History' }).click();
+	await expect(page.getByRole('link', { name: /Tesco/ })).not.toContainText('Photos kept');
 });

@@ -153,8 +153,39 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('3.89');
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
-	await expect(page.getByRole('status')).toHaveText('Trip saved.');
+	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+
+	// History lists it; the trip opens read-only with its items and the receipt check.
+	await page.getByRole('link', { name: 'See it in History' }).click();
+	const trips = page.getByRole('list', { name: 'Past trips' });
+	await expect(trips.getByRole('link')).toHaveCount(1);
+	await expect(trips.getByRole('link')).toContainText('Asda');
+	await expect(trips.getByRole('link')).toContainText('£3.89');
+	await expect(trips.getByRole('link')).toContainText('3 items');
+	await expect(trips.getByRole('link')).toContainText('✓ Receipt matched');
+	await trips.getByRole('link').click();
+	await expect(page.getByRole('heading', { name: 'Asda' })).toBeVisible();
+	await expect(page.getByLabel('Trip totals')).toContainText('£3.89');
+	await expect(page.getByLabel('Trip totals')).toContainText('£3.25');
+	await expect(page.getByLabel('Trip totals')).toContainText('£0.64');
+	await expect(page.getByText('✓ The receipt matched.')).toBeVisible();
+	const items = page.getByRole('list', { name: 'Items bought' }).getByRole('listitem');
+	await expect(items).toHaveCount(2);
+	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('2 × £1.45 incl. VAT');
+	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('£2.90');
+	await expect(page.getByRole('button', { name: /Decrease|Delete/ })).toHaveCount(0);
+
+	// A new trip starts empty.
+	await page.getByRole('link', { name: '← History' }).click();
+	await page.getByRole('link', { name: '← Trolley' }).click();
 	await page.getByRole('button', { name: /^Asda/ }).click();
 	await expect(page.getByText('Your trolley is empty.')).toBeVisible();
+});
+
+test('history is empty before the first trip is finished', async ({ page }) => {
+	await page.goto('/history');
+	await expect(page.getByText('No finished trips yet.')).toBeVisible();
+	await page.goto('/history/not-a-trip');
+	await expect(page.getByText("This trip isn't in your history.")).toBeVisible();
 });

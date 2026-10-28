@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from './db';
 import {
 	addItem,
@@ -18,6 +18,8 @@ import {
 	deleteTripPhotos,
 	finishTrip,
 	getOpenTrip,
+	getTrip,
+	listFinishedTrips,
 	receiptDifference,
 	setReceiptTotal,
 	setTripBudget,
@@ -334,5 +336,33 @@ describe('finishing a trip', () => {
 		expect((await db.trips.get(trip.id))?.photosKept).toBe(false);
 		expect(await db.photos.count()).toBe(0);
 		expect((await listTripItems(trip.id)).every((i) => i.photoId === undefined)).toBe(true);
+	});
+});
+
+describe('history', () => {
+	it('lists finished trips newest first with their stores, and never the open one', async () => {
+		const tesco = await addStore({ name: 'Tesco' });
+		const aldi = await addStore({ name: 'Aldi' });
+		const finish = async (storeId: string, at: number) => {
+			const trip = await startTrip(storeId);
+			await addItem(trip.id, milk);
+			vi.setSystemTime(at);
+			await finishTrip(trip.id);
+			vi.useRealTimers();
+			return trip;
+		};
+		vi.useFakeTimers({ toFake: ['Date'] });
+		const first = await finish(tesco.id, Date.UTC(2026, 9, 1, 10));
+		vi.useFakeTimers({ toFake: ['Date'] });
+		const second = await finish(aldi.id, Date.UTC(2026, 9, 8, 10));
+		await startTrip(tesco.id);
+
+		const history = await listFinishedTrips();
+		expect(history.map((h) => [h.trip.id, h.store?.name])).toEqual([
+			[second.id, 'Aldi'],
+			[first.id, 'Tesco']
+		]);
+		expect(await getTrip(first.id)).toMatchObject({ status: 'finished' });
+		expect(await getTrip('missing')).toBeUndefined();
 	});
 });

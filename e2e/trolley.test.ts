@@ -122,3 +122,39 @@ test('works offline after the first visit', async ({ page, context }) => {
 	await expect(page.getByRole('heading', { name: 'Stores' })).toBeVisible();
 	await context.setOffline(false);
 });
+
+test('finishing a trip checks the receipt and starts afresh', async ({ page }) => {
+	await startTripAtNewStore(page, 'Asda');
+	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await expect(page.getByRole('status')).toContainText('Add an item before finishing');
+
+	await addItem(page, 'Milk 2L', '1.45', 2);
+	await addItem(page, 'Bread', '0.99');
+	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await expect(finish).toContainText('£3.89');
+	await expect(finish).toContainText('Add the receipt total');
+
+	const receipt = finish.getByLabel('Receipt total (£)');
+	await receipt.fill('3.90');
+	await expect(finish).toContainText('The till charged £0.01 more than Trolay added up.');
+	await receipt.fill('3.8');
+	await expect(finish).toContainText('The till charged £0.09 less than Trolay added up.');
+	await receipt.fill('abc');
+	await expect(finish).toContainText('Enter the total like 42.50.');
+	await expect(finish.getByRole('button', { name: 'Finish trip' })).toBeDisabled();
+	await receipt.fill('3.89');
+	await expect(finish).toContainText('✓ The receipt matches.');
+
+	// The receipt total is kept if the sheet is closed before finishing.
+	await receipt.press('Tab');
+	await finish.getByRole('button', { name: 'Close' }).click();
+	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('3.89');
+
+	await finish.getByRole('button', { name: 'Finish trip' }).click();
+	await expect(page.getByRole('status')).toHaveText('Trip saved.');
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+	await page.getByRole('button', { name: /^Asda/ }).click();
+	await expect(page.getByText('Your trolley is empty.')).toBeVisible();
+});

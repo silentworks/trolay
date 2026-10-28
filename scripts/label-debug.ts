@@ -1,17 +1,13 @@
 // Shows how the parser sees one fixture: OCR lines, rows, and its reading. Uses the OCR cache
 // written by label-accuracy.ts. Usage: node scripts/label-debug.ts fixtures/labels/real/x.jpg
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { buildRows } from '../src/lib/capture/label/layout.ts';
 import { parseLabel } from '../src/lib/capture/label/parse.ts';
+import { cachePath } from './lib/accuracy.ts';
 import { loadNodeOcr, readRaster } from './lib/node-ocr.ts';
 
 const path = process.argv[2];
-const version = /ENGINE_VERSION = '([^']+)'/.exec(
-	readFileSync('scripts/label-accuracy.ts', 'utf8')
-)![1];
-const key = createHash('sha1').update(version).update(readFileSync(path)).digest('hex');
-const cache = `.cache/ocr/${key}.json`;
+const cache = cachePath(path);
 const lines = existsSync(cache)
 	? JSON.parse(readFileSync(cache, 'utf8'))
 	: await (await loadNodeOcr()).read(readRaster(path));

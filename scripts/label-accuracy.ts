@@ -8,12 +8,11 @@
 //
 // Usage: pnpm test:labels [set...] [--filter text] [--verbose] [--no-cache]
 //   sets: real, dev, test, holdout (default: all). Each is a folder in fixtures/labels with expected.json.
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { filledFields, parseLabel, type LabelReading } from '../src/lib/capture/label/parse.ts';
-import type { TextLine } from '../src/lib/capture/ocr/engine.ts';
-import { loadNodeOcr, readRaster } from './lib/node-ocr.ts';
+import { readCached, wilsonUpper } from './lib/accuracy.ts';
+import { loadNodeOcr } from './lib/node-ocr.ts';
 
 interface Expected {
 	/** Acceptable descriptions; a brand line under the product name may be in or out. */
@@ -37,21 +36,8 @@ const option = (name: string) => {
 const filter = option('--filter') ?? '';
 const sets = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--filter');
 const ROOT = 'fixtures/labels';
-const CACHE = '.cache/ocr';
-// Bump when the OCR engine or its settings change, so cached readings are not reused.
-const ENGINE_VERSION = 'pp-ocrv5-mobile-8';
 
 const normalise = (s: string) => s.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, '');
-
-/** Wilson score interval upper bound for k events in n trials, 95%. */
-function wilsonUpper(k: number, n: number): number {
-	if (!n) return 1;
-	const z = 1.959964;
-	const p = k / n;
-	const centre = p + (z * z) / (2 * n);
-	const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
-	return Math.min(1, (centre + margin) / (1 + (z * z) / n));
-}
 
 function score(reading: LabelReading, want: Expected): Record<Field, Outcome> {
 	const filled = filledFields(reading);
@@ -73,22 +59,6 @@ function score(reading: LabelReading, want: Expected): Record<Field, Outcome> {
 }
 
 const ocr = await loadNodeOcr();
-mkdirSync(CACHE, { recursive: true });
-
-async function read(path: string): Promise<{ lines: TextLine[]; ms: number }> {
-	const bytes = readFileSync(path);
-	const key = createHash('sha1').update(ENGINE_VERSION).update(bytes).digest('hex');
-	const cached = join(CACHE, `${key}.json`);
-	if (!flag('--no-cache') && existsSync(cached)) {
-		return { lines: JSON.parse(readFileSync(cached, 'utf8')), ms: 0 };
-	}
-	const image = readRaster(path);
-	const started = performance.now();
-	const lines = await ocr.read(image);
-	const ms = performance.now() - started;
-	writeFileSync(cached, JSON.stringify(lines));
-	return { lines, ms };
-}
 
 let failed = false;
 const names = sets.length ? sets : ['real', 'dev', 'test', 'holdout'];
@@ -118,7 +88,7 @@ for (const set of names) {
 	for (const [file, want] of Object.entries(expected)) {
 		if (!file.includes(filter)) continue;
 		total++;
-		const { lines, ms } = await read(join(dir, file));
+		const { lines, ms } = await readCached(ocr, join(dir, file), !flag('--no-cache'));
 		if (ms) {
 			ocrMs += ms;
 			ocrRuns++;

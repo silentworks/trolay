@@ -29,10 +29,17 @@ export interface Trip extends SyncMeta {
 	storeId: string;
 	status: TripStatus;
 	budgetMinor?: number;
+	/** The till receipt's total, incl. VAT, entered or read before finishing. */
 	receiptTotalMinor?: number;
+	/** Set on finish when the receipt did not match, so the label photos stay as evidence. */
 	photosKept: boolean;
 	startedAt: number;
 	finishedAt?: number;
+	/**
+	 * Totals as they stood at finish. A finished trip keeps them even if the store's VAT rate is
+	 * edited later.
+	 */
+	totals?: { inclMinor: number; exclMinor: number; itemCount: number; taxRateBps: number };
 }
 
 /** What the label reader extracted (phase 2), kept so an edited item can be reverted. */

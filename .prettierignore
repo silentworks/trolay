@@ -7,3 +7,10 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Written by the fixture generators
+/fixtures/labels/dev/expected.json
+/fixtures/labels/test/expected.json
+/fixtures/labels/holdout/expected.json
+/fixtures/receipts/dev/expected.json
+/fixtures/receipts/test/expected.json

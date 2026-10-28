@@ -9,6 +9,13 @@
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
 
+	interface Props {
+		/** Said once on arrival, e.g. that the last trip was saved. */
+		notice?: string;
+	}
+
+	let { notice }: Props = $props();
+
 	const stores = new LiveQuery(() => listStores());
 	let budget = $state('');
 	let error = $state('');
@@ -47,6 +54,7 @@
 		<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
 	</header>
 
+	{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 
 	<div class="field">
@@ -82,6 +90,13 @@
 </Sheet>
 
 <style>
+	.notice {
+		padding: 10px 12px;
+		border-radius: var(--radius);
+		background: var(--surface-2);
+		font-weight: 600;
+	}
+
 	.page {
 		max-width: 560px;
 		margin: 0 auto;

@@ -202,3 +202,31 @@ test('cart rows show the photo; tap for the full photo, retake from the edit she
 	await edit.getByRole('button', { name: 'Close' }).click();
 	await expect(thumb.locator('img')).not.toHaveAttribute('src', firstThumb!);
 });
+
+test('reads the receipt total and keeps the photos when it does not match', async ({ page }) => {
+	await startTrip(page);
+	await snapLabel(page);
+	const review = page.getByRole('dialog', { name: 'Check the label' });
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+
+	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	// A real Tesco receipt (fixtures/receipts/real/uk-tesco-1994.jpg): TOTAL 6.71, paid with £7.00
+	// cash and £0.29 change, which confirms it.
+	await page
+		.getByRole('dialog', { name: 'Snap the receipt' })
+		.locator('input[type=file]')
+		.setInputFiles('fixtures/receipts/real/uk-tesco-1994.jpg');
+	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('6.71', READ_TIMEOUT);
+	await expect(finish.getByText('the card and cash lines add up to it')).toBeVisible();
+	await expect(finish.getByText('The till charged £4.72 more than Trolay added up.')).toBeVisible();
+	await expect(finish.getByText('The 1 label photo will be kept as evidence')).toBeVisible();
+
+	await finish.getByRole('button', { name: 'Finish trip' }).click();
+	await expect(page.getByRole('status')).toHaveText(
+		'Trip saved. Its photos are kept because the receipt did not match.'
+	);
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+});

@@ -30,6 +30,17 @@ Work is tracked in the Linear project **Trolay**.
     cross-checked against the unit price and pack size, ex VAT against inc VAT.
   - A field is filled only above a confidence threshold, otherwise left for the shopper.
     `pnpm test:labels` measures this on real and generated photos (`fixtures/labels/README.md`).
+- **Receipt totals: the same on-device OCR, read by what the lines say**
+  (`src/lib/capture/receipt/parse.ts`). The total is the amount beside a line that is nothing
+  but a total caption ("TOTAL", "BALANCE DUE", "AMOUNT TO PAY"…), so subtotals, savings, VAT
+  totals and a product called "FAGE TOTAL" never count. The payment lines (card, gift card,
+  cash less change, cashback) must add up to it; a curled or angled receipt is paired every
+  plausible way and the arithmetic decides. Without that confirmation a total is only filled
+  when it is read with high confidence and every pairing agrees. The shopper always sees it
+  before finishing. `pnpm test:receipts` measures it (`fixtures/receipts/README.md`).
+- **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
+  rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
+  by a penny or more, when they are kept as evidence.
 - **Barcodes: the browser's `BarcodeDetector` where it reads retail formats (Android Chrome),
   otherwise ZXing in WebAssembly** (`barcode-detector` ponyfill), bundled with the app so it
   works offline.
@@ -46,8 +57,9 @@ pnpm install
 pnpm dev            # http://localhost:5173
 ```
 
-Requires `rsvg-convert` and ImageMagick to generate the label fixtures (`pnpm fixtures:labels`)
-and to run `pnpm test:labels`, and `ffmpeg` for the camera end-to-end tests (it turns a label
+Requires `rsvg-convert` and ImageMagick to generate the label and receipt fixtures
+(`pnpm fixtures:labels`, `pnpm fixtures:receipts`) and to run `pnpm test:labels` and
+`pnpm test:receipts`, and `ffmpeg` for the camera end-to-end tests (it turns a label
 photo into the fake camera's video).
 
 Imports from `src/lib` use the `#lib/*` alias with the file extension, e.g.
@@ -62,6 +74,8 @@ pnpm test           # unit tests: VAT maths, data layer (fake-indexeddb)
 pnpm test:e2e       # Playwright against a production build, including offline and a fake camera
 pnpm fixtures:labels  # generate the dev/test label photos (once; not committed)
 pnpm test:labels    # label reader accuracy over fixtures/labels (see its README)
+pnpm fixtures:receipts  # generate the dev/test receipt photos (once; not committed)
+pnpm test:receipts  # receipt reader accuracy over fixtures/receipts (see its README)
 pnpm check:all      # all of the above
 ```
 

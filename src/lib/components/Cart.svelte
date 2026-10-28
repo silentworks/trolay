@@ -18,11 +18,12 @@
 		type ItemInput
 	} from '#lib/data/items.ts';
 	import { getStore, listStores } from '#lib/data/stores.ts';
-	import { changeTripStore, setTripBudget } from '#lib/data/trips.ts';
+	import { changeTripStore, finishTrip, setReceiptTotal, setTripBudget } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
 	import BudgetForm from './BudgetForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
+	import FinishTrip from './FinishTrip.svelte';
 	import ItemForm from './ItemForm.svelte';
 	import ItemRow from './ItemRow.svelte';
 	import PhotoViewer from './PhotoViewer.svelte';
@@ -33,9 +34,11 @@
 
 	interface Props {
 		tripId: string;
+		/** The trip has moved to History; this cart is about to close. */
+		onfinished?: (photosKept: boolean) => void;
 	}
 
-	let { tripId }: Props = $props();
+	let { tripId, onfinished }: Props = $props();
 
 	// One live query for everything the cart shows; it re-runs when the trip, its store or
 	// its items change.
@@ -51,7 +54,8 @@
 		| { kind: 'add'; capture?: CaptureSession }
 		| { kind: 'edit'; item: Item }
 		| { kind: 'budget' }
-		| { kind: 'store' };
+		| { kind: 'store' }
+		| { kind: 'finish' };
 	let sheet = $state<SheetState | null>(null);
 	let camera = $state(false);
 	let viewing = $state<Item>();
@@ -62,6 +66,7 @@
 	const store = $derived(cart.current?.store);
 	const items = $derived(cart.current?.items ?? []);
 	const totals = $derived(tripTotals(items, store?.taxRateBps ?? 0));
+	const photoCount = $derived(items.filter((item) => item.photoId).length);
 
 	// Load the label and barcode readers while the shopper picks up the first item, so the
 	// first capture is quick. Failures surface on first use instead.
@@ -143,6 +148,17 @@
 		await run(() => changeTripStore(tripId, next.id));
 	}
 
+	function tapFinish() {
+		if (items.length === 0) show('Add an item before finishing the trip.');
+		else sheet = { kind: 'finish' };
+	}
+
+	async function finish() {
+		const { photosKept } = await finishTrip(tripId);
+		sheet = null;
+		onfinished?.(photosKept);
+	}
+
 	async function saveBudget(budgetMinor: number | undefined) {
 		await run(() => setTripBudget(tripId, budgetMinor));
 		sheet = null;
@@ -156,7 +172,10 @@
 				<span class="label">Shopping at</span>
 				<span class="name">{store.name}{store.branch ? ` · ${store.branch}` : ''}</span>
 			</button>
-			<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
+			<nav class="links">
+				<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
+				<button class="btn" type="button" onclick={tapFinish}>Finish</button>
+			</nav>
 		</header>
 
 		{#if items.length}
@@ -254,6 +273,16 @@
 		<BudgetForm budgetMinor={trip.budgetMinor} onsave={saveBudget} />
 	</Sheet>
 
+	<Sheet open={sheet?.kind === 'finish'} title="Finish trip" onclose={() => (sheet = null)}>
+		<FinishTrip
+			appTotalMinor={totals.inclMinor}
+			receiptTotalMinor={trip.receiptTotalMinor}
+			{photoCount}
+			onreceipt={(minor) => setReceiptTotal(tripId, minor)}
+			onfinish={() => run(finish)}
+		/>
+	</Sheet>
+
 	<Sheet open={sheet?.kind === 'store'} title="Change store" onclose={() => (sheet = null)}>
 		<StoreList stores={stores.current ?? []} currentId={store.id} onpick={pickStore} />
 	</Sheet>
@@ -298,6 +327,11 @@
 	.store .name {
 		font-weight: 800;
 		font-size: 1.3rem;
+	}
+
+	.links {
+		display: flex;
+		gap: 4px;
 	}
 
 	.items {

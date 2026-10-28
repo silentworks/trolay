@@ -11,9 +11,12 @@
 
 	interface Props {
 		open: boolean;
-		/** label: snap a shelf label (any barcode in view comes along); barcode: scan only. */
-		mode: 'label' | 'barcode';
-		/** Label mode: the photo, and a barcode if one was seen while aiming. */
+		/**
+		 * label: snap a shelf label (any barcode in view comes along); receipt: snap the bottom of a
+		 * till receipt; barcode: scan only.
+		 */
+		mode: 'label' | 'receipt' | 'barcode';
+		/** Label and receipt modes: the photo, and (label) a barcode if one was seen while aiming. */
 		oncapture?: (photo: Blob, barcode: string | undefined) => void;
 		/** Barcode mode: the barcode that was read. */
 		onbarcode?: (barcode: string) => void;
@@ -23,6 +26,11 @@
 	let { open, mode, oncapture, onbarcode, onclose }: Props = $props();
 
 	const SCAN_INTERVAL_MS = 250;
+	const TITLES = {
+		label: 'Snap a shelf label',
+		receipt: 'Snap the receipt',
+		barcode: 'Scan a barcode'
+	};
 
 	let dialog: HTMLDialogElement;
 	let video = $state<HTMLVideoElement>();
@@ -50,7 +58,7 @@
 		barcode = undefined;
 
 		const scan = async () => {
-			if (stopped) return;
+			if (stopped || mode === 'receipt') return;
 			try {
 				if (element.readyState >= element.HAVE_CURRENT_DATA) {
 					const found = await detectBarcode(element);
@@ -100,7 +108,7 @@
 		if (!video || busy) return;
 		busy = true;
 		try {
-			// Only the label inside the guide (and a margin) is kept: neighbouring labels and pack
+			// Only what is inside the guide (and a margin) is kept: neighbouring labels and pack
 			// text outside it can only confuse the reader.
 			const photo = await grabFrame(video, guide ? cropUnder(video, guide) : undefined);
 			oncapture?.(photo, barcode);
@@ -116,7 +124,7 @@
 		const file = input.files?.[0];
 		input.value = '';
 		if (!file) return;
-		if (mode === 'label') {
+		if (mode !== 'barcode') {
 			oncapture?.(file, barcode);
 			return;
 		}
@@ -133,12 +141,7 @@
 	}
 </script>
 
-<dialog
-	bind:this={dialog}
-	class="camera"
-	aria-label={mode === 'label' ? 'Snap a shelf label' : 'Scan a barcode'}
-	{onclose}
->
+<dialog bind:this={dialog} class="camera" aria-label={TITLES[mode]} {onclose}>
 	{#if open}
 		<video bind:this={video} playsinline muted autoplay class:hidden={status !== 'live'}></video>
 
@@ -160,6 +163,8 @@
 					{problem}
 				{:else if mode === 'label'}
 					Fill the frame with the shelf label
+				{:else if mode === 'receipt'}
+					Fit the bottom of the receipt, with the total, in the frame
 				{:else}
 					Point at the barcode
 				{/if}
@@ -170,7 +175,7 @@
 			<div class="fallback">
 				<p>You can take the photo with your camera app instead.</p>
 				<button class="btn btn-primary" type="button" onclick={() => fileInput?.click()}>
-					{mode === 'label' ? 'Take or choose a photo' : 'Photograph the barcode'}
+					{mode === 'barcode' ? 'Photograph the barcode' : 'Take or choose a photo'}
 				</button>
 			</div>
 		{/if}
@@ -186,7 +191,7 @@
 				<button class="btn side" type="button" onclick={() => fileInput?.click()} disabled={busy}>
 					Choose photo
 				</button>
-				{#if mode === 'label'}
+				{#if mode !== 'barcode'}
 					<button
 						class="shutter"
 						type="button"
@@ -256,6 +261,13 @@
 
 	.guide.label {
 		aspect-ratio: 5 / 3;
+	}
+
+	/* The bottom of a till roll: narrow and tall. */
+	.guide.receipt {
+		left: 14%;
+		right: 14%;
+		aspect-ratio: 3 / 4;
 	}
 
 	.guide.barcode {

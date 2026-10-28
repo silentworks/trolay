@@ -1,17 +1,14 @@
 // Calibration report: for every fixture in a set (default dev), the description and price the
 // parser picked before any threshold, whether each is right, and its confidence measures. Used to
-// choose the thresholds in label/parse.ts on dev only. Reads the OCR cache from label-accuracy.ts.
+// choose the thresholds in label/parse.ts on dev only. Reads the OCR cache that label-accuracy.ts writes.
 // Usage: node scripts/label-calibration.ts [set]
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseLabel } from '../src/lib/capture/label/parse.ts';
+import { cachePath } from './lib/accuracy.ts';
 
 const set = process.argv[2] ?? 'dev';
 const dir = join('fixtures/labels', set);
-const version = /ENGINE_VERSION = '([^']+)'/.exec(
-	readFileSync('scripts/label-accuracy.ts', 'utf8')
-)![1];
 const expected: Record<string, { description: string[]; unitPriceMinor: number }> = JSON.parse(
 	readFileSync(join(dir, 'expected.json'), 'utf8')
 );
@@ -25,11 +22,7 @@ const rows: {
 	value: string;
 }[] = [];
 for (const [file, want] of Object.entries(expected)) {
-	const key = createHash('sha1')
-		.update(version)
-		.update(readFileSync(join(dir, file)))
-		.digest('hex');
-	const cache = `.cache/ocr/${key}.json`;
+	const cache = cachePath(join(dir, file));
 	if (!existsSync(cache)) continue;
 	const reading = parseLabel(JSON.parse(readFileSync(cache, 'utf8')));
 	if (reading.description) {

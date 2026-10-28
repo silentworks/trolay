@@ -5,6 +5,7 @@
 	import { itemName, listTripItems } from '#lib/data/items.ts';
 	import { getStore } from '#lib/data/stores.ts';
 	import { deleteTripPhotos, getTrip, receiptDifference } from '#lib/data/trips.ts';
+	import { exportTripCsv } from '#lib/export/history.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
 	import PhotoImage from './PhotoImage.svelte';
@@ -27,6 +28,7 @@
 
 	let viewing = $state<Item>();
 	let confirming = $state(false);
+	let problem = $state('');
 
 	const trip = $derived(view.current?.trip);
 	const totals = $derived(trip?.totals);
@@ -34,6 +36,15 @@
 		trip && totals ? receiptDifference(trip.receiptTotalMinor, totals.inclMinor) : undefined
 	);
 	const photoCount = $derived(view.current?.items.filter((item) => item.photoId).length ?? 0);
+
+	async function exportCsv() {
+		problem = '';
+		try {
+			await exportTripCsv(tripId);
+		} catch (error) {
+			problem = error instanceof Error ? error.message : String(error);
+		}
+	}
 
 	async function deletePhotos() {
 		await deleteTripPhotos(tripId);
@@ -103,6 +114,11 @@
 				<button class="btn" type="button" onclick={() => (confirming = true)}>Delete photos</button>
 			</div>
 		{/if}
+
+		<div class="exports">
+			<button class="btn" type="button" onclick={exportCsv}>Export as CSV</button>
+		</div>
+		{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 
 		<h2>Items</h2>
 		<ul class="items" aria-label="Items bought">
@@ -231,6 +247,10 @@
 
 	.kept p {
 		margin: 0;
+	}
+
+	.exports {
+		margin-top: 12px;
 	}
 
 	.items {

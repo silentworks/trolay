@@ -3,9 +3,20 @@
 	import { formatWhen } from '#lib/dates.ts';
 	import { listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { exportHistoryCsv } from '#lib/export/history.ts';
 	import { formatGBP } from '#lib/money.ts';
 
 	const history = new LiveQuery(() => listFinishedTrips());
+	let problem = $state('');
+
+	async function exportAll() {
+		problem = '';
+		try {
+			await exportHistoryCsv();
+		} catch (error) {
+			problem = error instanceof Error ? error.message : String(error);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -54,6 +65,10 @@
 					</li>
 				{/each}
 			</ul>
+			<button class="btn btn-block export" type="button" onclick={exportAll}>
+				Export all history as CSV
+			</button>
+			{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 		{:else}
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
@@ -80,6 +95,10 @@
 
 	.hint {
 		color: var(--muted);
+	}
+
+	.export {
+		margin-top: 16px;
 	}
 
 	.trips {

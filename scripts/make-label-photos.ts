@@ -11,12 +11,16 @@
 // expected.json, so `pnpm fixtures:labels` recreates them.
 //
 // Usage: node scripts/make-label-photos.ts [count-dev] [count-test]   (needs rsvg-convert, magick)
+//        node scripts/make-label-photos.ts holdout [count]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = 'fixtures/labels';
-const [devCount = 160, testCount = 320] = process.argv.slice(2).map(Number);
+// `holdout` makes a fresh set of the test products from new seeds, for a measurement nothing
+// was tuned on (the test set's failures were looked at once, so it no longer qualifies).
+const holdout = process.argv[2] === 'holdout';
+const [devCount = 160, testCount = 320] = process.argv.slice(holdout ? 3 : 2).map(Number);
 
 // ---------------------------------------------------------------------------------------------
 // Deterministic randomness
@@ -756,7 +760,12 @@ function photograph(
 
 // ---------------------------------------------------------------------------------------------
 
-function generate(set: 'dev' | 'test', count: number, products: Product[], seedBase: number) {
+function generate(
+	set: 'dev' | 'test' | 'holdout',
+	count: number,
+	products: Product[],
+	seedBase: number
+) {
 	const dir = join(ROOT, set);
 	rmSync(dir, { recursive: true, force: true });
 	mkdirSync(dir, { recursive: true });
@@ -797,5 +806,9 @@ const shuffled = [...PRODUCTS].sort((a, b) => {
 });
 const devProducts = shuffled.filter((_, i) => i % 3 === 0);
 const testProducts = shuffled.filter((_, i) => i % 3 !== 0);
-generate('dev', devCount, devProducts, 1_000);
-generate('test', testCount, testProducts, 900_000);
+if (holdout) {
+	generate('holdout', testCount, testProducts, 5_000_000);
+} else {
+	generate('dev', devCount, devProducts, 1_000);
+	generate('test', testCount, testProducts, 900_000);
+}

@@ -14,11 +14,12 @@ so a clean run states how rare mistakes must be, not only that none happened.
 
 ## Sets
 
-| Folder  | What                                                                  | In git           |
-| ------- | --------------------------------------------------------------------- | ---------------- |
-| `real/` | Real photos: the owner's, and openly licensed ones (`ATTRIBUTION.md`) | Photos + answers |
-| `dev/`  | 160 generated photo-realistic labels, used to tune the reader         | Answers only     |
-| `test/` | 320 generated labels with different products, held out to measure it  | Answers only     |
+| Folder     | What                                                                  | In git           |
+| ---------- | --------------------------------------------------------------------- | ---------------- |
+| `real/`    | Real photos: the owner's, and openly licensed ones (`ATTRIBUTION.md`) | Photos + answers |
+| `dev/`     | 160 generated photo-realistic labels, used to tune the reader         | Answers only     |
+| `test/`    | 320 generated labels with different products, held out to measure it  | Answers only     |
+| `holdout/` | 320 more of the test products from new seeds, scored once at the end  | Answers only     |
 
 `dev/` and `test/` are drawn by `pnpm fixtures:labels` (`scripts/make-label-photos.ts`, needs
 `rsvg-convert` and ImageMagick): eight UK label layouts (classic, coloured band, discounter
@@ -26,6 +27,10 @@ with raised pence, warehouse, trade inc/ex VAT, offers, electronic shelf label, 
 photographed with perspective, tilt, uneven light, sleeve glare, blur, noise and JPEG
 compression, sometimes with the neighbouring label's edge and price in frame. The two sets share
 no products. Generation is deterministic, so only `expected.json` is committed.
+
+`test/` was scored once and its few failures were then looked at and fixed, so it no longer
+counts as unseen. `holdout/` (`node scripts/make-label-photos.ts holdout 0 320`) is a fresh
+draw of the same products that nothing was tuned on.
 
 Generated labels are a stand-in for scale; real photos are the proof. Add your own.
 

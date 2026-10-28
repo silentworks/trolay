@@ -36,3 +36,4 @@ vite.config.ts.timestamp-*
 # Generated label photos (pnpm fixtures:labels); only their expected.json is committed
 /fixtures/labels/dev/*.jpg
 /fixtures/labels/test/*.jpg
+/fixtures/labels/holdout/*.jpg

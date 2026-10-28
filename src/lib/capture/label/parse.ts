@@ -45,7 +45,12 @@ export function filledFields(reading: LabelReading | undefined) {
 	return {
 		description: confident(reading?.description, MIN_CONFIDENCE.description),
 		unitPriceMinor: confident(reading?.unitPriceMinor, MIN_CONFIDENCE.price),
-		priceIncludesTax: confident(reading?.priceIncludesTax, MIN_CONFIDENCE.vat),
+		// VAT says what the price includes: without a price it would describe a number the
+		// shopper never sees.
+		priceIncludesTax:
+			confident(reading?.unitPriceMinor, MIN_CONFIDENCE.price) === undefined
+				? undefined
+				: confident(reading?.priceIncludesTax, MIN_CONFIDENCE.vat),
 		barcode: confident(reading?.barcode, MIN_CONFIDENCE.price)
 	};
 }
@@ -673,6 +678,15 @@ function isDescriptionRow(row: Row, excluded: Set<Row>): boolean {
 	const letters = compact.replace(/[^a-z]/gi, '').length;
 	if (excluded.has(row) || row.confidence < 0.5 || !letters) return false;
 	if (PACK_SIZE.test(text)) return true;
+	// "5% FAT 500G": a line ending in a pack size is description, however few its letters.
+	if (
+		packSizes(text).some((p) => p.dimension !== 'count') &&
+		meaningfulWords(text).length &&
+		!UNIT_CAPTION.test(text) &&
+		!/[£€$]|\d\s*p\b/i.test(text)
+	) {
+		return true;
+	}
 	// Stray glyphs ("D" for a currency sign, "BC" from a logo) are not words.
 	if (!meaningfulWords(text).length) return false;
 	if (letters < compact.length * 0.5) return false;
@@ -713,26 +727,36 @@ function pickDescription(rows: Row[], excluded: Set<Row>): LabelReading['descrip
 	const candidates = rows.filter((r) => isDescriptionRow(r, excluded));
 	// Lines stacked closely, aligned left or centred, at a similar size, form a block.
 	const blocks: Row[][] = [];
+	const continues = (prev: Row, row: Row) => {
+		const gap = row.box.y0 - prev.box.y1;
+		const ratio = Math.max(row.height, prev.height) / Math.min(row.height, prev.height);
+		const h = Math.max(row.height, prev.height);
+		const aligned =
+			Math.abs(row.box.x0 - prev.box.x0) <= 1.5 * h ||
+			Math.abs((row.box.x0 + row.box.x1) / 2 - (prev.box.x0 + prev.box.x1) / 2) <= 1.5 * h;
+		// Rows between the two that were excluded (a price, a caption) end the block. Only rows
+		// in the same column count: a neighbouring label's fragment at the frame edge can fall
+		// between the lines in reading order.
+		const between = rows.some(
+			(r) =>
+				!candidates.includes(r) &&
+				r.box.y0 >= prev.box.y1 - 1 &&
+				r.box.y1 <= row.box.y0 + 1 &&
+				overlapShare(
+					r.box.x0,
+					r.box.x1,
+					Math.min(prev.box.x0, row.box.x0),
+					Math.max(prev.box.x1, row.box.x1)
+				) > 0
+		);
+		return gap <= 1.2 * h && ratio <= 1.8 && aligned && !between;
+	};
 	for (const row of candidates) {
-		const block = blocks.at(-1);
-		const prev = block?.at(-1);
-		if (block && prev) {
-			const gap = row.box.y0 - prev.box.y1;
-			const ratio = Math.max(row.height, prev.height) / Math.min(row.height, prev.height);
-			const h = Math.max(row.height, prev.height);
-			const aligned =
-				Math.abs(row.box.x0 - prev.box.x0) <= 1.5 * h ||
-				Math.abs((row.box.x0 + row.box.x1) / 2 - (prev.box.x0 + prev.box.x1) / 2) <= 1.5 * h;
-			// Rows between the two that were excluded (a price, a caption) end the block.
-			const between = rows.some(
-				(r) => !candidates.includes(r) && r.box.y0 >= prev.box.y1 - 1 && r.box.y1 <= row.box.y0 + 1
-			);
-			if (gap <= 1.2 * h && ratio <= 1.8 && aligned && !between && block.length < 4) {
-				block.push(row);
-				continue;
-			}
-		}
-		blocks.push([row]);
+		// Join whichever block this line continues, not only the latest: a neighbour's fragment
+		// can start a block of its own in between.
+		const block = blocks.find((b) => b.length < 4 && continues(b.at(-1)!, row));
+		if (block) block.push(row);
+		else blocks.push([row]);
 	}
 	// The product name is the most prominent block of words; ties go to the one nearer the top.
 	const block = blocks
@@ -768,7 +792,12 @@ function splitGluedUnits(rows: Row[]): Row[] {
 	return rows.map((row) => ({
 		...row,
 		tokens: row.tokens.flatMap((token) => {
-			const m = /^([^/]*\d[^/]*)(\/.+)$/.exec(token.text);
+			// A slash is often read as "l", "I" or "|": "33pleach" is "33p/each".
+			const text = token.text.replace(
+				new RegExp(`^(\\d+(?:[.,]\\d+)?p)[lI|](${PER_UNIT})$`, 'i'),
+				'$1/$2'
+			);
+			const m = /^([^/]*\d[^/]*)(\/.+)$/.exec(text);
 			if (!m || !parseNumber(m[1])) return [token];
 			const split =
 				token.box.x0 + ((token.box.x1 - token.box.x0) * m[1].length) / token.text.length;

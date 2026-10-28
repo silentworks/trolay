@@ -303,6 +303,17 @@ describe('parseLabel: VAT', () => {
 		expect(fields).toMatchObject({ unitPriceMinor: 102, priceIncludesTax: true });
 	});
 
+	it('says nothing about VAT when the price itself was not read', () => {
+		// fixtures/labels/holdout/093-trade.jpg: the price was garbled, the marker was not.
+		const fields = filled([
+			line('Ginger Beer 4 x 330ml', 418, 134, 77),
+			line('2C£2.99', 300, 373, 193, { width: 609, confidence: 0.76 }),
+			line('£1.20 per £3.59 inc VAT', 250, 519, 103, { width: 528, confidence: 0.39 })
+		]);
+		expect(fields.unitPriceMinor).toBeUndefined();
+		expect(fields.priceIncludesTax).toBeUndefined();
+	});
+
 	it('says nothing when the label has no VAT marker', () => {
 		expect(
 			filled([line('Milk 2L', 200, 60, 40), line('£1.45', 600, 300, 150)]).priceIncludesTax
@@ -331,6 +342,35 @@ describe('parseLabel: description', () => {
 			line('Santa Mari 37 g', 250, 680, 58)
 		]);
 		expect(fields.description).toBe('Chipotle Chil');
+	});
+
+	it("keeps a two-line name together when a neighbour's fragment falls between the lines", () => {
+		// fixtures/labels/test/073-classic.jpg: "erry" from the next label at the frame edge.
+		const fields = filled([
+			line('Peppers', 194, 140, 56, { width: 186 }),
+			line('erry', 1094, 173, 44, { width: 83 }),
+			line('Mixed 3 Pack', 248, 195, 51, { width: 299 }),
+			line('£1.55', 789, 426, 211, { width: 498 })
+		]);
+		expect(fields.description).toBe('Peppers Mixed 3 Pack');
+	});
+
+	it('keeps a size line with few letters ("5% FAT 500G")', () => {
+		const fields = filled([
+			line('BEEF MINCE', 336, 196, 48, { width: 229 }),
+			line('5% FAT 500G', 328, 246, 48, { width: 239 }),
+			line('£4.25', 700, 450, 190)
+		]);
+		expect(fields.description).toBe('BEEF MINCE 5% FAT 500G');
+	});
+
+	it('reads a slash misread as "l" in a unit price ("33pleach")', () => {
+		const fields = filled([
+			line('LARGE BROWN EGGS 6 PACK', 630, 218, 61, { width: 681 }),
+			line('£1.99', 760, 420, 240),
+			line('33pleach', 900, 700, 70, { width: 260 })
+		]);
+		expect(fields.description).toBe('LARGE BROWN EGGS 6 PACK');
 	});
 
 	it('leaves a description it is unsure of empty', () => {

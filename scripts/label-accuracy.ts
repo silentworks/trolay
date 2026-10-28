@@ -7,7 +7,7 @@
 // clean run says how rare mistakes must be, not just that none happened to occur.
 //
 // Usage: pnpm test:labels [set...] [--filter text] [--verbose] [--no-cache]
-//   sets: real, dev, test (default: all). Each is a folder in fixtures/labels with expected.json.
+//   sets: real, dev, test, holdout (default: all). Each is a folder in fixtures/labels with expected.json.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -91,7 +91,7 @@ async function read(path: string): Promise<{ lines: TextLine[]; ms: number }> {
 }
 
 let failed = false;
-const names = sets.length ? sets : ['real', 'dev', 'test'];
+const names = sets.length ? sets : ['real', 'dev', 'test', 'holdout'];
 for (const set of names) {
 	const dir = join(ROOT, set);
 	if (!existsSync(join(dir, 'expected.json'))) continue;

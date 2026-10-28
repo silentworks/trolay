@@ -1,1121 +1,801 @@
 {
 	"001-classic.jpg": {
-		"description": [
-			"Washing Up Liquid 900ml"
-		],
+		"description": ["Washing Up Liquid 900ml"],
 		"unitPriceMinor": 125,
 		"vat": null
 	},
 	"002-band.jpg": {
-		"description": [
-			"Beef Burgers 4 Pack"
-		],
+		"description": ["Beef Burgers 4 Pack"],
 		"unitPriceMinor": 299,
 		"vat": null
 	},
 	"003-discounter.jpg": {
-		"description": [
-			"WHOLE MILK 1.136L"
-		],
+		"description": ["WHOLE MILK 1.136L"],
 		"unitPriceMinor": 105,
 		"vat": null
 	},
 	"004-warehouse.jpg": {
-		"description": [
-			"SPREADABLE BUTTER 500G"
-		],
+		"description": ["SPREADABLE BUTTER 500G"],
 		"unitPriceMinor": 399,
 		"vat": null
 	},
 	"005-trade.jpg": {
-		"description": [
-			"Hand Wash 250ml"
-		],
+		"description": ["Hand Wash 250ml"],
 		"unitPriceMinor": 102,
 		"vat": "inc"
 	},
 	"006-offer.jpg": {
-		"description": [
-			"Parmesan 200g"
-		],
+		"description": ["Parmesan 200g"],
 		"unitPriceMinor": 399,
 		"vat": null
 	},
 	"007-esl.jpg": {
-		"description": [
-			"SALTED PEANUTS 200G"
-		],
+		"description": ["SALTED PEANUTS 200G"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"008-pence.jpg": {
-		"description": [
-			"Tomato Ketchup 910g"
-		],
+		"description": ["Tomato Ketchup 910g"],
 		"unitPriceMinor": 32,
 		"vat": null
 	},
 	"009-classic.jpg": {
-		"description": [
-			"Iceberg Lettuce"
-		],
+		"description": ["Iceberg Lettuce"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"010-band.jpg": {
-		"description": [
-			"Red Leicester 350g"
-		],
+		"description": ["Red Leicester 350g"],
 		"unitPriceMinor": 315,
 		"vat": null
 	},
 	"011-discounter.jpg": {
-		"description": [
-			"WHOLE MILK 1.136L"
-		],
+		"description": ["WHOLE MILK 1.136L"],
 		"unitPriceMinor": 105,
 		"vat": null
 	},
 	"012-warehouse.jpg": {
-		"description": [
-			"CORNFLAKES 720G"
-		],
+		"description": ["CORNFLAKES 720G"],
 		"unitPriceMinor": 249,
 		"vat": null
 	},
 	"013-trade.jpg": {
-		"description": [
-			"Tuna Chunks in Brine 4 x 145g"
-		],
+		"description": ["Tuna Chunks in Brine 4 x 145g"],
 		"unitPriceMinor": 499,
 		"vat": "ex"
 	},
 	"014-offer.jpg": {
-		"description": [
-			"Soy Sauce 150ml"
-		],
+		"description": ["Soy Sauce 150ml"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"015-esl.jpg": {
-		"description": [
-			"BEEF BURGERS 4 PACK"
-		],
+		"description": ["BEEF BURGERS 4 PACK"],
 		"unitPriceMinor": 299,
 		"vat": null
 	},
 	"016-pence.jpg": {
-		"description": [
-			"Chicken Stock Cubes 12 Pack"
-		],
+		"description": ["Chicken Stock Cubes 12 Pack"],
 		"unitPriceMinor": 54,
 		"vat": null
 	},
 	"017-classic.jpg": {
-		"description": [
-			"Cornflakes 720g"
-		],
+		"description": ["Cornflakes 720g"],
 		"unitPriceMinor": 249,
 		"vat": null
 	},
 	"018-band.jpg": {
-		"description": [
-			"Cod Fillets 280g"
-		],
+		"description": ["Cod Fillets 280g"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"019-discounter.jpg": {
-		"description": [
-			"GARLIC BREAD 2 PACK"
-		],
+		"description": ["GARLIC BREAD 2 PACK"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"020-warehouse.jpg": {
-		"description": [
-			"SEMI SKIMMED MILK 2.272L"
-		],
+		"description": ["SEMI SKIMMED MILK 2.272L"],
 		"unitPriceMinor": 145,
 		"vat": null
 	},
 	"021-trade.jpg": {
-		"description": [
-			"Cucumber"
-		],
+		"description": ["Cucumber"],
 		"unitPriceMinor": 65,
 		"vat": "ex"
 	},
 	"022-offer.jpg": {
-		"description": [
-			"Mixed Salad Leaves 120g"
-		],
+		"description": ["Mixed Salad Leaves 120g"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"023-esl.jpg": {
-		"description": [
-			"ORANGE JUICE SMOOTH 1L"
-		],
+		"description": ["ORANGE JUICE SMOOTH 1L"],
 		"unitPriceMinor": 210,
 		"vat": null
 	},
 	"024-pence.jpg": {
-		"description": [
-			"Penne Pasta 1kg"
-		],
+		"description": ["Penne Pasta 1kg"],
 		"unitPriceMinor": 43,
 		"vat": null
 	},
 	"025-classic.jpg": {
-		"description": [
-			"Salted Peanuts 200g"
-		],
+		"description": ["Salted Peanuts 200g"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"026-band.jpg": {
-		"description": [
-			"Pesto Sauce 190g"
-		],
+		"description": ["Pesto Sauce 190g"],
 		"unitPriceMinor": 175,
 		"vat": null
 	},
 	"027-discounter.jpg": {
-		"description": [
-			"SPARKLING WATER 6 X 500ML"
-		],
+		"description": ["SPARKLING WATER 6 X 500ML"],
 		"unitPriceMinor": 240,
 		"vat": null
 	},
 	"028-warehouse.jpg": {
-		"description": [
-			"PARMESAN 200G"
-		],
+		"description": ["PARMESAN 200G"],
 		"unitPriceMinor": 399,
 		"vat": null
 	},
 	"029-trade.jpg": {
-		"description": [
-			"Laundry Liquid 1.4L"
-		],
+		"description": ["Laundry Liquid 1.4L"],
 		"unitPriceMinor": 650,
 		"vat": "ex"
 	},
 	"030-offer.jpg": {
-		"description": [
-			"Cucumber"
-		],
+		"description": ["Cucumber"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"031-esl.jpg": {
-		"description": [
-			"TOILET TISSUE 9 ROLLS"
-		],
+		"description": ["TOILET TISSUE 9 ROLLS"],
 		"unitPriceMinor": 525,
 		"vat": null
 	},
 	"032-pence.jpg": {
-		"description": [
-			"Peanut Butter Crunchy 340g"
-		],
+		"description": ["Peanut Butter Crunchy 340g"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"033-classic.jpg": {
-		"description": [
-			"Iceberg Lettuce"
-		],
+		"description": ["Iceberg Lettuce"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"034-band.jpg": {
-		"description": [
-			"King Prawns 180g"
-		],
+		"description": ["King Prawns 180g"],
 		"unitPriceMinor": 400,
 		"vat": null
 	},
 	"035-discounter.jpg": {
-		"description": [
-			"ICEBERG LETTUCE"
-		],
+		"description": ["ICEBERG LETTUCE"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"036-warehouse.jpg": {
-		"description": [
-			"POTATO SALAD 250G"
-		],
+		"description": ["POTATO SALAD 250G"],
 		"unitPriceMinor": 95,
 		"vat": null
 	},
 	"037-trade.jpg": {
-		"description": [
-			"Peanut Butter Crunchy 340g"
-		],
+		"description": ["Peanut Butter Crunchy 340g"],
 		"unitPriceMinor": 227,
 		"vat": "inc"
 	},
 	"038-offer.jpg": {
-		"description": [
-			"Avocados 2 Pack"
-		],
+		"description": ["Avocados 2 Pack"],
 		"unitPriceMinor": 159,
 		"vat": null
 	},
 	"039-esl.jpg": {
-		"description": [
-			"COLA 2L"
-		],
+		"description": ["COLA 2L"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"040-pence.jpg": {
-		"description": [
-			"Avocados 2 Pack"
-		],
+		"description": ["Avocados 2 Pack"],
 		"unitPriceMinor": 79,
 		"vat": null
 	},
 	"041-classic.jpg": {
-		"description": [
-			"Cucumber"
-		],
+		"description": ["Cucumber"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"042-band.jpg": {
-		"description": [
-			"Coconut Milk 400ml"
-		],
+		"description": ["Coconut Milk 400ml"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"043-discounter.jpg": {
-		"description": [
-			"TUNA CHUNKS IN BRINE 4 X 145G"
-		],
+		"description": ["TUNA CHUNKS IN BRINE 4 X 145G"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"044-warehouse.jpg": {
-		"description": [
-			"CEREAL BARS 6 PACK"
-		],
+		"description": ["CEREAL BARS 6 PACK"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"045-trade.jpg": {
-		"description": [
-			"Toothpaste 75ml"
-		],
+		"description": ["Toothpaste 75ml"],
 		"unitPriceMinor": 199,
 		"vat": "ex"
 	},
 	"046-offer.jpg": {
-		"description": [
-			"Coconut Milk 400ml"
-		],
+		"description": ["Coconut Milk 400ml"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"047-esl.jpg": {
-		"description": [
-			"CHEESE SLICES 200G"
-		],
+		"description": ["CHEESE SLICES 200G"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"048-pence.jpg": {
-		"description": [
-			"Penne Pasta 1kg"
-		],
+		"description": ["Penne Pasta 1kg"],
 		"unitPriceMinor": 68,
 		"vat": null
 	},
 	"049-classic.jpg": {
-		"description": [
-			"Cashew Nuts 200g"
-		],
+		"description": ["Cashew Nuts 200g"],
 		"unitPriceMinor": 275,
 		"vat": null
 	},
 	"050-band.jpg": {
-		"description": [
-			"Peanut Butter Crunchy 340g"
-		],
+		"description": ["Peanut Butter Crunchy 340g"],
 		"unitPriceMinor": 189,
 		"vat": null
 	},
 	"051-discounter.jpg": {
-		"description": [
-			"RED LEICESTER 350G"
-		],
+		"description": ["RED LEICESTER 350G"],
 		"unitPriceMinor": 315,
 		"vat": null
 	},
 	"052-warehouse.jpg": {
-		"description": [
-			"CASHEW NUTS 200G"
-		],
+		"description": ["CASHEW NUTS 200G"],
 		"unitPriceMinor": 275,
 		"vat": null
 	},
 	"053-trade.jpg": {
-		"description": [
-			"Red Leicester 350g"
-		],
+		"description": ["Red Leicester 350g"],
 		"unitPriceMinor": 315,
 		"vat": "ex"
 	},
 	"054-offer.jpg": {
-		"description": [
-			"Chicken Stock Cubes 12 Pack"
-		],
+		"description": ["Chicken Stock Cubes 12 Pack"],
 		"unitPriceMinor": 115,
 		"vat": null
 	},
 	"055-esl.jpg": {
-		"description": [
-			"AVOCADO OIL 2L"
-		],
+		"description": ["AVOCADO OIL 2L"],
 		"unitPriceMinor": 1999,
 		"vat": null
 	},
 	"056-pence.jpg": {
-		"description": [
-			"Beef Burgers 4 Pack"
-		],
+		"description": ["Beef Burgers 4 Pack"],
 		"unitPriceMinor": 53,
 		"vat": null
 	},
 	"057-classic.jpg": {
-		"description": [
-			"Dried Apricots 250g"
-		],
+		"description": ["Dried Apricots 250g"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"058-band.jpg": {
-		"description": [
-			"Penne Pasta 1kg"
-		],
+		"description": ["Penne Pasta 1kg"],
 		"unitPriceMinor": 135,
 		"vat": null
 	},
 	"059-discounter.jpg": {
-		"description": [
-			"PENNE PASTA 1KG"
-		],
+		"description": ["PENNE PASTA 1KG"],
 		"unitPriceMinor": 135,
 		"vat": null
 	},
 	"060-warehouse.jpg": {
-		"description": [
-			"LAMB MINCE 500G"
-		],
+		"description": ["LAMB MINCE 500G"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"061-trade.jpg": {
-		"description": [
-			"Avocado Oil 2L"
-		],
+		"description": ["Avocado Oil 2L"],
 		"unitPriceMinor": 1999,
 		"vat": "ex"
 	},
 	"062-offer.jpg": {
-		"description": [
-			"Tortilla Chips 200g"
-		],
+		"description": ["Tortilla Chips 200g"],
 		"unitPriceMinor": 135,
 		"vat": null
 	},
 	"063-esl.jpg": {
-		"description": [
-			"WASHING UP LIQUID 900ML"
-		],
+		"description": ["WASHING UP LIQUID 900ML"],
 		"unitPriceMinor": 125,
 		"vat": null
 	},
 	"064-pence.jpg": {
-		"description": [
-			"Almond Drink 1L"
-		],
+		"description": ["Almond Drink 1L"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"065-classic.jpg": {
-		"description": [
-			"Brown Sauce 425g"
-		],
+		"description": ["Brown Sauce 425g"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"066-band.jpg": {
-		"description": [
-			"King Prawns 180g"
-		],
+		"description": ["King Prawns 180g"],
 		"unitPriceMinor": 400,
 		"vat": null
 	},
 	"067-discounter.jpg": {
-		"description": [
-			"SPARKLING WATER 6 X 500ML"
-		],
+		"description": ["SPARKLING WATER 6 X 500ML"],
 		"unitPriceMinor": 240,
 		"vat": null
 	},
 	"068-warehouse.jpg": {
-		"description": [
-			"LAUNDRY LIQUID 1.4L"
-		],
+		"description": ["LAUNDRY LIQUID 1.4L"],
 		"unitPriceMinor": 650,
 		"vat": null
 	},
 	"069-trade.jpg": {
-		"description": [
-			"Whole Milk 1.136L"
-		],
+		"description": ["Whole Milk 1.136L"],
 		"unitPriceMinor": 105,
 		"vat": "ex"
 	},
 	"070-offer.jpg": {
-		"description": [
-			"Tomato Ketchup 910g"
-		],
+		"description": ["Tomato Ketchup 910g"],
 		"unitPriceMinor": 350,
 		"vat": null
 	},
 	"071-esl.jpg": {
-		"description": [
-			"SHOWER GEL 250ML"
-		],
+		"description": ["SHOWER GEL 250ML"],
 		"unitPriceMinor": 100,
 		"vat": null
 	},
 	"072-pence.jpg": {
-		"description": [
-			"Apple Juice 1L"
-		],
+		"description": ["Apple Juice 1L"],
 		"unitPriceMinor": 30,
 		"vat": null
 	},
 	"073-classic.jpg": {
-		"description": [
-			"Cucumber"
-		],
+		"description": ["Cucumber"],
 		"unitPriceMinor": 65,
 		"vat": null
 	},
 	"074-band.jpg": {
-		"description": [
-			"Long Grain Rice 500g"
-		],
+		"description": ["Long Grain Rice 500g"],
 		"unitPriceMinor": 89,
 		"vat": null
 	},
 	"075-discounter.jpg": {
-		"description": [
-			"PORK SAUSAGES 454G"
-		],
+		"description": ["PORK SAUSAGES 454G"],
 		"unitPriceMinor": 250,
 		"vat": null
 	},
 	"076-warehouse.jpg": {
-		"description": [
-			"GARLIC BREAD 2 PACK"
-		],
+		"description": ["GARLIC BREAD 2 PACK"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"077-trade.jpg": {
-		"description": [
-			"Salmon Fillets 240g"
-		],
+		"description": ["Salmon Fillets 240g"],
 		"unitPriceMinor": 450,
 		"vat": "ex"
 	},
 	"078-offer.jpg": {
-		"description": [
-			"Orange Juice Smooth 1L"
-		],
+		"description": ["Orange Juice Smooth 1L"],
 		"unitPriceMinor": 210,
 		"vat": null
 	},
 	"079-esl.jpg": {
-		"description": [
-			"ORANGE JUICE SMOOTH 1L"
-		],
+		"description": ["ORANGE JUICE SMOOTH 1L"],
 		"unitPriceMinor": 210,
 		"vat": null
 	},
 	"080-pence.jpg": {
-		"description": [
-			"Paracetamol Tablets 16 Pack"
-		],
+		"description": ["Paracetamol Tablets 16 Pack"],
 		"unitPriceMinor": 43,
 		"vat": null
 	},
 	"081-classic.jpg": {
-		"description": [
-			"Mixed Salad Leaves 120g"
-		],
+		"description": ["Mixed Salad Leaves 120g"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"082-band.jpg": {
-		"description": [
-			"Cola 2L"
-		],
+		"description": ["Cola 2L"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"083-discounter.jpg": {
-		"description": [
-			"LONG GRAIN RICE 500G"
-		],
+		"description": ["LONG GRAIN RICE 500G"],
 		"unitPriceMinor": 89,
 		"vat": null
 	},
 	"084-warehouse.jpg": {
-		"description": [
-			"SALMON FILLETS 240G"
-		],
+		"description": ["SALMON FILLETS 240G"],
 		"unitPriceMinor": 450,
 		"vat": null
 	},
 	"085-trade.jpg": {
-		"description": [
-			"Pepperoni Slices 100g"
-		],
+		"description": ["Pepperoni Slices 100g"],
 		"unitPriceMinor": 180,
 		"vat": "inc"
 	},
 	"086-offer.jpg": {
-		"description": [
-			"Spreadable Butter 500g"
-		],
+		"description": ["Spreadable Butter 500g"],
 		"unitPriceMinor": 399,
 		"vat": null
 	},
 	"087-esl.jpg": {
-		"description": [
-			"CHICKEN STOCK CUBES 12 PACK"
-		],
+		"description": ["CHICKEN STOCK CUBES 12 PACK"],
 		"unitPriceMinor": 115,
 		"vat": null
 	},
 	"088-pence.jpg": {
-		"description": [
-			"Salmon Fillets 240g"
-		],
+		"description": ["Salmon Fillets 240g"],
 		"unitPriceMinor": 62,
 		"vat": null
 	},
 	"089-classic.jpg": {
-		"description": [
-			"Soy Sauce 150ml"
-		],
+		"description": ["Soy Sauce 150ml"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"090-band.jpg": {
-		"description": [
-			"Wholemeal Wraps 8 Pack"
-		],
+		"description": ["Wholemeal Wraps 8 Pack"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"091-discounter.jpg": {
-		"description": [
-			"COLA 2L"
-		],
+		"description": ["COLA 2L"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"092-warehouse.jpg": {
-		"description": [
-			"PENNE PASTA 1KG"
-		],
+		"description": ["PENNE PASTA 1KG"],
 		"unitPriceMinor": 135,
 		"vat": null
 	},
 	"093-trade.jpg": {
-		"description": [
-			"Penne Pasta 1kg"
-		],
+		"description": ["Penne Pasta 1kg"],
 		"unitPriceMinor": 135,
 		"vat": "ex"
 	},
 	"094-offer.jpg": {
-		"description": [
-			"Beef Burgers 4 Pack"
-		],
+		"description": ["Beef Burgers 4 Pack"],
 		"unitPriceMinor": 299,
 		"vat": null
 	},
 	"095-esl.jpg": {
-		"description": [
-			"PARACETAMOL TABLETS 16 PACK"
-		],
+		"description": ["PARACETAMOL TABLETS 16 PACK"],
 		"unitPriceMinor": 45,
 		"vat": null
 	},
 	"096-pence.jpg": {
-		"description": [
-			"Apple Juice 1L"
-		],
+		"description": ["Apple Juice 1L"],
 		"unitPriceMinor": 95,
 		"vat": null
 	},
 	"097-classic.jpg": {
-		"description": [
-			"Avocados 2 Pack"
-		],
+		"description": ["Avocados 2 Pack"],
 		"unitPriceMinor": 159,
 		"vat": null
 	},
 	"098-band.jpg": {
-		"description": [
-			"Chopped Tomatoes 400g"
-		],
+		"description": ["Chopped Tomatoes 400g"],
 		"unitPriceMinor": 49,
 		"vat": null
 	},
 	"099-discounter.jpg": {
-		"description": [
-			"GALA APPLES 6 PACK"
-		],
+		"description": ["GALA APPLES 6 PACK"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"100-warehouse.jpg": {
-		"description": [
-			"CLING FILM 30M"
-		],
+		"description": ["CLING FILM 30M"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"101-trade.jpg": {
-		"description": [
-			"Tortilla Chips 200g"
-		],
+		"description": ["Tortilla Chips 200g"],
 		"unitPriceMinor": 135,
 		"vat": "ex"
 	},
 	"102-offer.jpg": {
-		"description": [
-			"Tuna Chunks in Brine 4 x 145g"
-		],
+		"description": ["Tuna Chunks in Brine 4 x 145g"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"103-esl.jpg": {
-		"description": [
-			"TOOTHPASTE 75ML"
-		],
+		"description": ["TOOTHPASTE 75ML"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"104-pence.jpg": {
-		"description": [
-			"Toilet Tissue 9 Rolls"
-		],
+		"description": ["Toilet Tissue 9 Rolls"],
 		"unitPriceMinor": 36,
 		"vat": null
 	},
 	"105-classic.jpg": {
-		"description": [
-			"Soy Sauce 150ml"
-		],
+		"description": ["Soy Sauce 150ml"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"106-band.jpg": {
-		"description": [
-			"Margherita Pizza 300g"
-		],
+		"description": ["Margherita Pizza 300g"],
 		"unitPriceMinor": 150,
 		"vat": null
 	},
 	"107-discounter.jpg": {
-		"description": [
-			"GALA APPLES 6 PACK"
-		],
+		"description": ["GALA APPLES 6 PACK"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"108-warehouse.jpg": {
-		"description": [
-			"SOY SAUCE 150ML"
-		],
+		"description": ["SOY SAUCE 150ML"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"109-trade.jpg": {
-		"description": [
-			"Brown Sauce 425g"
-		],
+		"description": ["Brown Sauce 425g"],
 		"unitPriceMinor": 239,
 		"vat": "inc"
 	},
 	"110-offer.jpg": {
-		"description": [
-			"Soy Sauce 150ml"
-		],
+		"description": ["Soy Sauce 150ml"],
 		"unitPriceMinor": 129,
 		"vat": null
 	},
 	"111-esl.jpg": {
-		"description": [
-			"TOMATO KETCHUP 910G"
-		],
+		"description": ["TOMATO KETCHUP 910G"],
 		"unitPriceMinor": 350,
 		"vat": null
 	},
 	"112-pence.jpg": {
-		"description": [
-			"Aluminium Foil 10m"
-		],
+		"description": ["Aluminium Foil 10m"],
 		"unitPriceMinor": 42,
 		"vat": null
 	},
 	"113-classic.jpg": {
-		"description": [
-			"Gala Apples 6 Pack"
-		],
+		"description": ["Gala Apples 6 Pack"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"114-band.jpg": {
-		"description": [
-			"Pesto Sauce 190g"
-		],
+		"description": ["Pesto Sauce 190g"],
 		"unitPriceMinor": 175,
 		"vat": null
 	},
 	"115-discounter.jpg": {
-		"description": [
-			"CEREAL BARS 6 PACK"
-		],
+		"description": ["CEREAL BARS 6 PACK"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"116-warehouse.jpg": {
-		"description": [
-			"LAMB MINCE 500G"
-		],
+		"description": ["LAMB MINCE 500G"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"117-trade.jpg": {
-		"description": [
-			"Cod Fillets 280g"
-		],
+		"description": ["Cod Fillets 280g"],
 		"unitPriceMinor": 499,
 		"vat": "ex"
 	},
 	"118-offer.jpg": {
-		"description": [
-			"Washing Up Liquid 900ml"
-		],
+		"description": ["Washing Up Liquid 900ml"],
 		"unitPriceMinor": 125,
 		"vat": null
 	},
 	"119-esl.jpg": {
-		"description": [
-			"WHOLEMEAL WRAPS 8 PACK"
-		],
+		"description": ["WHOLEMEAL WRAPS 8 PACK"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"120-pence.jpg": {
-		"description": [
-			"Tortilla Chips 200g"
-		],
+		"description": ["Tortilla Chips 200g"],
 		"unitPriceMinor": 56,
 		"vat": null
 	},
 	"121-classic.jpg": {
-		"description": [
-			"Potato Salad 250g"
-		],
+		"description": ["Potato Salad 250g"],
 		"unitPriceMinor": 95,
 		"vat": null
 	},
 	"122-band.jpg": {
-		"description": [
-			"Toothpaste 75ml"
-		],
+		"description": ["Toothpaste 75ml"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"123-discounter.jpg": {
-		"description": [
-			"WHOLE MILK 1.136L"
-		],
+		"description": ["WHOLE MILK 1.136L"],
 		"unitPriceMinor": 105,
 		"vat": null
 	},
 	"124-warehouse.jpg": {
-		"description": [
-			"ALMOND DRINK 1L"
-		],
+		"description": ["ALMOND DRINK 1L"],
 		"unitPriceMinor": 150,
 		"vat": null
 	},
 	"125-trade.jpg": {
-		"description": [
-			"Orange Juice Smooth 1L"
-		],
+		"description": ["Orange Juice Smooth 1L"],
 		"unitPriceMinor": 210,
 		"vat": "ex"
 	},
 	"126-offer.jpg": {
-		"description": [
-			"Toothpaste 75ml"
-		],
+		"description": ["Toothpaste 75ml"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"127-esl.jpg": {
-		"description": [
-			"LAMB MINCE 500G"
-		],
+		"description": ["LAMB MINCE 500G"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"128-pence.jpg": {
-		"description": [
-			"Toilet Tissue 9 Rolls"
-		],
+		"description": ["Toilet Tissue 9 Rolls"],
 		"unitPriceMinor": 31,
 		"vat": null
 	},
 	"129-classic.jpg": {
-		"description": [
-			"Orange Juice Smooth 1L"
-		],
+		"description": ["Orange Juice Smooth 1L"],
 		"unitPriceMinor": 210,
 		"vat": null
 	},
 	"130-band.jpg": {
-		"description": [
-			"Chicken Stock Cubes 12 Pack"
-		],
+		"description": ["Chicken Stock Cubes 12 Pack"],
 		"unitPriceMinor": 115,
 		"vat": null
 	},
 	"131-discounter.jpg": {
-		"description": [
-			"ALMOND DRINK 1L"
-		],
+		"description": ["ALMOND DRINK 1L"],
 		"unitPriceMinor": 150,
 		"vat": null
 	},
 	"132-warehouse.jpg": {
-		"description": [
-			"MIXED SALAD LEAVES 120G"
-		],
+		"description": ["MIXED SALAD LEAVES 120G"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"133-trade.jpg": {
-		"description": [
-			"Red Leicester 350g"
-		],
+		"description": ["Red Leicester 350g"],
 		"unitPriceMinor": 315,
 		"vat": "ex"
 	},
 	"134-offer.jpg": {
-		"description": [
-			"Lamb Mince 500g"
-		],
+		"description": ["Lamb Mince 500g"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"135-esl.jpg": {
-		"description": [
-			"CHOPPED TOMATOES 400G"
-		],
+		"description": ["CHOPPED TOMATOES 400G"],
 		"unitPriceMinor": 49,
 		"vat": null
 	},
 	"136-pence.jpg": {
-		"description": [
-			"Toilet Tissue 9 Rolls"
-		],
+		"description": ["Toilet Tissue 9 Rolls"],
 		"unitPriceMinor": 97,
 		"vat": null
 	},
 	"137-classic.jpg": {
-		"description": [
-			"Wholemeal Wraps 8 Pack"
-		],
+		"description": ["Wholemeal Wraps 8 Pack"],
 		"unitPriceMinor": 165,
 		"vat": null
 	},
 	"138-band.jpg": {
-		"description": [
-			"Potato Salad 250g"
-		],
+		"description": ["Potato Salad 250g"],
 		"unitPriceMinor": 95,
 		"vat": null
 	},
 	"139-discounter.jpg": {
-		"description": [
-			"MIXED SALAD LEAVES 120G"
-		],
+		"description": ["MIXED SALAD LEAVES 120G"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"140-warehouse.jpg": {
-		"description": [
-			"LAUNDRY LIQUID 1.4L"
-		],
+		"description": ["LAUNDRY LIQUID 1.4L"],
 		"unitPriceMinor": 650,
 		"vat": null
 	},
 	"141-trade.jpg": {
-		"description": [
-			"Margherita Pizza 300g"
-		],
+		"description": ["Margherita Pizza 300g"],
 		"unitPriceMinor": 150,
 		"vat": "ex"
 	},
 	"142-offer.jpg": {
-		"description": [
-			"Semi Skimmed Milk 2.272L"
-		],
+		"description": ["Semi Skimmed Milk 2.272L"],
 		"unitPriceMinor": 145,
 		"vat": null
 	},
 	"143-esl.jpg": {
-		"description": [
-			"SEMI SKIMMED MILK 2.272L"
-		],
+		"description": ["SEMI SKIMMED MILK 2.272L"],
 		"unitPriceMinor": 145,
 		"vat": null
 	},
 	"144-pence.jpg": {
-		"description": [
-			"Paracetamol Tablets 16 Pack"
-		],
+		"description": ["Paracetamol Tablets 16 Pack"],
 		"unitPriceMinor": 40,
 		"vat": null
 	},
 	"145-classic.jpg": {
-		"description": [
-			"Avocados 2 Pack"
-		],
+		"description": ["Avocados 2 Pack"],
 		"unitPriceMinor": 159,
 		"vat": null
 	},
 	"146-band.jpg": {
-		"description": [
-			"Apple Juice 1L"
-		],
+		"description": ["Apple Juice 1L"],
 		"unitPriceMinor": 95,
 		"vat": null
 	},
 	"147-discounter.jpg": {
-		"description": [
-			"ALUMINIUM FOIL 10M"
-		],
+		"description": ["ALUMINIUM FOIL 10M"],
 		"unitPriceMinor": 175,
 		"vat": null
 	},
 	"148-warehouse.jpg": {
-		"description": [
-			"CORNFLAKES 720G"
-		],
+		"description": ["CORNFLAKES 720G"],
 		"unitPriceMinor": 249,
 		"vat": null
 	},
 	"149-trade.jpg": {
-		"description": [
-			"Cashew Nuts 200g"
-		],
+		"description": ["Cashew Nuts 200g"],
 		"unitPriceMinor": 330,
 		"vat": "inc"
 	},
 	"150-offer.jpg": {
-		"description": [
-			"Chopped Tomatoes 400g"
-		],
+		"description": ["Chopped Tomatoes 400g"],
 		"unitPriceMinor": 49,
 		"vat": null
 	},
 	"151-esl.jpg": {
-		"description": [
-			"PEPPERONI SLICES 100G"
-		],
+		"description": ["PEPPERONI SLICES 100G"],
 		"unitPriceMinor": 150,
 		"vat": null
 	},
 	"152-pence.jpg": {
-		"description": [
-			"Chicken Thighs 1kg"
-		],
+		"description": ["Chicken Thighs 1kg"],
 		"unitPriceMinor": 75,
 		"vat": null
 	},
 	"153-classic.jpg": {
-		"description": [
-			"Lamb Mince 500g"
-		],
+		"description": ["Lamb Mince 500g"],
 		"unitPriceMinor": 499,
 		"vat": null
 	},
 	"154-band.jpg": {
-		"description": [
-			"Brown Sauce 425g"
-		],
+		"description": ["Brown Sauce 425g"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"155-discounter.jpg": {
-		"description": [
-			"COCONUT MILK 400ML"
-		],
+		"description": ["COCONUT MILK 400ML"],
 		"unitPriceMinor": 99,
 		"vat": null
 	},
 	"156-warehouse.jpg": {
-		"description": [
-			"PORK SAUSAGES 454G"
-		],
+		"description": ["PORK SAUSAGES 454G"],
 		"unitPriceMinor": 250,
 		"vat": null
 	},
 	"157-trade.jpg": {
-		"description": [
-			"Cereal Bars 6 Pack"
-		],
+		"description": ["Cereal Bars 6 Pack"],
 		"unitPriceMinor": 239,
 		"vat": "inc"
 	},
 	"158-offer.jpg": {
-		"description": [
-			"Vegetable Oil 1L"
-		],
+		"description": ["Vegetable Oil 1L"],
 		"unitPriceMinor": 199,
 		"vat": null
 	},
 	"159-esl.jpg": {
-		"description": [
-			"ALUMINIUM FOIL 10M"
-		],
+		"description": ["ALUMINIUM FOIL 10M"],
 		"unitPriceMinor": 175,
 		"vat": null
 	},
 	"160-pence.jpg": {
-		"description": [
-			"Cheese Slices 200g"
-		],
+		"description": ["Cheese Slices 200g"],
 		"unitPriceMinor": 71,
 		"vat": null
 	}

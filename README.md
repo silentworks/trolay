@@ -4,8 +4,7 @@ A personal, installable web app (PWA) that keeps a running total of a shop as yo
 store, add each item, and the trolley shows the total with and without VAT at all times. It works
 fully offline once installed.
 
-Product spec: [Shopping Trolley — Product Spec](https://claude.ai/artifact/NnJxkYQHyYv1pEWaPDxRjz)
-· Work tracked in the Linear project **My Shopping Trolley**.
+Work is tracked in the Linear project **My Shopping Trolley**.
 
 ## Decisions
 
@@ -21,7 +20,7 @@ Product spec: [Shopping Trolley — Product Spec](https://claude.ai/artifact/NnJ
 
 ## Develop
 
-Requires Node 22+ and pnpm.
+Requires Node 22+ and pnpm 10 (pinned in `package.json` under `packageManager`).
 
 ```sh
 pnpm install
@@ -43,16 +42,20 @@ pnpm check:all      # all of the above
 
 First run of the end-to-end tests: `pnpm exec playwright install chromium`.
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Workers)
 
-The build output in `build/` is a static site.
+The app is served as Workers static assets, configured in `wrangler.jsonc`. The build output in
+`build/` is uploaded as assets; there is no Worker script yet.
 
-1. Buy the domain and move its DNS to Cloudflare.
-2. Create a Pages project connected to this repository: build command `pnpm build`, output
-   directory `build`.
-3. Add the domain as a custom domain on the Pages project. HTTPS is required for the camera and
-   the service worker.
+1. Create a Worker connected to this repository (Workers Builds) with:
+   - Build command: `pnpm build`
+   - Deploy command: `pnpm exec wrangler deploy`
+   - The Worker's name must match `name` in `wrangler.jsonc` (`trolay`).
+2. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
+   HTTPS is required for the camera and the service worker.
 
-`static/_headers` stops browsers caching the service worker and app shell, so new versions are
-picked up. Cloudflare Pages serves `index.html` for any path without a file of its own, which is
-what the SPA needs. `/api` is reserved for the phase 4 sync API.
+To deploy by hand: `pnpm build && pnpm exec wrangler deploy` (after `pnpm exec wrangler login`).
+
+`not_found_handling: "single-page-application"` serves `index.html` for any path without a file
+of its own, which is what the SPA needs. `static/_headers` stops browsers caching the service
+worker and app shell, so new versions are picked up. `/api` is reserved for the phase 4 sync API.

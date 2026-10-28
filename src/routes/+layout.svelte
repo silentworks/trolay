@@ -3,6 +3,7 @@
 	import { requestPersistentStorage } from '#lib/data/db.ts';
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
+	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -23,4 +24,5 @@
 </script>
 
 <InstallNudge />
+<UpdatePrompt />
 {@render children()}

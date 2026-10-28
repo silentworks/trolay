@@ -12,7 +12,9 @@ Work is tracked in the Linear project **Trolay**.
   `index.html` fallback). All data lives in the browser, so nothing renders on a server.
 - **Service worker: SvelteKit's built-in support** (`src/service-worker/`), not Workbox.
   `@vite-pwa/sveltekit` does not support SvelteKit 3. The worker precaches every build file and
-  serves the app shell for all navigations, so the app works with no signal.
+  serves the app shell for all navigations, so the app works with no signal. A new version
+  installs in the background and waits: the app shows "Refresh to update" and reloads only when
+  tapped, never mid-shop on its own. Dismissed, it takes over the next time the app is opened.
 - **Local data: Dexie over IndexedDB** (`src/lib/data/`). Records carry `updatedAt`, `updatedBy`
   and `deletedAt` (tombstones) from day one, ready for sync in phase 4.
 - **Money: integer pence, VAT in basis points** (2000 = 20%), see `src/lib/money.ts`. Each line

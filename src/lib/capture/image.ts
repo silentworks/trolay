@@ -44,6 +44,16 @@ async function encode(bitmap: ImageBitmap, maxEdge: number): Promise<Blob> {
 	);
 }
 
+/** A smaller copy of an image, scaled by `factor`, for the large-text OCR pass. */
+export async function downscale(source: Blob, factor: number): Promise<Blob> {
+	const bitmap = await createImageBitmap(source);
+	try {
+		return await encode(bitmap, Math.round(Math.max(bitmap.width, bitmap.height) * factor));
+	} finally {
+		bitmap.close();
+	}
+}
+
 /** Does the work; called inside the compression worker, or on the main thread as a fallback. */
 export async function compressInPlace(source: Blob): Promise<CompressedPhoto> {
 	// Applies the EXIF rotation that phone cameras rely on.

@@ -1,8 +1,13 @@
+import { createRequire } from 'node:module';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+// The label reader's files are served from static/ocr/<version>/ (scripts/copy-ocr-assets.js).
+const { version: tesseractVersion } = createRequire(import.meta.url)('tesseract.js/package.json');
+
 export default defineConfig({
+	define: { __TESSERACT_VERSION__: JSON.stringify(tesseractVersion) },
 	plugins: [
 		sveltekit({
 			compilerOptions: {
@@ -12,8 +17,8 @@ export default defineConfig({
 			},
 
 			// SPA mode: every route renders in the browser (`ssr = false` in the root layout) and
-			// unknown paths fall back to index.html, which Cloudflare Pages serves for any URL
-			// that has no file of its own.
+			// unknown paths fall back to index.html, which Cloudflare serves for any URL that has
+			// no file of its own.
 			adapter: adapter({ fallback: 'index.html' })
 		})
 	],

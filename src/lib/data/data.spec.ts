@@ -189,6 +189,17 @@ describe('items', () => {
 		expect(await db.photos.count()).toBe(1);
 	});
 
+	it('saves a valid barcode and rejects a mistyped one', async () => {
+		const trip = await openTrip();
+		const item = await addItem(trip.id, { ...milk, barcode: '5012 3456 78900' });
+		expect((await db.items.get(item.id))?.barcode).toBe('5012345678900');
+		await expect(addItem(trip.id, { ...milk, barcode: '5012345678901' })).rejects.toThrow(
+			'Check the barcode'
+		);
+		await updateItem(item.id, { ...milk, barcode: '' });
+		expect((await db.items.get(item.id))?.barcode).toBeUndefined();
+	});
+
 	it('only adds items to an open trip', async () => {
 		await expect(addItem('missing', milk)).rejects.toThrow('not open');
 	});

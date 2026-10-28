@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import type { Item } from '#lib/data/db.ts';
 	import type { ItemInput } from '#lib/data/items.ts';
 	import { formatGBP, lineTotals, minorToInput, parsePounds } from '#lib/money.ts';
+	import CameraCapture from './CameraCapture.svelte';
 
 	interface Props {
 		item?: Item;
+		/** A snapped label being added: its photo is shown and its readings fill the form. */
+		capture?: CaptureSession;
 		defaultIncludesTax: boolean;
 		taxRateBps: number;
 		onsave: (input: ItemInput) => Promise<void>;
@@ -13,15 +17,18 @@
 		onrevert?: () => Promise<void>;
 	}
 
-	let { item, defaultIncludesTax, taxRateBps, onsave, ondelete, onrevert }: Props = $props();
+	let { item, capture, defaultIncludesTax, taxRateBps, onsave, ondelete, onrevert }: Props =
+		$props();
 	const uid = $props.id();
 
 	// Initial values only: the form edits its own copy until it is saved.
-	const initial = untrack(() => ({ item, defaultIncludesTax }));
+	const initial = untrack(() => ({ item, defaultIncludesTax, barcode: capture?.barcode }));
 	let description = $state(initial.item?.description ?? '');
 	let price = $state(initial.item ? minorToInput(initial.item.unitPriceMinor) : '');
 	let quantity = $state(initial.item?.quantity ?? 1);
 	let priceIncludesTax = $state(initial.item?.priceIncludesTax ?? initial.defaultIncludesTax);
+	let barcode = $state(initial.item?.barcode ?? initial.barcode ?? '');
+	let scanning = $state(false);
 	let error = $state('');
 	let saving = $state(false);
 
@@ -41,7 +48,7 @@
 		saving = true;
 		error = '';
 		try {
-			await onsave({ description, unitPriceMinor, priceIncludesTax, quantity });
+			await onsave({ description, unitPriceMinor, priceIncludesTax, quantity, barcode });
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -57,6 +64,17 @@
 
 <form onsubmit={submit} novalidate>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
+
+	{#if capture}
+		<figure class="photo">
+			<img src={capture.previewUrl} alt="The label you photographed" />
+			{#if capture.status === 'failed'}
+				<figcaption class="error">
+					The photo could not be processed ({capture.error}). The item can still be added.
+				</figcaption>
+			{/if}
+		</figure>
+	{/if}
 
 	<div class="field">
 		<label for="{uid}-description">Description</label>
@@ -108,6 +126,20 @@
 		Price includes VAT
 	</label>
 
+	<div class="field">
+		<label for="{uid}-barcode">Barcode <span class="hint">(optional)</span></label>
+		<div class="barcode">
+			<input
+				id="{uid}-barcode"
+				class="input"
+				bind:value={barcode}
+				inputmode="numeric"
+				autocomplete="off"
+			/>
+			<button class="btn" type="button" onclick={() => (scanning = true)}>Scan</button>
+		</div>
+	</div>
+
 	{#if preview}
 		<p class="preview">
 			Line total {formatGBP(preview.inclMinor)} incl. VAT · {formatGBP(preview.exclMinor)} excl.
@@ -130,7 +162,36 @@
 	{/if}
 </form>
 
+<CameraCapture
+	open={scanning}
+	mode="barcode"
+	onbarcode={(code) => {
+		barcode = code;
+		scanning = false;
+	}}
+	onclose={() => (scanning = false)}
+/>
+
 <style>
+	.photo {
+		margin: 0 0 12px;
+	}
+
+	.photo img {
+		display: block;
+		width: 100%;
+		max-height: 30dvh;
+		object-fit: contain;
+		border-radius: var(--radius);
+		background: var(--surface-2);
+	}
+
+	.barcode {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 8px;
+	}
+
 	.row {
 		display: grid;
 		grid-template-columns: 1fr auto;

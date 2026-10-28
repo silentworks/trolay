@@ -6,8 +6,8 @@ import { version } from '$app/env';
 // gets its own cache; the old one is removed once the new worker takes over.
 const CACHE = `trolay-${version}`;
 
-// The label reader's files (~7 MB, under ocr/<tesseract version>/) live in a cache of their
-// own that survives app updates, so a new build does not download them again.
+// The label reader's files (~24 MB of models and WebAssembly, under ocr/<content hash>/) live in
+// a cache of their own that survives app updates, so a new build does not download them again.
 const OCR_CACHE = 'trolay-ocr';
 const isOcrFile = (path: string) => path.startsWith('ocr/');
 
@@ -52,7 +52,7 @@ self.addEventListener('activate', (event) => {
 			for (const key of await caches.keys()) {
 				if (key !== CACHE && key !== OCR_CACHE) await caches.delete(key);
 			}
-			// Drop label-reader files from older Tesseract versions.
+			// Drop label-reader files from older versions.
 			const ocr = await caches.open(OCR_CACHE);
 			for (const request of await ocr.keys()) {
 				if (!OCR_PRECACHED.has(request.url)) await ocr.delete(request);

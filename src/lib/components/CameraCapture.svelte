@@ -3,6 +3,7 @@
 	import {
 		cameraErrorMessage,
 		canUseCamera,
+		cropUnder,
 		grabFrame,
 		openRearCamera,
 		stopCamera
@@ -26,6 +27,7 @@
 	let dialog: HTMLDialogElement;
 	let video = $state<HTMLVideoElement>();
 	let fileInput = $state<HTMLInputElement>();
+	let guide = $state<HTMLElement>();
 	let status = $state<'starting' | 'live' | 'unavailable'>('starting');
 	let problem = $state('');
 	let barcode = $state<string>();
@@ -98,7 +100,9 @@
 		if (!video || busy) return;
 		busy = true;
 		try {
-			const photo = await grabFrame(video);
+			// Only the label inside the guide (and a margin) is kept: neighbouring labels and pack
+			// text outside it can only confuse the reader.
+			const photo = await grabFrame(video, guide ? cropUnder(video, guide) : undefined);
 			oncapture?.(photo, barcode);
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
@@ -139,7 +143,7 @@
 		<video bind:this={video} playsinline muted autoplay class:hidden={status !== 'live'}></video>
 
 		{#if status === 'live'}
-			<div class="guide {mode}" aria-hidden="true"></div>
+			<div class="guide {mode}" aria-hidden="true" bind:this={guide}></div>
 		{/if}
 
 		<header>

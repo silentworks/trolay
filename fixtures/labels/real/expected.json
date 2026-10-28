@@ -1,0 +1,48 @@
+{
+	"warehouse-avocado-oil.png": {
+		"description": ["MARIANNE'S AVOCADO OIL 2 L"],
+		"unitPriceMinor": 1999,
+		"vat": null
+	},
+	"uk-cully-sully-chowder.jpg": {
+		"description": ["Cully & Sully Smoked Salmon & Haddock Chowder 400g"],
+		"unitPriceMinor": 199,
+		"vat": null,
+		"barcode": "5391511420780"
+	},
+	"be-esl-coca-cola.jpg": {
+		"description": ["1.5L COCA REGULAR PET", "1.5L COCA REGULAR PET COCA-COLA"],
+		"unitPriceMinor": 209,
+		"vat": null
+	},
+	"be-esl-muesli.jpg": {
+		"description": ["300G CRUNCHY STEVIA CHOCO&NOIX"],
+		"unitPriceMinor": 146,
+		"vat": null
+	},
+	"au-esl-tissues.jpg": {
+		"description": ["Kleenex T/tissue White 24pk"],
+		"unitPriceMinor": 1100,
+		"vat": null
+	},
+	"se-lcd-chipotle.jpg": {
+		"description": ["Chipotle Chil", "Chipotle Chil Santa Mari 37 g"],
+		"unitPriceMinor": 1695,
+		"vat": null
+	},
+	"ae-esl-cardamom.jpg": {
+		"description": ["BAYARA CARDAMON WHOLE 330gm"],
+		"unitPriceMinor": 3975,
+		"vat": null
+	},
+	"ae-esl-peppercorn.jpg": {
+		"description": ["Bayara Peppercorn With Mix Grinder 28g"],
+		"unitPriceMinor": 1525,
+		"vat": null
+	},
+	"ae-esl-black-pepper.jpg": {
+		"description": ["BLACK PEPPER WHOLE 330ml"],
+		"unitPriceMinor": 2025,
+		"vat": null
+	}
+}

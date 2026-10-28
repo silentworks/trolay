@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { warmUpBarcodes } from '#lib/capture/barcode.ts';
-	import { warmUpOcr } from '#lib/capture/ocr.ts';
+	import { warmUpOcr } from '#lib/capture/ocr/browser.ts';
 	import { compressPhoto } from '#lib/capture/image.ts';
 	import { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import { db, type ExtractedFields, type Item, type Store } from '#lib/data/db.ts';

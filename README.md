@@ -50,6 +50,8 @@ The app is served as Workers static assets, configured in `wrangler.jsonc`. The 
 1. Create a Worker connected to this repository (Workers Builds) with:
    - Build command: `pnpm build`
    - Deploy command: `pnpm exec wrangler deploy`
+   - Non-production branch deploy command: `pnpm exec wrangler preview` (needs the `previews`
+     block in `wrangler.jsonc`)
    - The Worker's name must match `name` in `wrangler.jsonc` (`trolay`).
 2. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
    HTTPS is required for the camera and the service worker.

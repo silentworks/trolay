@@ -17,12 +17,19 @@ Work is tracked in the Linear project **Trolay**.
   and `deletedAt` (tombstones) from day one, ready for sync in phase 4.
 - **Money: integer pence, VAT in basis points** (2000 = 20%), see `src/lib/money.ts`. Each line
   is rounded to the nearest penny (half up), then lines are summed.
-- **Label reading: Tesseract.js on the device** (`src/lib/capture/`), no cloud service. Its
-  worker, WebAssembly core and English data (~7 MB) are copied from `node_modules` into
-  `static/ocr/<version>/` by `scripts/copy-ocr-assets.js` (on install and build, not committed)
-  and kept by the service worker in a cache that survives app updates. Each photo is read twice
-  (full size for small print, one third size for the big price) and `parse-label.ts` turns the
-  text into fields with confidences; anything under 0.6 is left empty for the shopper.
+- **Label reading: PaddleOCR's PP-OCRv5 models on ONNX Runtime Web, on the device**
+  (`src/lib/capture/ocr/`, `src/lib/capture/label/`), no cloud service. Tesseract.js was tried
+  first and could not read real shelf-label photos: it is built for scanned documents. PP-OCRv5
+  (Apache-2.0, `models/ocr/`) is built for text in photos. The models and the WebAssembly runtime
+  (~24 MB) are copied to `static/ocr/<content hash>/` by `scripts/copy-ocr-assets.js`, run in a
+  Web Worker and are kept by the service worker in a cache that survives app updates.
+  - Detection runs at two scales (fine print, and very large glyphs such as a price's "1");
+    big short text (the price) is read in several crops that vote.
+  - `label/parse.ts` reads the layout, not just the text: captions ("SELL PRICE", "PRICE PER
+    LITRE"), raised pence, was-prices, multi-buys, loyalty prices and unit prices; the price is
+    cross-checked against the unit price and pack size, ex VAT against inc VAT.
+  - A field is filled only above a confidence threshold, otherwise left for the shopper.
+    `pnpm test:labels` measures this on real and generated photos (`fixtures/labels/README.md`).
 - **Barcodes: the browser's `BarcodeDetector` where it reads retail formats (Android Chrome),
   otherwise ZXing in WebAssembly** (`barcode-detector` ponyfill), bundled with the app so it
   works offline.
@@ -39,8 +46,9 @@ pnpm install
 pnpm dev            # http://localhost:5173
 ```
 
-Requires `rsvg-convert` only to regenerate label fixtures, and `ffmpeg` for the camera
-end-to-end tests (it turns a label fixture into the fake camera's video).
+Requires `rsvg-convert` and ImageMagick to generate the label fixtures (`pnpm fixtures:labels`)
+and to run `pnpm test:labels`, and `ffmpeg` for the camera end-to-end tests (it turns a label
+photo into the fake camera's video).
 
 Imports from `src/lib` use the `#lib/*` alias with the file extension, e.g.
 `import { formatGBP } from '#lib/money.ts'`.
@@ -52,6 +60,7 @@ pnpm check          # svelte-check (types and a11y)
 pnpm lint           # prettier + eslint
 pnpm test           # unit tests: VAT maths, data layer (fake-indexeddb)
 pnpm test:e2e       # Playwright against a production build, including offline and a fake camera
+pnpm fixtures:labels  # generate the dev/test label photos (once; not committed)
 pnpm test:labels    # label reader accuracy over fixtures/labels (see its README)
 pnpm check:all      # all of the above
 ```

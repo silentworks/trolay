@@ -15,9 +15,9 @@
 		"test:unit": "vitest",
 		"test": "vitest --run",
 		"test:e2e": "playwright test",
-		"check:all": "pnpm check && pnpm lint && pnpm test && pnpm test:labels && pnpm test:e2e",
+		"check:all": "pnpm check && pnpm lint && pnpm test && pnpm test:labels real dev test && pnpm test:e2e",
 		"test:labels": "node scripts/label-accuracy.ts",
-		"fixtures:labels": "node scripts/make-label-fixtures.js"
+		"fixtures:labels": "node scripts/make-label-photos.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -46,10 +46,9 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
-		"@tesseract.js-data/eng": "1.0.0",
 		"barcode-detector": "3.2.2",
 		"dexie": "^4.4.7",
-		"tesseract.js": "7.0.0",
+		"onnxruntime-web": "1.24.3",
 		"zxing-wasm": "3.1.3"
 	},
 	"packageManager": "pnpm@10.25.0",
@@ -57,9 +56,6 @@
 		"onlyBuiltDependencies": [
 			"esbuild",
 			"workerd"
-		],
-		"ignoredBuiltDependencies": [
-			"tesseract.js"
 		]
 	}
 }

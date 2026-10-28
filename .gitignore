@@ -29,3 +29,11 @@ vite.config.ts.timestamp-*
 # Tesseract.js files, copied by scripts/copy-ocr-assets.js
 /static/ocr
 /e2e/.generated
+
+# OCR results cached by scripts/label-accuracy.ts
+/.cache
+
+# Generated label photos (pnpm fixtures:labels); only their expected.json is committed
+/fixtures/labels/dev/*.jpg
+/fixtures/labels/test/*.jpg
+/fixtures/labels/holdout/*.jpg

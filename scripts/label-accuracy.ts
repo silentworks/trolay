@@ -1,143 +1,173 @@
-// Runs every label in fixtures/labels/ through the same OCR engine and parser the app uses,
-// and reports accuracy per field. A field is "right", "left empty" (low confidence, so the
-// shopper fills it in) or "wrong" (filled in with a bad value — the case that matters most).
+// Measures the label reader on fixture photos, through the same OCR engine and parser as the
+// app, and scores every field strictly:
+//   right  the value filled in is exactly right (descriptions ignoring case and spacing),
+//   empty  left for the shopper because the reader was not sure,
+//   wrong  filled in with a wrong value: the failure that matters, and must stay at zero.
+// For each set it prints a 95% upper bound on the wrong-fill rate (Wilson score interval), so a
+// clean run says how rare mistakes must be, not just that none happened to occur.
 //
-// Usage: pnpm test:labels [file-name-filter]
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+// Usage: pnpm test:labels [set...] [--filter text] [--verbose] [--no-cache]
+//   sets: real, dev, test, holdout (default: all). Each is a folder in fixtures/labels with expected.json.
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-	DETAIL_PARAMS,
-	LARGE_PARAMS,
-	LARGE_PASS_SCALE,
-	toOcrLines
-} from '../src/lib/capture/ocr-passes.ts';
-import { confident, parseLabel } from '../src/lib/capture/parse-label.ts';
+import { filledFields, parseLabel, type LabelReading } from '../src/lib/capture/label/parse.ts';
+import type { TextLine } from '../src/lib/capture/ocr/engine.ts';
+import { loadNodeOcr, readRaster } from './lib/node-ocr.ts';
 
 interface Expected {
-	description: string;
+	/** Acceptable descriptions; a brand line under the product name may be in or out. */
+	description: string[];
 	unitPriceMinor: number;
-	priceIncludesTax: boolean;
+	/** The VAT marker printed on the label, or null when there is none. */
+	vat: 'inc' | 'ex' | null;
+	barcode?: string;
 }
 
 type Outcome = 'right' | 'empty' | 'wrong';
+const FIELDS = ['price', 'description', 'vat'] as const;
+type Field = (typeof FIELDS)[number];
 
-const require = createRequire(import.meta.url);
-const { createWorker, OEM } = require('tesseract.js');
-const { version } = require('tesseract.js/package.json');
+const args = process.argv.slice(2);
+const flag = (name: string) => args.includes(name);
+const option = (name: string) => {
+	const i = args.indexOf(name);
+	return i >= 0 ? args[i + 1] : undefined;
+};
+const filter = option('--filter') ?? '';
+const sets = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--filter');
+const ROOT = 'fixtures/labels';
+const CACHE = '.cache/ocr';
+// Bump when the OCR engine or its settings change, so cached readings are not reused.
+const ENGINE_VERSION = 'pp-ocrv5-mobile-8';
 
-const dir = 'fixtures/labels';
-const filter = process.argv[2] ?? '';
-const expected: Record<string, Expected> = JSON.parse(
-	readFileSync(join(dir, 'expected.json'), 'utf8')
-);
+const normalise = (s: string) => s.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, '');
 
-const normalise = (s: string) =>
-	s
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, ' ')
-		.trim();
-
-// Descriptions only need to be close, since the shopper sees and can correct them: right
-// when most of what was read is on the label and it covers at least the product name.
-function descriptionMatches(actual: string, wanted: string): boolean {
-	const read = normalise(actual).split(' ');
-	const want = normalise(wanted).split(' ');
-	const precision = read.filter((w) => want.includes(w)).length / read.length;
-	const recall = want.filter((w) => read.includes(w)).length / want.length;
-	return precision >= 0.75 && recall >= 0.4;
+/** Wilson score interval upper bound for k events in n trials, 95%. */
+function wilsonUpper(k: number, n: number): number {
+	if (!n) return 1;
+	const z = 1.959964;
+	const p = k / n;
+	const centre = p + (z * z) / (2 * n);
+	const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
+	return Math.min(1, (centre + margin) / (1 + (z * z) / n));
 }
 
-const worker = await createWorker('eng', OEM.LSTM_ONLY, {
-	langPath: join(process.cwd(), 'static/ocr', version),
-	cacheMethod: 'none',
-	gzip: true
-});
-
-// The app scales in the browser; here ImageMagick makes the one-third-size copy.
-const downscale = (path: string) =>
-	execFileSync('magick', [path, '-resize', `${LARGE_PASS_SCALE * 100}%`, 'png:-']);
-
-const fields = ['description', 'price', 'vat'] as const;
-const tally = Object.fromEntries(
-	fields.map((f) => [f, { right: 0, empty: 0, wrong: 0 }])
-) as Record<(typeof fields)[number], Record<Outcome, number>>;
-const problems: string[] = [];
-let total = 0;
-let ms = 0;
-
-for (const [file, want] of Object.entries(expected)) {
-	if (!file.includes(filter)) continue;
-	total++;
-	const path = join(dir, file);
-	const small = downscale(path);
-	const started = performance.now();
-	await worker.setParameters(DETAIL_PARAMS);
-	const detail = await worker.recognize(path, {}, { blocks: true });
-	await worker.setParameters(LARGE_PARAMS);
-	const large = await worker.recognize(small, {}, { blocks: true });
-	ms += performance.now() - started;
-
-	const passes = [toOcrLines(detail.data), toOcrLines(large.data, LARGE_PASS_SCALE)];
-	const reading = parseLabel(...passes);
-	if (process.env.DEBUG) {
-		for (const [i, lines] of passes.entries())
-			for (const l of lines)
-				console.log(
-					`${file} pass ${i} [${Math.round(l.confidence)} h${Math.round(l.height)}] ${l.text.trim()}`
-				);
-	}
-
-	const description = confident(reading.description);
-	const price = confident(reading.unitPriceMinor);
-	// No VAT marker means the store's setting applies: incl. VAT for a normal UK store,
-	// excl. for a trade store. Fixtures marked ex VAT come from trade-style labels.
-	const vat = confident(reading.priceIncludesTax);
-	const outcomes: Record<(typeof fields)[number], Outcome> = {
+function score(reading: LabelReading, want: Expected): Record<Field, Outcome> {
+	const filled = filledFields(reading);
+	const price = filled.unitPriceMinor;
+	const description = filled.description;
+	const vat = filled.priceIncludesTax;
+	const wantVat = want.vat === null ? undefined : want.vat === 'inc';
+	return {
+		price: price === undefined ? 'empty' : price === want.unitPriceMinor ? 'right' : 'wrong',
 		description:
 			description === undefined
 				? 'empty'
-				: descriptionMatches(description, want.description)
+				: want.description.some((d) => normalise(d) === normalise(description))
 					? 'right'
 					: 'wrong',
-		price: price === undefined ? 'empty' : price === want.unitPriceMinor ? 'right' : 'wrong',
-		vat:
-			vat === undefined
-				? want.priceIncludesTax
-					? 'right'
-					: 'empty'
-				: vat === want.priceIncludesTax
-					? 'right'
-					: 'wrong'
+		// No marker on the label: the right answer is to say nothing (the store's setting applies).
+		vat: vat === wantVat ? 'right' : vat === undefined ? 'empty' : 'wrong'
 	};
-	for (const field of fields) {
-		tally[field][outcomes[field]]++;
-		if (outcomes[field] !== 'right') {
-			problems.push(
-				`${file}  ${field}: ${outcomes[field]}  (read ${JSON.stringify(
-					field === 'description' ? description : field === 'price' ? price : vat
-				)}, expected ${JSON.stringify(
-					field === 'description'
-						? want.description
-						: field === 'price'
-							? want.unitPriceMinor
-							: want.priceIncludesTax
-				)})`
+}
+
+const ocr = await loadNodeOcr();
+mkdirSync(CACHE, { recursive: true });
+
+async function read(path: string): Promise<{ lines: TextLine[]; ms: number }> {
+	const bytes = readFileSync(path);
+	const key = createHash('sha1').update(ENGINE_VERSION).update(bytes).digest('hex');
+	const cached = join(CACHE, `${key}.json`);
+	if (!flag('--no-cache') && existsSync(cached)) {
+		return { lines: JSON.parse(readFileSync(cached, 'utf8')), ms: 0 };
+	}
+	const image = readRaster(path);
+	const started = performance.now();
+	const lines = await ocr.read(image);
+	const ms = performance.now() - started;
+	writeFileSync(cached, JSON.stringify(lines));
+	return { lines, ms };
+}
+
+let failed = false;
+const names = sets.length ? sets : ['real', 'dev', 'test', 'holdout'];
+for (const set of names) {
+	const dir = join(ROOT, set);
+	if (!existsSync(join(dir, 'expected.json'))) continue;
+	const expected: Record<string, Expected> = JSON.parse(
+		readFileSync(join(dir, 'expected.json'), 'utf8')
+	);
+	const tally = Object.fromEntries(
+		FIELDS.map((f) => [f, { right: 0, empty: 0, wrong: 0 }])
+	) as Record<Field, Record<Outcome, number>>;
+	const problems: string[] = [];
+	let total = 0;
+	let complete = 0;
+	let ocrMs = 0;
+	let ocrRuns = 0;
+
+	const missing = Object.keys(expected).filter((file) => !existsSync(join(dir, file)));
+	if (missing.length) {
+		console.log(
+			`\n== ${set}: ${missing.length} photos missing; run \`pnpm fixtures:labels\` first`
+		);
+		failed = true;
+		continue;
+	}
+	for (const [file, want] of Object.entries(expected)) {
+		if (!file.includes(filter)) continue;
+		total++;
+		const { lines, ms } = await read(join(dir, file));
+		if (ms) {
+			ocrMs += ms;
+			ocrRuns++;
+		}
+		const reading = parseLabel(lines);
+		const outcome = score(reading, want);
+		for (const f of FIELDS) tally[f][outcome[f]]++;
+		if (outcome.price === 'right' && outcome.description === 'right') complete++;
+		const bad = FIELDS.filter((f) => outcome[f] !== 'right');
+		if (bad.length || flag('--verbose')) {
+			const got = {
+				price: reading.unitPriceMinor,
+				description: reading.description,
+				vat: reading.priceIncludesTax
+			};
+			const wanted = { price: want.unitPriceMinor, description: want.description, vat: want.vat };
+			const report = FIELDS.map(
+				(f) =>
+					`  ${outcome[f].padEnd(5)} ${f.padEnd(11)} read ${JSON.stringify(got[f])}  expected ${JSON.stringify(wanted[f])}`
 			);
+			if (reading.checks.length) report.push(`  checks: ${reading.checks.join('; ')}`);
+			if (flag('--verbose')) {
+				for (const l of lines) {
+					report.push(
+						`    [${Math.round(l.confidence * 100)} h${Math.round(l.region.height)}] ${l.text}`
+					);
+				}
+			}
+			problems.push(`${file}\n${report.join('\n')}`);
 		}
 	}
-}
-await worker.terminate();
+	if (!total) continue;
 
-const pct = (n: number) => `${Math.round((n / total) * 100)}%`.padStart(4);
-console.log(`\n${total} labels, ${Math.round(ms / total)} ms OCR per label on this machine\n`);
-console.log('field        right  left empty  wrong');
-for (const field of fields) {
-	const t = tally[field];
-	console.log(`${field.padEnd(12)} ${pct(t.right)}   ${pct(t.empty)}       ${pct(t.wrong)}`);
+	const pct = (n: number) => `${((n / total) * 100).toFixed(1)}%`.padStart(7);
+	const speed = ocrRuns ? `, ${Math.round(ocrMs / ocrRuns)} ms OCR per label` : '';
+	console.log(`\n== ${set}: ${total} labels${speed}`);
+	console.log('field          right   empty   wrong   wrong fills (95% upper bound on rate)');
+	for (const f of FIELDS) {
+		const t = tally[f];
+		const filled = t.right + t.wrong;
+		const bound = (wilsonUpper(t.wrong, filled) * 100).toFixed(1);
+		console.log(
+			`${f.padEnd(12)} ${pct(t.right)} ${pct(t.empty)} ${pct(t.wrong)}   ${t.wrong} of ${filled} (≤ ${bound}%)`
+		);
+	}
+	console.log(`price and description both right: ${pct(complete).trim()}`);
+	if (problems.length) console.log('\n' + problems.join('\n'));
+	if (FIELDS.some((f) => tally[f].wrong > 0)) failed = true;
 }
-if (problems.length) console.log(`\n${problems.join('\n')}`);
-
-// A confidently wrong price is the failure that would silently mislead the shopper.
-if (tally.price.wrong > 0) process.exitCode = 1;
+await ocr.release();
+// A field filled in wrongly would silently mislead the shopper.
+if (failed) process.exitCode = 1;

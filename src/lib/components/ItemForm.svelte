@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { isValidGtin } from '#lib/capture/gtin.ts';
-	import { confident, MIN_FIELD_CONFIDENCE } from '#lib/capture/parse-label.ts';
+	import { filledFields } from '#lib/capture/label/parse.ts';
 	import type { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import type { ExtractedFields, Item } from '#lib/data/db.ts';
 	import type { ItemInput } from '#lib/data/items.ts';
@@ -54,6 +54,8 @@
 	const touched = { description: false, price: false, vat: false, barcode: false };
 	// Fields the label reader tried but could not read with confidence: highlighted, left empty.
 	let unread = $state({ description: false, price: false });
+	// The read price agreed with the unit price printed on the label (price ÷ pack size).
+	let priceChecked = $state(false);
 	let extracted: ExtractedFields | undefined;
 	let applied = false;
 	// A name found for the barcode beats the label reading: labels are often abbreviated.
@@ -66,17 +68,20 @@
 		if (applied || !capture || (stage !== 'done' && stage !== 'failed')) return;
 		applied = true;
 		untrack(() => {
-			const read = {
-				description: confident(reading?.description),
-				unitPriceMinor: confident(reading?.unitPriceMinor),
-				priceIncludesTax: confident(reading?.priceIncludesTax)
-			};
+			const {
+				description: readDescription,
+				unitPriceMinor,
+				priceIncludesTax: vat
+			} = filledFields(reading);
+			const read = { description: readDescription, unitPriceMinor, priceIncludesTax: vat };
 			if (descriptionFromLookup) read.description = description;
 			else if (read.description !== undefined && !touched.description) {
 				description = read.description;
 			}
 			if (read.unitPriceMinor !== undefined && !touched.price) {
 				price = minorToInput(read.unitPriceMinor);
+				priceChecked =
+					reading?.checks.includes('price matches the unit price and pack size') ?? false;
 			}
 			if (read.priceIncludesTax !== undefined && !touched.vat) {
 				priceIncludesTax = read.priceIncludesTax;
@@ -85,9 +90,13 @@
 				description: read.description === undefined && !descriptionFromLookup,
 				price: read.unitPriceMinor === undefined
 			};
-			const used = [reading?.description, reading?.unitPriceMinor, reading?.priceIncludesTax]
-				.map((field) => field?.confidence ?? 0)
-				.filter((confidence) => confidence >= MIN_FIELD_CONFIDENCE);
+			const used = [
+				read.description !== undefined && reading?.description,
+				read.unitPriceMinor !== undefined && reading?.unitPriceMinor,
+				read.priceIncludesTax !== undefined && reading?.priceIncludesTax
+			]
+				.filter((field) => field)
+				.map((field) => (field as { confidence: number }).confidence);
 			if (used.length) extracted = { ...read, confidence: Math.min(...used) };
 		});
 	});
@@ -223,13 +232,18 @@
 				id="{uid}-price"
 				class="input"
 				bind:value={price}
-				oninput={() => (touched.price = true)}
+				oninput={() => {
+					touched.price = true;
+					priceChecked = false;
+				}}
 				inputmode="decimal"
 				aria-invalid={price !== '' && unitPriceMinor === null}
 				aria-describedby={unread.price && !price ? `${uid}-price-check` : undefined}
 			/>
 			{#if unread.price && !price}
 				<p class="check-hint" id="{uid}-price-check">Couldn't read the price. Please type it.</p>
+			{:else if priceChecked}
+				<p class="checked-hint">✓ Matches the unit price on the label</p>
 			{/if}
 		</div>
 
@@ -373,6 +387,13 @@
 		margin: 0;
 		color: var(--muted);
 		font-size: 0.9rem;
+	}
+
+	.checked-hint {
+		margin: 0;
+		color: var(--accent);
+		font-size: 0.9rem;
+		font-weight: 600;
 	}
 
 	.check-hint {

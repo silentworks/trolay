@@ -1,0 +1,17 @@
+# Real label photos
+
+Each photo is cropped from the source to the label, as a shopper would frame it in the camera guide.
+
+| File                         | Source                                                                                                                                                                                                                           | Author           | Licence           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------------- |
+| `warehouse-avocado-oil.png`  | Supplied by the project owner, taken in store                                                                                                                                                                                    | —                | Project test data |
+| `uk-cully-sully-chowder.jpg` | [Cully & Sully soup.jpg](https://commons.wikimedia.org/wiki/File:Cully_%26_Sully_soup.jpg)                                                                                                                                       | Jös              | CC BY-SA 4.0      |
+| `be-esl-coca-cola.jpg`       | [Coca Cola regular bottle price and Nutri-Score.jpg](https://commons.wikimedia.org/wiki/File:Coca_Cola_regular_bottle_price_and_Nutri-Score.jpg)                                                                                 | The RedBurn      | CC BY-SA 4.0      |
+| `be-esl-muesli.jpg`          | [Delhaize crunchy muesli price and Nutri-Score.jpg](https://commons.wikimedia.org/wiki/File:Delhaize_crunchy_muesli_price_and_Nutri-Score.jpg)                                                                                   | The RedBurn      | CC BY-SA 4.0      |
+| `au-esl-tissues.jpg`         | [2021-06-28 E-ink price tag in Sydney supermarket.jpg](https://commons.wikimedia.org/wiki/File:2021-06-28_E-ink_price_tag_in_Sydney_supermarket.jpg)                                                                             | Maksym Kozlenko  | CC BY-SA 4.0      |
+| `se-lcd-chipotle.jpg`        | [Jars of Chili, with electronic shelf tags.jpg](https://commons.wikimedia.org/wiki/File:Jars_of_Chili,_with_electronic_shelf_tags.jpg)                                                                                           | Franklin Heijnen | CC BY-SA 2.0      |
+| `ae-esl-cardamom.jpg`        | [Electronic shelf labels on spice products in Adcoops supermarket, United Arab Emirates.jpg](https://commons.wikimedia.org/wiki/File:Electronic_shelf_labels_on_spice_products_in_Adcoops_supermarket,_United_Arab_Emirates.jpg) | Maheshod98       | CC BY 4.0         |
+| `ae-esl-peppercorn.jpg`      | [Electronic shelf labels on spice products in Adcoops supermarket, United Arab Emirates.jpg](https://commons.wikimedia.org/wiki/File:Electronic_shelf_labels_on_spice_products_in_Adcoops_supermarket,_United_Arab_Emirates.jpg) | Maheshod98       | CC BY 4.0         |
+| `ae-esl-black-pepper.jpg`    | [Electronic shelf labels on spice products in Adcoops supermarket, United Arab Emirates.jpg](https://commons.wikimedia.org/wiki/File:Electronic_shelf_labels_on_spice_products_in_Adcoops_supermarket,_United_Arab_Emirates.jpg) | Maheshod98       | CC BY 4.0         |
+
+Crops of CC BY-SA images are shared under the same licence.

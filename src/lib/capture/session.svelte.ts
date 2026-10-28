@@ -1,7 +1,7 @@
 import { detectBarcodeInPhoto } from './barcode.ts';
 import { compressPhoto, type CompressedPhoto } from './image.ts';
-import { readLabelText } from './ocr.ts';
-import { parseLabel, type LabelReading } from './parse-label.ts';
+import { filledFields, parseLabel, type LabelReading } from './label/parse.ts';
+import { readText } from './ocr/browser.ts';
 
 /**
  * One snapped label, from shutter to saved item. Work starts as soon as it is created, so the
@@ -45,12 +45,14 @@ export class CaptureSession {
 	private async read(photo: CompressedPhoto): Promise<void> {
 		this.stage = 'reading';
 		const [text, barcode] = await Promise.allSettled([
-			readLabelText(photo.blob),
+			readText(photo.blob),
 			this.barcode ? Promise.resolve(this.barcode) : detectBarcodeInPhoto(photo.blob)
 		]);
 		if (barcode.status === 'fulfilled') this.barcode = barcode.value;
 		if (text.status === 'fulfilled') {
-			this.reading = parseLabel(...text.value);
+			this.reading = parseLabel(text.value);
+			// Barcode digits printed on the label stand in when no barcode was scanned.
+			this.barcode ??= filledFields(this.reading).barcode;
 			this.stage = 'done';
 		} else {
 			console.error('Label reading failed:', text.reason);

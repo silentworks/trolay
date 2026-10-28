@@ -1,4 +1,5 @@
-import { db, isLive, newId, type Trip } from './db';
+import { DEFAULT_VAT_BPS, tripTotals } from '#lib/money.ts';
+import { db, isLive, newId, type Item, type Trip } from './db';
 
 export async function getOpenTrip(): Promise<Trip | undefined> {
 	const trips = await db.trips.where('status').equals('open').toArray();
@@ -53,4 +54,93 @@ export async function setTripBudget(
 		throw new Error('The budget must be more than £0.');
 	}
 	await db.trips.update(tripId, { budgetMinor, updatedAt: Date.now() });
+}
+
+/** Pass undefined to clear it. The receipt total is what was paid, so always incl. VAT. */
+export async function setReceiptTotal(
+	tripId: string,
+	receiptTotalMinor: number | undefined
+): Promise<void> {
+	if (
+		receiptTotalMinor !== undefined &&
+		(!Number.isInteger(receiptTotalMinor) || receiptTotalMinor < 0)
+	) {
+		throw new Error('Enter the total printed on the receipt.');
+	}
+	await db.transaction('rw', db.trips, async () => {
+		const trip = await db.trips.get(tripId);
+		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
+		await db.trips.update(tripId, { receiptTotalMinor, updatedAt: Date.now() });
+	});
+}
+
+/**
+ * Receipt minus the app's total incl. VAT, in pence: positive when the till charged more.
+ * Undefined until a receipt total is entered.
+ */
+export function receiptDifference(
+	receiptTotalMinor: number | undefined,
+	appTotalInclMinor: number
+): number | undefined {
+	return receiptTotalMinor === undefined ? undefined : receiptTotalMinor - appTotalInclMinor;
+}
+
+/** Any difference of a penny or more is a mismatch, and keeps the photos as evidence. */
+export const isMismatch = (difference: number | undefined) =>
+	difference !== undefined && difference !== 0;
+
+async function liveItems(tripId: string): Promise<Item[]> {
+	return (await db.items.where('tripId').equals(tripId).toArray()).filter(isLive);
+}
+
+/** Removes the photos outright; items keep their description, price and barcode. */
+async function removePhotos(items: Item[], now: number): Promise<void> {
+	const withPhotos = items.filter((item) => item.photoId);
+	await db.photos.bulkDelete(withPhotos.map((item) => item.photoId!));
+	for (const item of withPhotos) {
+		await db.items.update(item.id, { photoId: undefined, updatedAt: now });
+	}
+}
+
+export interface FinishResult {
+	photosKept: boolean;
+	difference?: number;
+}
+
+/**
+ * Closes the trip and moves it to history, with its totals as they stand now. The label photos
+ * are deleted unless the receipt total differs from the app's, when they are kept as evidence.
+ */
+export async function finishTrip(tripId: string): Promise<FinishResult> {
+	return db.transaction('rw', [db.trips, db.stores, db.items, db.photos], async () => {
+		const trip = await db.trips.get(tripId);
+		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
+		const items = await liveItems(tripId);
+		if (items.length === 0) throw new Error('Add an item before finishing the trip.');
+		const store = await db.stores.get(trip.storeId);
+		const taxRateBps = store?.taxRateBps ?? DEFAULT_VAT_BPS;
+		const { inclMinor, exclMinor, itemCount } = tripTotals(items, taxRateBps);
+
+		const difference = receiptDifference(trip.receiptTotalMinor, inclMinor);
+		const photosKept = isMismatch(difference) && items.some((item) => item.photoId);
+		const now = Date.now();
+		if (!photosKept) await removePhotos(items, now);
+		await db.trips.update(tripId, {
+			status: 'finished',
+			finishedAt: now,
+			photosKept,
+			totals: { inclMinor, exclMinor, itemCount, taxRateBps },
+			updatedAt: now
+		});
+		return { photosKept, difference };
+	});
+}
+
+/** Deletes the photos a finished trip kept as receipt evidence, once they are no longer needed. */
+export async function deleteTripPhotos(tripId: string): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, db.photos, async () => {
+		const now = Date.now();
+		await removePhotos(await liveItems(tripId), now);
+		await db.trips.update(tripId, { photosKept: false, updatedAt: now });
+	});
 }

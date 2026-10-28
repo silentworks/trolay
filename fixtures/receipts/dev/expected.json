@@ -1,0 +1,362 @@
+{
+	"001-tesco.jpg": {
+		"totalMinor": 2932
+	},
+	"002-sainsburys.jpg": {
+		"totalMinor": 6910
+	},
+	"003-aldi.jpg": {
+		"totalMinor": 2678
+	},
+	"004-lidl.jpg": {
+		"totalMinor": 331
+	},
+	"005-coop.jpg": {
+		"totalMinor": 3233
+	},
+	"006-morrisons.jpg": {
+		"totalMinor": 3144
+	},
+	"007-asda.jpg": {
+		"totalMinor": 1384
+	},
+	"008-warehouse.jpg": {
+		"totalMinor": 3831
+	},
+	"009-marks.jpg": {
+		"totalMinor": 4197
+	},
+	"010-tesco.jpg": {
+		"totalMinor": 3995
+	},
+	"011-sainsburys.jpg": {
+		"totalMinor": 2904
+	},
+	"012-aldi.jpg": {
+		"totalMinor": 1910
+	},
+	"013-lidl.jpg": {
+		"totalMinor": 2797
+	},
+	"014-coop.jpg": {
+		"totalMinor": 2135
+	},
+	"015-morrisons.jpg": {
+		"totalMinor": 1200
+	},
+	"016-asda.jpg": {
+		"totalMinor": 5244
+	},
+	"017-warehouse.jpg": {
+		"totalMinor": 3650
+	},
+	"018-marks.jpg": {
+		"totalMinor": 2717
+	},
+	"019-tesco.jpg": {
+		"totalMinor": 2090
+	},
+	"020-sainsburys.jpg": {
+		"totalMinor": 2581
+	},
+	"021-aldi.jpg": {
+		"totalMinor": 1075
+	},
+	"022-lidl.jpg": {
+		"totalMinor": 3559
+	},
+	"023-coop.jpg": {
+		"totalMinor": 685
+	},
+	"024-morrisons.jpg": {
+		"totalMinor": 5299
+	},
+	"025-asda.jpg": {
+		"totalMinor": 1236
+	},
+	"026-warehouse.jpg": {
+		"totalMinor": 2281
+	},
+	"027-marks.jpg": {
+		"totalMinor": 5454
+	},
+	"028-tesco.jpg": {
+		"totalMinor": null
+	},
+	"029-sainsburys.jpg": {
+		"totalMinor": 4920
+	},
+	"030-aldi.jpg": {
+		"totalMinor": 760
+	},
+	"031-lidl.jpg": {
+		"totalMinor": 1519
+	},
+	"032-coop.jpg": {
+		"totalMinor": 2020
+	},
+	"033-morrisons.jpg": {
+		"totalMinor": 4568
+	},
+	"034-asda.jpg": {
+		"totalMinor": 1570
+	},
+	"035-warehouse.jpg": {
+		"totalMinor": 615
+	},
+	"036-marks.jpg": {
+		"totalMinor": 1650
+	},
+	"037-tesco.jpg": {
+		"totalMinor": 3034
+	},
+	"038-sainsburys.jpg": {
+		"totalMinor": 3049
+	},
+	"039-aldi.jpg": {
+		"totalMinor": 2095
+	},
+	"040-lidl.jpg": {
+		"totalMinor": 2949
+	},
+	"041-coop.jpg": {
+		"totalMinor": 2479
+	},
+	"042-morrisons.jpg": {
+		"totalMinor": 2718
+	},
+	"043-asda.jpg": {
+		"totalMinor": 1729
+	},
+	"044-warehouse.jpg": {
+		"totalMinor": 1630
+	},
+	"045-marks.jpg": {
+		"totalMinor": 2975
+	},
+	"046-tesco.jpg": {
+		"totalMinor": 1570
+	},
+	"047-sainsburys.jpg": {
+		"totalMinor": 879
+	},
+	"048-aldi.jpg": {
+		"totalMinor": 3062
+	},
+	"049-lidl.jpg": {
+		"totalMinor": 2802
+	},
+	"050-coop.jpg": {
+		"totalMinor": 3074
+	},
+	"051-morrisons.jpg": {
+		"totalMinor": 2827
+	},
+	"052-asda.jpg": {
+		"totalMinor": 3632
+	},
+	"053-warehouse.jpg": {
+		"totalMinor": 830
+	},
+	"054-marks.jpg": {
+		"totalMinor": 4101
+	},
+	"055-tesco.jpg": {
+		"totalMinor": 2855
+	},
+	"056-sainsburys.jpg": {
+		"totalMinor": 1269
+	},
+	"057-aldi.jpg": {
+		"totalMinor": 1951
+	},
+	"058-lidl.jpg": {
+		"totalMinor": 710
+	},
+	"059-coop.jpg": {
+		"totalMinor": 3973
+	},
+	"060-morrisons.jpg": {
+		"totalMinor": 6223
+	},
+	"061-asda.jpg": {
+		"totalMinor": 2677
+	},
+	"062-warehouse.jpg": {
+		"totalMinor": 634
+	},
+	"063-marks.jpg": {
+		"totalMinor": 1009
+	},
+	"064-tesco.jpg": {
+		"totalMinor": 7036
+	},
+	"065-sainsburys.jpg": {
+		"totalMinor": 2640
+	},
+	"066-aldi.jpg": {
+		"totalMinor": 1220
+	},
+	"067-lidl.jpg": {
+		"totalMinor": 4260
+	},
+	"068-coop.jpg": {
+		"totalMinor": 1566
+	},
+	"069-morrisons.jpg": {
+		"totalMinor": 1520
+	},
+	"070-asda.jpg": {
+		"totalMinor": 2230
+	},
+	"071-warehouse.jpg": {
+		"totalMinor": 5692
+	},
+	"072-marks.jpg": {
+		"totalMinor": 1675
+	},
+	"073-tesco.jpg": {
+		"totalMinor": 4307
+	},
+	"074-sainsburys.jpg": {
+		"totalMinor": 2181
+	},
+	"075-aldi.jpg": {
+		"totalMinor": 3769
+	},
+	"076-lidl.jpg": {
+		"totalMinor": 3910
+	},
+	"077-coop.jpg": {
+		"totalMinor": 2026
+	},
+	"078-morrisons.jpg": {
+		"totalMinor": 4158
+	},
+	"079-asda.jpg": {
+		"totalMinor": 1474
+	},
+	"080-warehouse.jpg": {
+		"totalMinor": 1675
+	},
+	"081-marks.jpg": {
+		"totalMinor": 1217
+	},
+	"082-tesco.jpg": {
+		"totalMinor": 5272
+	},
+	"083-sainsburys.jpg": {
+		"totalMinor": 854
+	},
+	"084-aldi.jpg": {
+		"totalMinor": 2343
+	},
+	"085-lidl.jpg": {
+		"totalMinor": 5374
+	},
+	"086-coop.jpg": {
+		"totalMinor": 1090
+	},
+	"087-morrisons.jpg": {
+		"totalMinor": 3999
+	},
+	"088-asda.jpg": {
+		"totalMinor": 2990
+	},
+	"089-warehouse.jpg": {
+		"totalMinor": 2915
+	},
+	"090-marks.jpg": {
+		"totalMinor": 2583
+	},
+	"091-tesco.jpg": {
+		"totalMinor": 2860
+	},
+	"092-sainsburys.jpg": {
+		"totalMinor": 1494
+	},
+	"093-aldi.jpg": {
+		"totalMinor": 1914
+	},
+	"094-lidl.jpg": {
+		"totalMinor": 2093
+	},
+	"095-coop.jpg": {
+		"totalMinor": 1494
+	},
+	"096-morrisons.jpg": {
+		"totalMinor": 5436
+	},
+	"097-asda.jpg": {
+		"totalMinor": 500
+	},
+	"098-warehouse.jpg": {
+		"totalMinor": 749
+	},
+	"099-marks.jpg": {
+		"totalMinor": 364
+	},
+	"100-tesco.jpg": {
+		"totalMinor": 825
+	},
+	"101-sainsburys.jpg": {
+		"totalMinor": 984
+	},
+	"102-aldi.jpg": {
+		"totalMinor": 2730
+	},
+	"103-lidl.jpg": {
+		"totalMinor": 2755
+	},
+	"104-coop.jpg": {
+		"totalMinor": 939
+	},
+	"105-morrisons.jpg": {
+		"totalMinor": 1324
+	},
+	"106-asda.jpg": {
+		"totalMinor": 1564
+	},
+	"107-warehouse.jpg": {
+		"totalMinor": 2760
+	},
+	"108-marks.jpg": {
+		"totalMinor": 980
+	},
+	"109-tesco.jpg": {
+		"totalMinor": 4063
+	},
+	"110-sainsburys.jpg": {
+		"totalMinor": 2194
+	},
+	"111-aldi.jpg": {
+		"totalMinor": 5532
+	},
+	"112-lidl.jpg": {
+		"totalMinor": 2112
+	},
+	"113-coop.jpg": {
+		"totalMinor": 3083
+	},
+	"114-morrisons.jpg": {
+		"totalMinor": 3117
+	},
+	"115-asda.jpg": {
+		"totalMinor": 155
+	},
+	"116-warehouse.jpg": {
+		"totalMinor": 3332
+	},
+	"117-marks.jpg": {
+		"totalMinor": 1442
+	},
+	"118-tesco.jpg": {
+		"totalMinor": 5836
+	},
+	"119-sainsburys.jpg": {
+		"totalMinor": 1224
+	},
+	"120-aldi.jpg": {
+		"totalMinor": 2240
+	}
+}

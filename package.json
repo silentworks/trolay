@@ -15,9 +15,11 @@
 		"test:unit": "vitest",
 		"test": "vitest --run",
 		"test:e2e": "playwright test",
-		"check:all": "pnpm check && pnpm lint && pnpm test && pnpm test:labels real dev test && pnpm test:e2e",
+		"check:all": "pnpm check && pnpm lint && pnpm test && pnpm test:labels real dev test && pnpm test:receipts real dev && pnpm test:e2e",
 		"test:labels": "node scripts/label-accuracy.ts",
-		"fixtures:labels": "node scripts/make-label-photos.ts"
+		"test:receipts": "node scripts/receipt-accuracy.ts",
+		"fixtures:labels": "node scripts/make-label-photos.ts",
+		"fixtures:receipts": "node scripts/make-receipt-photos.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

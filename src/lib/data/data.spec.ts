@@ -13,7 +13,16 @@ import {
 	updateItem
 } from './items';
 import { addStore, listStores, updateStore } from './stores';
-import { changeTripStore, getOpenTrip, setTripBudget, startTrip } from './trips';
+import {
+	changeTripStore,
+	deleteTripPhotos,
+	finishTrip,
+	getOpenTrip,
+	receiptDifference,
+	setReceiptTotal,
+	setTripBudget,
+	startTrip
+} from './trips';
 
 beforeEach(async () => {
 	await db.delete();
@@ -206,5 +215,124 @@ describe('items', () => {
 
 	it('only adds items to an open trip', async () => {
 		await expect(addItem('missing', milk)).rejects.toThrow('not open');
+	});
+});
+
+describe('finishing a trip', () => {
+	const photo = () => ({ blob: new Blob(['full']), thumbBlob: new Blob(['thumb']) });
+
+	async function tripWithPhotos() {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		// 2 × £1.45 + £0.99 = £3.89 incl. VAT; excl. VAT each line rounds on its own: £2.42 + £0.83.
+		await addItem(trip.id, { ...milk, quantity: 2 }, { photo: photo() });
+		await addItem(
+			trip.id,
+			{ ...milk, description: 'Bread', unitPriceMinor: 99 },
+			{ photo: photo() }
+		);
+		return { store, trip };
+	}
+
+	it('measures the receipt against the app total: positive when the till charged more', () => {
+		expect(receiptDifference(undefined, 389)).toBeUndefined();
+		expect(receiptDifference(389, 389)).toBe(0);
+		expect(receiptDifference(390, 389)).toBe(1);
+		expect(receiptDifference(388, 389)).toBe(-1);
+	});
+
+	it('only takes a receipt total on an open trip, and rejects a negative or fractional one', async () => {
+		const { trip } = await tripWithPhotos();
+		await expect(setReceiptTotal(trip.id, -1)).rejects.toThrow('receipt');
+		await expect(setReceiptTotal(trip.id, 1.5)).rejects.toThrow('receipt');
+		await setReceiptTotal(trip.id, 389);
+		expect((await db.trips.get(trip.id))?.receiptTotalMinor).toBe(389);
+		await setReceiptTotal(trip.id, undefined);
+		expect((await db.trips.get(trip.id))?.receiptTotalMinor).toBeUndefined();
+		await finishTrip(trip.id);
+		await expect(setReceiptTotal(trip.id, 389)).rejects.toThrow('not open');
+	});
+
+	it('closes the trip with its totals and deletes the photos when the receipt matches', async () => {
+		const { trip } = await tripWithPhotos();
+		await setReceiptTotal(trip.id, 389);
+		expect(await finishTrip(trip.id)).toEqual({ photosKept: false, difference: 0 });
+
+		const finished = await db.trips.get(trip.id);
+		expect(finished).toMatchObject({
+			status: 'finished',
+			photosKept: false,
+			totals: { inclMinor: 389, exclMinor: 325, itemCount: 3, taxRateBps: 2000 }
+		});
+		expect(finished?.finishedAt).toBeTypeOf('number');
+		expect(await getOpenTrip()).toBeUndefined();
+		expect(await db.photos.count()).toBe(0);
+		// Descriptions, prices and barcodes stay.
+		const items = await listTripItems(trip.id);
+		// Both items can be added in the same millisecond, so their order is not fixed.
+		expect(items.map((i) => [i.description, i.unitPriceMinor, i.photoId])).toEqual(
+			expect.arrayContaining([
+				['Bread', 99, undefined],
+				['Milk 2L', 145, undefined]
+			])
+		);
+		expect(items).toHaveLength(2);
+	});
+
+	it('deletes the photos when no receipt total was entered', async () => {
+		const { trip } = await tripWithPhotos();
+		expect(await finishTrip(trip.id)).toEqual({ photosKept: false, difference: undefined });
+		expect(await db.photos.count()).toBe(0);
+	});
+
+	it('keeps the photos as evidence when the receipt is out by even a penny', async () => {
+		for (const receipt of [390, 388]) {
+			await db.delete();
+			await db.open();
+			const { trip } = await tripWithPhotos();
+			await setReceiptTotal(trip.id, receipt);
+			expect(await finishTrip(trip.id)).toEqual({ photosKept: true, difference: receipt - 389 });
+			expect((await db.trips.get(trip.id))?.photosKept).toBe(true);
+			expect(await db.photos.count()).toBe(2);
+		}
+	});
+
+	it("keeps its totals when the store's VAT rate changes afterwards", async () => {
+		const { store, trip } = await tripWithPhotos();
+		await finishTrip(trip.id);
+		await updateStore(store.id, { name: 'Tesco', taxRateBps: 0 });
+		expect((await db.trips.get(trip.id))?.totals).toMatchObject({
+			exclMinor: 325,
+			taxRateBps: 2000
+		});
+	});
+
+	it('ignores deleted items and refuses to finish an empty trip', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		const item = await addItem(trip.id, milk);
+		await deleteItem(item.id);
+		await expect(finishTrip(trip.id)).rejects.toThrow('Add an item');
+		await restoreItem(item.id);
+		await addItem(trip.id, { ...milk, description: 'Gone' }).then((i) => deleteItem(i.id));
+		await finishTrip(trip.id);
+		expect((await db.trips.get(trip.id))?.totals?.inclMinor).toBe(145);
+	});
+
+	it('finishes only an open trip, so a new one can start', async () => {
+		const { store, trip } = await tripWithPhotos();
+		await finishTrip(trip.id);
+		await expect(finishTrip(trip.id)).rejects.toThrow('not open');
+		expect((await startTrip(store.id)).status).toBe('open');
+	});
+
+	it('deletes kept photos later on request', async () => {
+		const { trip } = await tripWithPhotos();
+		await setReceiptTotal(trip.id, 500);
+		await finishTrip(trip.id);
+		await deleteTripPhotos(trip.id);
+		expect((await db.trips.get(trip.id))?.photosKept).toBe(false);
+		expect(await db.photos.count()).toBe(0);
+		expect((await listTripItems(trip.id)).every((i) => i.photoId === undefined)).toBe(true);
 	});
 });

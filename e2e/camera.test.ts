@@ -13,6 +13,17 @@ async function startTrip(page: Page) {
 }
 
 const READ_TIMEOUT = { timeout: 30_000 };
+const OPEN_FOOD_FACTS = 'https://world.openfoodfacts.org/api/v2/product/**';
+
+// Never reach the real Open Food Facts from tests; by default it doesn't list the product.
+test.beforeEach(async ({ page }) => {
+	await page.route(OPEN_FOOD_FACTS, (route) => route.fulfill({ status: 404, json: { status: 0 } }));
+});
+
+async function listOnOpenFoodFacts(page: Page, product: object) {
+	await page.unroute(OPEN_FOOD_FACTS);
+	await page.route(OPEN_FOOD_FACTS, (route) => route.fulfill({ json: { status: 1, product } }));
+}
 
 async function snapLabel(page: Page) {
 	await page.getByRole('button', { name: 'Snap label' }).click();
@@ -89,6 +100,11 @@ test('labels are read with no signal once the app has loaded', async ({ page, co
 });
 
 test('scan a barcode into an item typed by hand', async ({ page }) => {
+	await listOnOpenFoodFacts(page, {
+		brands: 'Dairy Co',
+		product_name: 'Semi Skimmed Milk',
+		quantity: '2.272 L'
+	});
 	await startTrip(page);
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
@@ -98,4 +114,52 @@ test('scan a barcode into an item typed by hand', async ({ page }) => {
 		timeout: 15_000
 	});
 	await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue(BARCODE);
+	await expect(sheet.getByLabel('Description')).toHaveValue('Dairy Co Semi Skimmed Milk 2.272 L');
+	await expect(sheet.getByText('Name from Open Food Facts.')).toBeVisible();
+});
+
+test('a name you gave the barcode before beats the label reading', async ({ page }) => {
+	await startTrip(page);
+	await page.getByRole('button', { name: 'Add by hand' }).click();
+	const sheet = page.getByRole('dialog', { name: 'Add item' });
+	await sheet.getByLabel('Description').fill('Milk for tea');
+	await sheet.getByLabel('Unit price (£)').fill('1.45');
+	await sheet.getByLabel('Barcode (optional)').fill(BARCODE);
+	await sheet.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(sheet).toBeHidden();
+
+	const review = await snapLabel(page);
+	await expect(review.getByText('Read from the label. Check before adding.')).toBeVisible(
+		READ_TIMEOUT
+	);
+	await expect(review.getByLabel('Description')).toHaveValue('Milk for tea');
+	await expect(review.getByText('Name from your earlier shopping.')).toBeVisible();
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.45');
+});
+
+test('a barcode scanned with no signal is named once the signal returns', async ({
+	page,
+	context
+}) => {
+	await startTrip(page);
+	await context.setOffline(true);
+	// Routes still answer while offline, so make the lookup fail as it would with no signal.
+	await page.unroute(OPEN_FOOD_FACTS);
+	await page.route(OPEN_FOOD_FACTS, (route) => route.abort('internetdisconnected'));
+	await page.getByRole('button', { name: 'Add by hand' }).click();
+	const sheet = page.getByRole('dialog', { name: 'Add item' });
+	await sheet.getByRole('button', { name: 'Scan' }).click();
+	await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue(BARCODE, READ_TIMEOUT);
+	await expect(sheet.getByText(/No signal\. Leave it blank/)).toBeVisible();
+	await sheet.getByLabel('Unit price (£)').fill('1.45');
+	await sheet.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(
+		page.getByRole('button', { name: `Unnamed item ${BARCODE} £1.45 each incl. VAT` })
+	).toBeVisible();
+
+	await listOnOpenFoodFacts(page, { brands: 'Dairy Co', product_name: 'Semi Skimmed Milk' });
+	await context.setOffline(false);
+	await expect(
+		page.getByRole('button', { name: /^Dairy Co Semi Skimmed Milk £1\.45/ })
+	).toBeVisible();
 });

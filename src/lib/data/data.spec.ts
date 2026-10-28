@@ -120,6 +120,10 @@ describe('items', () => {
 	it('validates input', async () => {
 		const trip = await openTrip();
 		await expect(addItem(trip.id, { ...milk, description: ' ' })).rejects.toThrow('description');
+		// A barcode alone is enough: the name can be looked up later.
+		await expect(
+			addItem(trip.id, { ...milk, description: '', barcode: '5012345678900' })
+		).resolves.toMatchObject({ description: '' });
 		await expect(addItem(trip.id, { ...milk, unitPriceMinor: 1.5 })).rejects.toThrow('price');
 		await expect(addItem(trip.id, { ...milk, quantity: 0 })).rejects.toThrow('Quantity');
 	});

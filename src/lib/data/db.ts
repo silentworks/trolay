@@ -68,9 +68,16 @@ export interface Photo extends SyncMeta {
 
 export interface ProductCacheEntry {
 	barcode: string;
+	/** Empty when Open Food Facts doesn't list the product, so it isn't asked again. */
 	name: string;
 	source: 'openfoodfacts' | 'own-item';
 	fetchedAt: number;
+}
+
+/** A barcode whose Open Food Facts lookup failed for lack of signal, to retry later. */
+export interface PendingLookup {
+	barcode: string;
+	queuedAt: number;
 }
 
 export class TrolleyDB extends Dexie {
@@ -79,6 +86,7 @@ export class TrolleyDB extends Dexie {
 	items!: EntityTable<Item, 'id'>;
 	photos!: EntityTable<Photo, 'id'>;
 	productCache!: EntityTable<ProductCacheEntry, 'barcode'>;
+	pendingLookups!: EntityTable<PendingLookup, 'barcode'>;
 
 	constructor(name = 'trolay') {
 		super(name);
@@ -89,6 +97,7 @@ export class TrolleyDB extends Dexie {
 			photos: 'id, itemId',
 			productCache: 'barcode'
 		});
+		this.version(2).stores({ pendingLookups: 'barcode' });
 	}
 }
 

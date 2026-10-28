@@ -1,10 +1,10 @@
-# Shopping Trolley
+# Trolay
 
 A personal, installable web app (PWA) that keeps a running total of a shop as you go. Pick the
 store, add each item, and the trolley shows the total with and without VAT at all times. It works
 fully offline once installed.
 
-Work is tracked in the Linear project **My Shopping Trolley**.
+Work is tracked in the Linear project **Trolay**.
 
 ## Decisions
 

@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>Stores · Shopping Trolley</title>
+	<title>Stores · Trolay</title>
 </svelte:head>
 
 <div class="page">

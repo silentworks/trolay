@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>Shopping Trolley</title>
+	<title>Trolay</title>
 </svelte:head>
 
 {#if openTrip.loaded}

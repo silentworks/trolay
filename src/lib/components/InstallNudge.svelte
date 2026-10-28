@@ -14,7 +14,7 @@
 {#if isIos && !isInstalled && !settings.installNudgeDismissed}
 	<aside class="nudge" aria-label="Install the app">
 		<p>
-			<strong>Install Shopping Trolley</strong> so your trolley stays saved: tap
+			<strong>Install Trolay</strong> so your trolley stays saved: tap
 			<span aria-label="the Share button">Share</span>, then <em>Add to Home Screen</em>.
 		</p>
 		<button class="btn" type="button" onclick={() => settings.dismissInstallNudge()}>Got it</button>

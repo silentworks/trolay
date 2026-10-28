@@ -80,7 +80,7 @@ export class TrolleyDB extends Dexie {
 	photos!: EntityTable<Photo, 'id'>;
 	productCache!: EntityTable<ProductCacheEntry, 'barcode'>;
 
-	constructor(name = 'shopping-trolley') {
+	constructor(name = 'trolay') {
 		super(name);
 		this.version(1).stores({
 			stores: 'id, lastUsedAt',

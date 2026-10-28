@@ -1,6 +1,6 @@
 {
-	"name": "Shopping Trolley",
-	"short_name": "Trolley",
+	"name": "Trolay",
+	"short_name": "Trolay",
 	"description": "Snap shelf prices and keep a running total of your shop, with and without VAT.",
 	"id": "/",
 	"start_url": "/",

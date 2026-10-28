@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { warmUpBarcodes } from '#lib/capture/barcode.ts';
 	import { warmUpOcr } from '#lib/capture/ocr.ts';
+	import { compressPhoto } from '#lib/capture/image.ts';
 	import { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import { db, type ExtractedFields, type Item, type Store } from '#lib/data/db.ts';
 	import {
@@ -11,6 +12,7 @@
 		listTripItems,
 		restoreItem,
 		revertItem,
+		setItemPhoto,
 		setQuantity,
 		updateItem,
 		type ItemInput
@@ -23,6 +25,7 @@
 	import CameraCapture from './CameraCapture.svelte';
 	import ItemForm from './ItemForm.svelte';
 	import ItemRow from './ItemRow.svelte';
+	import PhotoViewer from './PhotoViewer.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreList from './StoreList.svelte';
 	import Toast from './Toast.svelte';
@@ -51,6 +54,7 @@
 		| { kind: 'store' };
 	let sheet = $state<SheetState | null>(null);
 	let camera = $state(false);
+	let viewing = $state<Item>();
 	let toast = $state<{ id: number; message: string; undoItemId?: string } | null>(null);
 	let toastCount = 0;
 
@@ -108,6 +112,14 @@
 		sheet = null;
 	}
 
+	/** Retake from the edit sheet; the sheet stays open on the updated item. */
+	async function retake(item: Item, source: Blob) {
+		await setItemPhoto(item.id, await compressPhoto(source));
+		const updated = await db.items.get(item.id);
+		if (updated && sheet?.kind === 'edit') sheet = { kind: 'edit', item: updated };
+		show('Photo updated');
+	}
+
 	function remove(item: Item) {
 		sheet = null;
 		run(async () => {
@@ -156,6 +168,7 @@
 						onedit={() => (sheet = { kind: 'edit', item })}
 						ondelete={() => remove(item)}
 						onquantity={(quantity) => run(() => setQuantity(item.id, quantity))}
+						onphoto={() => (viewing = item)}
 					/>
 				{/each}
 			</ul>
@@ -226,9 +239,16 @@
 					await revertItem(item.id);
 					sheet = null;
 				}}
+				onretake={(photo) => retake(item, photo)}
 			/>
 		{/if}
 	</Sheet>
+
+	<PhotoViewer
+		photoId={viewing?.photoId}
+		title={viewing ? `Photo of ${itemName(viewing)}` : ''}
+		onclose={() => (viewing = undefined)}
+	/>
 
 	<Sheet open={sheet?.kind === 'budget'} title="Trip budget" onclose={() => (sheet = null)}>
 		<BudgetForm budgetMinor={trip.budgetMinor} onsave={saveBudget} />

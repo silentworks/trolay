@@ -8,6 +8,7 @@
 	import { isLookupPending, lookupProductName } from '#lib/data/products.ts';
 	import { formatGBP, lineTotals, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
+	import PhotoImage from './PhotoImage.svelte';
 
 	interface Props {
 		item?: Item;
@@ -21,6 +22,8 @@
 		onsave: (input: ItemInput, extracted?: ExtractedFields) => Promise<void>;
 		ondelete?: () => void;
 		onrevert?: () => Promise<void>;
+		/** Editing: replaces the item's photo with a new one. */
+		onretake?: (photo: Blob) => Promise<void>;
 	}
 
 	let {
@@ -31,7 +34,8 @@
 		taxRateBps,
 		onsave,
 		ondelete,
-		onrevert
+		onrevert,
+		onretake
 	}: Props = $props();
 	const uid = $props.id();
 
@@ -42,7 +46,7 @@
 	let quantity = $state(initial.item?.quantity ?? 1);
 	let priceIncludesTax = $state(initial.item?.priceIncludesTax ?? initial.defaultIncludesTax);
 	let barcode = $state(initial.item?.barcode ?? initial.barcode ?? '');
-	let scanning = $state(false);
+	let camera = $state<'barcode' | 'label'>();
 	let error = $state('');
 	let saving = $state(false);
 
@@ -169,6 +173,19 @@
 		</figure>
 	{/if}
 
+	{#if item && onretake}
+		<div class="current-photo">
+			{#if item.photoId}
+				{#key item.photoId}
+					<PhotoImage photoId={item.photoId} size="thumb" alt="Photo of the label" />
+				{/key}
+			{/if}
+			<button class="btn" type="button" onclick={() => (camera = 'label')}>
+				{item.photoId ? 'Retake photo' : 'Add a photo'}
+			</button>
+		</div>
+	{/if}
+
 	<div class="field" class:needs-check={unread.description && !description}>
 		<label for="{uid}-description">Description</label>
 		<!-- svelte-ignore a11y_autofocus -->
@@ -253,7 +270,7 @@
 				inputmode="numeric"
 				autocomplete="off"
 			/>
-			<button class="btn" type="button" onclick={() => (scanning = true)}>Scan</button>
+			<button class="btn" type="button" onclick={() => (camera = 'barcode')}>Scan</button>
 		</div>
 	</div>
 
@@ -280,19 +297,40 @@
 </form>
 
 <CameraCapture
-	open={scanning}
-	mode="barcode"
+	open={camera !== undefined}
+	mode={camera ?? 'barcode'}
 	onbarcode={(code) => {
 		barcode = code;
 		touched.barcode = true;
-		scanning = false;
+		camera = undefined;
 	}}
-	onclose={() => (scanning = false)}
+	oncapture={async (photo) => {
+		camera = undefined;
+		try {
+			await onretake?.(photo);
+		} catch (e) {
+			error = e instanceof Error ? e.message : String(e);
+		}
+	}}
+	onclose={() => (camera = undefined)}
 />
 
 <style>
 	.photo {
 		margin: 0 0 12px;
+	}
+
+	.current-photo {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.current-photo :global(img) {
+		width: 96px;
+		height: 72px;
 	}
 
 	.photo figcaption {

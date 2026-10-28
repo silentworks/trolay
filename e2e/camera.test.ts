@@ -163,3 +163,34 @@ test('a barcode scanned with no signal is named once the signal returns', async 
 		page.getByRole('button', { name: /^Dairy Co Semi Skimmed Milk £1\.45/ })
 	).toBeVisible();
 });
+
+test('cart rows show the photo; tap for the full photo, retake from the edit sheet', async ({
+	page
+}) => {
+	await startTrip(page);
+	const review = await snapLabel(page);
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.45', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+
+	const thumb = page.getByRole('button', { name: /^Photo of Semi Skimmed Milk/ });
+	await expect(thumb.locator('img')).toBeVisible();
+	const firstThumb = await thumb.locator('img').getAttribute('src');
+	await thumb.click();
+	const viewer = page.getByRole('dialog', { name: /^Photo of Semi Skimmed Milk/ });
+	await expect(viewer.locator('img')).toBeVisible();
+	expect(
+		await viewer.locator('img').evaluate((img: HTMLImageElement) => img.naturalWidth)
+	).toBeGreaterThan(240);
+	await viewer.getByRole('button', { name: 'Close photo' }).click();
+	await expect(viewer).toBeHidden();
+
+	await page.getByRole('button', { name: /^Semi Skimmed Milk/ }).click();
+	const edit = page.getByRole('dialog', { name: 'Edit item' });
+	await edit.getByRole('button', { name: 'Retake photo' }).click();
+	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
+	await expect(camera.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+	await camera.getByRole('button', { name: 'Take photo' }).click();
+	await expect(page.getByText('Photo updated')).toBeVisible();
+	await edit.getByRole('button', { name: 'Close' }).click();
+	await expect(thumb.locator('img')).not.toHaveAttribute('src', firstThumb!);
+});

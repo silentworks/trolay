@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Item } from '#lib/data/db.ts';
 	import { itemName } from '#lib/data/items.ts';
+	import PhotoImage from './PhotoImage.svelte';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
 
 	interface Props {
@@ -9,9 +10,10 @@
 		onedit: () => void;
 		ondelete: () => void;
 		onquantity: (quantity: number) => void;
+		onphoto: () => void;
 	}
 
-	let { item, taxRateBps, onedit, ondelete, onquantity }: Props = $props();
+	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto }: Props = $props();
 
 	const totals = $derived(lineTotals(item, taxRateBps));
 	const name = $derived(itemName(item));
@@ -65,6 +67,13 @@
 		onpointerup={pointerup}
 		onpointercancel={() => (offset = 0)}
 	>
+		{#if item.photoId}
+			<button class="thumb" type="button" aria-label="Photo of {name}" onclick={onphoto}>
+				{#key item.photoId}
+					<PhotoImage photoId={item.photoId} size="thumb" alt="" />
+				{/key}
+			</button>
+		{/if}
 		<button class="main" type="button" onclick={click}>
 			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
@@ -130,7 +139,7 @@
 	.content {
 		position: relative;
 		display: grid;
-		grid-template-columns: 1fr auto auto;
+		grid-template-columns: auto 1fr auto auto;
 		align-items: center;
 		gap: 4px;
 		padding: 8px 4px 8px 0;
@@ -143,6 +152,22 @@
 
 	.deleting .content {
 		opacity: 0.7;
+	}
+
+	.thumb {
+		width: 52px;
+		height: 52px;
+		margin-left: 8px;
+		padding: 0;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--surface-2);
+		overflow: hidden;
+	}
+
+	/* Rows without a photo: the description takes the thumbnail's column too. */
+	.content > .main:first-child {
+		grid-column: span 2;
 	}
 
 	.main {

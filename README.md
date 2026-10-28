@@ -17,6 +17,18 @@ Work is tracked in the Linear project **Trolay**.
   and `deletedAt` (tombstones) from day one, ready for sync in phase 4.
 - **Money: integer pence, VAT in basis points** (2000 = 20%), see `src/lib/money.ts`. Each line
   is rounded to the nearest penny (half up), then lines are summed.
+- **Label reading: Tesseract.js on the device** (`src/lib/capture/`), no cloud service. Its
+  worker, WebAssembly core and English data (~7 MB) are copied from `node_modules` into
+  `static/ocr/<version>/` by `scripts/copy-ocr-assets.js` (on install and build, not committed)
+  and kept by the service worker in a cache that survives app updates. Each photo is read twice
+  (full size for small print, one third size for the big price) and `parse-label.ts` turns the
+  text into fields with confidences; anything under 0.6 is left empty for the shopper.
+- **Barcodes: the browser's `BarcodeDetector` where it reads retail formats (Android Chrome),
+  otherwise ZXing in WebAssembly** (`barcode-detector` ponyfill), bundled with the app so it
+  works offline.
+- **Product names: the shopper's own earlier items first, then Open Food Facts.** Only the
+  barcode is sent; answers are cached on the device and lookups made with no signal are retried
+  later.
 
 ## Develop
 
@@ -27,6 +39,9 @@ pnpm install
 pnpm dev            # http://localhost:5173
 ```
 
+Requires `rsvg-convert` only to regenerate label fixtures, and `ffmpeg` for the camera
+end-to-end tests (it turns a label fixture into the fake camera's video).
+
 Imports from `src/lib` use the `#lib/*` alias with the file extension, e.g.
 `import { formatGBP } from '#lib/money.ts'`.
 
@@ -36,7 +51,8 @@ Imports from `src/lib` use the `#lib/*` alias with the file extension, e.g.
 pnpm check          # svelte-check (types and a11y)
 pnpm lint           # prettier + eslint
 pnpm test           # unit tests: VAT maths, data layer (fake-indexeddb)
-pnpm test:e2e       # Playwright against a production build, including offline
+pnpm test:e2e       # Playwright against a production build, including offline and a fake camera
+pnpm test:labels    # label reader accuracy over fixtures/labels (see its README)
 pnpm check:all      # all of the above
 ```
 

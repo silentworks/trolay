@@ -28,3 +28,4 @@ vite.config.ts.timestamp-*
 
 # Tesseract.js files, copied by scripts/copy-ocr-assets.js
 /static/ocr
+/e2e/.generated

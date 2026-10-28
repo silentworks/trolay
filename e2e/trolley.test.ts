@@ -12,7 +12,7 @@ async function startTripAtNewStore(page: Page, name: string) {
 }
 
 async function addItem(page: Page, description: string, price: string, quantity = 1) {
-	await page.getByRole('button', { name: '+ Add item' }).click();
+	await page.getByRole('button', { name: '+ Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill(description);
 	await sheet.getByLabel('Unit price (£)').fill(price);

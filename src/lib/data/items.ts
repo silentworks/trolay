@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { isValidGtin } from '../capture/gtin';
 import type { CompressedPhoto } from '../capture/image';
 import { db, isLive, newId, type ExtractedFields, type Item, type Photo } from './db';
 
@@ -7,6 +8,7 @@ export interface ItemInput {
 	unitPriceMinor: number;
 	priceIncludesTax: boolean;
 	quantity: number;
+	barcode?: string;
 }
 
 function validate(input: ItemInput): ItemInput {
@@ -18,7 +20,11 @@ function validate(input: ItemInput): ItemInput {
 	if (!Number.isInteger(input.quantity) || input.quantity < 1) {
 		throw new Error('Quantity must be at least 1.');
 	}
-	return { ...input, description };
+	const barcode = input.barcode?.replace(/\s/g, '') || undefined;
+	if (barcode !== undefined && !isValidGtin(barcode)) {
+		throw new Error('Check the barcode: it should be the 8, 12 or 13 digits under the bars.');
+	}
+	return { ...input, description, barcode };
 }
 
 /** True when any field the label reader filled in has since been changed by hand. */

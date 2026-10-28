@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { warmUpBarcodes } from '#lib/capture/barcode.ts';
+	import { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import { db, type Item, type Store } from '#lib/data/db.ts';
 	import {
 		addItem,
@@ -16,6 +18,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
 	import BudgetForm from './BudgetForm.svelte';
+	import CameraCapture from './CameraCapture.svelte';
 	import ItemForm from './ItemForm.svelte';
 	import ItemRow from './ItemRow.svelte';
 	import Sheet from './Sheet.svelte';
@@ -40,8 +43,12 @@
 	const stores = new LiveQuery(() => listStores());
 
 	type SheetState =
-		{ kind: 'add' } | { kind: 'edit'; item: Item } | { kind: 'budget' } | { kind: 'store' };
+		| { kind: 'add'; capture?: CaptureSession }
+		| { kind: 'edit'; item: Item }
+		| { kind: 'budget' }
+		| { kind: 'store' };
 	let sheet = $state<SheetState | null>(null);
+	let camera = $state(false);
 	let toast = $state<{ id: number; message: string; undoItemId?: string } | null>(null);
 	let toastCount = 0;
 
@@ -49,6 +56,23 @@
 	const store = $derived(cart.current?.store);
 	const items = $derived(cart.current?.items ?? []);
 	const totals = $derived(tripTotals(items, store?.taxRateBps ?? 0));
+
+	// Load the barcode reader while the shopper picks up the first item.
+	$effect(() => {
+		const timer = setTimeout(() => warmUpBarcodes().catch(() => {}), 1000);
+		return () => clearTimeout(timer);
+	});
+
+	// A capture's photo preview is released when its sheet closes.
+	$effect(() => {
+		const capture = sheet?.kind === 'add' ? sheet.capture : undefined;
+		return () => capture?.dispose();
+	});
+
+	function captured(photo: Blob, barcode: string | undefined) {
+		camera = false;
+		sheet = { kind: 'add', capture: new CaptureSession(photo, barcode) };
+	}
 
 	function show(message: string, undoItemId?: string) {
 		toast = { id: ++toastCount, message, undoItemId };
@@ -62,8 +86,10 @@
 		}
 	}
 
-	async function saveNew(input: ItemInput) {
-		await addItem(tripId, input);
+	async function saveNew(input: ItemInput, capture: CaptureSession | undefined) {
+		// The photo is usually compressed by now; if it failed, the item is saved without it.
+		const photo = capture && (await capture.ready.catch(() => undefined));
+		await addItem(tripId, input, { photo });
 		sheet = null;
 	}
 
@@ -141,13 +167,14 @@
 					/>
 				{/key}
 			{/if}
-			<button
-				class="btn btn-primary btn-block add"
-				type="button"
-				onclick={() => (sheet = { kind: 'add' })}
-			>
-				+ Add item
-			</button>
+			<div class="actions">
+				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
+					📷 Snap label
+				</button>
+				<button class="btn manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
+					+ Add by hand
+				</button>
+			</div>
 			<TotalsFooter
 				{totals}
 				budgetMinor={trip.budgetMinor}
@@ -156,12 +183,27 @@
 		</div>
 	</div>
 
-	<Sheet open={sheet?.kind === 'add'} title="Add item" onclose={() => (sheet = null)}>
-		<ItemForm
-			defaultIncludesTax={store.pricesIncludeTax}
-			taxRateBps={store.taxRateBps}
-			onsave={saveNew}
-		/>
+	<CameraCapture
+		open={camera}
+		mode="label"
+		oncapture={captured}
+		onclose={() => (camera = false)}
+	/>
+
+	<Sheet
+		open={sheet?.kind === 'add'}
+		title={sheet?.kind === 'add' && sheet.capture ? 'Check the label' : 'Add item'}
+		onclose={() => (sheet = null)}
+	>
+		{#if sheet?.kind === 'add'}
+			{@const capture = sheet.capture}
+			<ItemForm
+				{capture}
+				defaultIncludesTax={store.pricesIncludeTax}
+				taxRateBps={store.taxRateBps}
+				onsave={(input) => saveNew(input, capture)}
+			/>
+		{/if}
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'edit'} title="Edit item" onclose={() => (sheet = null)}>
@@ -264,8 +306,18 @@
 		box-shadow: var(--shadow);
 	}
 
-	.add {
+	.actions {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 8px;
+	}
+
+	.actions .btn {
 		min-height: 56px;
-		font-size: 1.1rem;
+		padding: 0 12px;
+	}
+
+	.snap {
+		font-size: 1.15rem;
 	}
 </style>

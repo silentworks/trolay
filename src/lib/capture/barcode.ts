@@ -34,7 +34,8 @@ async function load(): Promise<Detector> {
 	]);
 	prepareZXingModule({
 		overrides: {
-			locateFile: (path: string, prefix: string) => (path.endsWith('.wasm') ? wasmUrl : prefix + path)
+			locateFile: (path: string, prefix: string) =>
+				path.endsWith('.wasm') ? wasmUrl : prefix + path
 		}
 	});
 	return new BarcodeDetector({ formats: [...FORMATS] });

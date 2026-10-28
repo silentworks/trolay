@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { warmUpBarcodes } from '#lib/capture/barcode.ts';
+	import { warmUpOcr } from '#lib/capture/ocr.ts';
 	import { CaptureSession } from '#lib/capture/session.svelte.ts';
-	import { db, type Item, type Store } from '#lib/data/db.ts';
+	import { db, type ExtractedFields, type Item, type Store } from '#lib/data/db.ts';
 	import {
 		addItem,
 		deleteItem,
@@ -57,9 +58,13 @@
 	const items = $derived(cart.current?.items ?? []);
 	const totals = $derived(tripTotals(items, store?.taxRateBps ?? 0));
 
-	// Load the barcode reader while the shopper picks up the first item.
+	// Load the label and barcode readers while the shopper picks up the first item, so the
+	// first capture is quick. Failures surface on first use instead.
 	$effect(() => {
-		const timer = setTimeout(() => warmUpBarcodes().catch(() => {}), 1000);
+		const timer = setTimeout(() => {
+			warmUpOcr().catch(() => {});
+			warmUpBarcodes().catch(() => {});
+		}, 1000);
 		return () => clearTimeout(timer);
 	});
 
@@ -86,10 +91,14 @@
 		}
 	}
 
-	async function saveNew(input: ItemInput, capture: CaptureSession | undefined) {
+	async function saveNew(
+		input: ItemInput,
+		extracted: ExtractedFields | undefined,
+		capture: CaptureSession | undefined
+	) {
 		// The photo is usually compressed by now; if it failed, the item is saved without it.
 		const photo = capture && (await capture.ready.catch(() => undefined));
-		await addItem(tripId, input, { photo });
+		await addItem(tripId, input, { photo, extracted });
 		sheet = null;
 	}
 
@@ -172,7 +181,7 @@
 					📷 Snap label
 				</button>
 				<button class="btn manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
-					+ Add by hand
+					Add by hand
 				</button>
 			</div>
 			<TotalsFooter
@@ -183,12 +192,7 @@
 		</div>
 	</div>
 
-	<CameraCapture
-		open={camera}
-		mode="label"
-		oncapture={captured}
-		onclose={() => (camera = false)}
-	/>
+	<CameraCapture open={camera} mode="label" oncapture={captured} onclose={() => (camera = false)} />
 
 	<Sheet
 		open={sheet?.kind === 'add'}
@@ -201,7 +205,7 @@
 				{capture}
 				defaultIncludesTax={store.pricesIncludeTax}
 				taxRateBps={store.taxRateBps}
-				onsave={(input) => saveNew(input, capture)}
+				onsave={(input, extracted) => saveNew(input, extracted, capture)}
 			/>
 		{/if}
 	</Sheet>
@@ -308,13 +312,14 @@
 
 	.actions {
 		display: grid;
-		grid-template-columns: 2fr 1fr;
+		grid-template-columns: 3fr 2fr;
 		gap: 8px;
 	}
 
 	.actions .btn {
 		min-height: 56px;
 		padding: 0 12px;
+		white-space: nowrap;
 	}
 
 	.snap {

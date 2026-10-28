@@ -143,8 +143,11 @@
 		{/if}
 
 		<header>
-			<button class="btn round" type="button" aria-label="Close camera" onclick={() => dialog.close()}
-				>✕</button
+			<button
+				class="btn round"
+				type="button"
+				aria-label="Close camera"
+				onclick={() => dialog.close()}>✕</button
 			>
 			<p class="hint" aria-live="polite">
 				{#if status === 'starting'}
@@ -324,6 +327,8 @@
 
 	.controls .side {
 		justify-self: start;
+		padding: 0 14px;
+		white-space: nowrap;
 		background: rgb(0 0 0 / 0.5);
 		color: #fff;
 		border-color: rgb(255 255 255 / 0.4);

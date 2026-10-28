@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import BackupPanel from '#lib/components/BackupPanel.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import { listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
@@ -73,6 +74,8 @@
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
 	{/if}
+
+	<BackupPanel />
 </div>
 
 <style>

@@ -4,9 +4,11 @@ import { db } from './db';
 import {
 	addItem,
 	deleteItem,
+	getPhoto,
 	listTripItems,
 	restoreItem,
 	revertItem,
+	setItemPhoto,
 	setQuantity,
 	updateItem
 } from './items';
@@ -158,7 +160,7 @@ describe('items', () => {
 	it('marks an extracted item as edited and reverts it', async () => {
 		const trip = await openTrip();
 		const extracted = { description: 'Milk 2L', unitPriceMinor: 145, confidence: 0.9 };
-		const item = await addItem(trip.id, milk, extracted);
+		const item = await addItem(trip.id, milk, { extracted });
 		expect(item.edited).toBe(false);
 
 		await updateItem(item.id, { ...milk, unitPriceMinor: 155, quantity: 2 });
@@ -170,6 +172,21 @@ describe('items', () => {
 			quantity: 2,
 			edited: false
 		});
+	});
+
+	it('stores the photo and thumbnail with the item, and replaces them on retake', async () => {
+		const trip = await openTrip();
+		const first = { blob: new Blob(['full-1']), thumbBlob: new Blob(['thumb-1']) };
+		const item = await addItem(trip.id, milk, { photo: first });
+		const firstId = (await db.items.get(item.id))?.photoId;
+		expect(firstId).toBeDefined();
+		expect(await getPhoto(firstId!)).toMatchObject({ itemId: item.id });
+
+		await setItemPhoto(item.id, { blob: new Blob(['full-2']), thumbBlob: new Blob(['thumb-2']) });
+		const secondId = (await db.items.get(item.id))?.photoId;
+		expect(secondId).not.toBe(firstId);
+		expect(await getPhoto(firstId!)).toBeUndefined();
+		expect(await db.photos.count()).toBe(1);
 	});
 
 	it('only adds items to an open trip', async () => {

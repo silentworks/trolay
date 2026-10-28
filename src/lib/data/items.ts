@@ -1,5 +1,6 @@
 import Dexie from 'dexie';
-import { db, isLive, newId, type ExtractedFields, type Item } from './db';
+import type { CompressedPhoto } from '../capture/image';
+import { db, isLive, newId, type ExtractedFields, type Item, type Photo } from './db';
 
 export interface ItemInput {
 	description: string;
@@ -31,29 +32,64 @@ function differsFromExtracted(item: ItemInput, extracted: ExtractedFields | unde
 	);
 }
 
+export interface AddItemOptions {
+	/** What the label reader filled in, kept so later edits can be reverted. */
+	extracted?: ExtractedFields;
+	photo?: CompressedPhoto;
+}
+
+function newPhoto(itemId: string, photo: CompressedPhoto, now: number): Photo {
+	return { id: newId(), itemId, ...photo, createdAt: now, updatedAt: now };
+}
+
 export async function addItem(
 	tripId: string,
 	input: ItemInput,
-	extracted?: ExtractedFields
+	{ extracted, photo }: AddItemOptions = {}
 ): Promise<Item> {
 	const fields = validate(input);
-	return db.transaction('rw', db.trips, db.items, async () => {
+	return db.transaction('rw', db.trips, db.items, db.photos, async () => {
 		const trip = await db.trips.get(tripId);
 		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
 
 		const now = Date.now();
+		const id = newId();
+		const stored = photo && newPhoto(id, photo, now);
 		const item: Item = {
-			id: newId(),
+			id,
 			tripId,
 			...fields,
+			photoId: stored?.id,
 			extracted,
 			edited: differsFromExtracted(fields, extracted),
 			createdAt: now,
 			updatedAt: now
 		};
+		if (stored) await db.photos.add(stored);
 		await db.items.add(item);
 		return item;
 	});
+}
+
+/**
+ * Replaces an item's photo (retake). The old photo is removed outright rather than
+ * tombstoned: photos never sync as rows, and keeping the blob would only waste space.
+ */
+export async function setItemPhoto(itemId: string, photo: CompressedPhoto): Promise<void> {
+	await db.transaction('rw', db.items, db.photos, async () => {
+		const item = await db.items.get(itemId);
+		if (!isLive(item)) throw new Error('That item no longer exists.');
+		const now = Date.now();
+		const stored = newPhoto(itemId, photo, now);
+		await db.photos.add(stored);
+		if (item.photoId) await db.photos.delete(item.photoId);
+		await db.items.update(itemId, { photoId: stored.id, updatedAt: now });
+	});
+}
+
+export async function getPhoto(id: string): Promise<Photo | undefined> {
+	const photo = await db.photos.get(id);
+	return isLive(photo) ? photo : undefined;
 }
 
 export async function updateItem(id: string, input: ItemInput): Promise<void> {

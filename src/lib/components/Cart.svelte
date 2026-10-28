@@ -7,6 +7,7 @@
 	import {
 		addItem,
 		deleteItem,
+		itemName,
 		listTripItems,
 		restoreItem,
 		revertItem,
@@ -111,7 +112,7 @@
 		sheet = null;
 		run(async () => {
 			await deleteItem(item.id);
-			show(`Deleted ${item.description}`, item.id);
+			show(`Deleted ${itemName(item)}`, item.id);
 		});
 	}
 
@@ -203,6 +204,7 @@
 			{@const capture = sheet.capture}
 			<ItemForm
 				{capture}
+				storeId={store.id}
 				defaultIncludesTax={store.pricesIncludeTax}
 				taxRateBps={store.taxRateBps}
 				onsave={(input, extracted) => saveNew(input, extracted, capture)}
@@ -215,6 +217,7 @@
 			{@const item = sheet.item}
 			<ItemForm
 				{item}
+				storeId={store.id}
 				defaultIncludesTax={store.pricesIncludeTax}
 				taxRateBps={store.taxRateBps}
 				onsave={(input) => saveEdit(item, input)}

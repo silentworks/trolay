@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Item } from '#lib/data/db.ts';
+	import { itemName } from '#lib/data/items.ts';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
 
 	interface Props {
@@ -13,6 +14,7 @@
 	let { item, taxRateBps, onedit, ondelete, onquantity }: Props = $props();
 
 	const totals = $derived(lineTotals(item, taxRateBps));
+	const name = $derived(itemName(item));
 
 	// Swipe left past the threshold to delete. Vertical movement is left to the page scroll.
 	const SWIPE_DELETE_PX = 96;
@@ -64,7 +66,7 @@
 		onpointercancel={() => (offset = 0)}
 	>
 		<button class="main" type="button" onclick={click}>
-			<span class="description">{item.description}</span>
+			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
 				{formatGBP(item.unitPriceMinor)} each
 				<span class="badge">{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}</span>
@@ -76,7 +78,7 @@
 			<span class="line-total"
 				>{formatGBP(item.priceIncludesTax ? totals.inclMinor : totals.exclMinor)}</span
 			>
-			<div class="stepper" role="group" aria-label="Quantity of {item.description}">
+			<div class="stepper" role="group" aria-label="Quantity of {name}">
 				<button
 					class="btn"
 					type="button"
@@ -94,11 +96,8 @@
 			</div>
 		</div>
 
-		<button
-			class="btn btn-ghost delete"
-			type="button"
-			aria-label="Delete {item.description}"
-			onclick={ondelete}>🗑</button
+		<button class="btn btn-ghost delete" type="button" aria-label="Delete {name}" onclick={ondelete}
+			>🗑</button
 		>
 	</div>
 </li>
@@ -159,6 +158,11 @@
 	.description {
 		font-weight: 600;
 		overflow-wrap: anywhere;
+	}
+
+	.description.unnamed {
+		font-style: italic;
+		color: var(--muted);
 	}
 
 	.meta {

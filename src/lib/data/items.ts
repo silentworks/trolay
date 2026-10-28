@@ -13,7 +13,6 @@ export interface ItemInput {
 
 function validate(input: ItemInput): ItemInput {
 	const description = input.description.trim();
-	if (!description) throw new Error('Add a description.');
 	if (!Number.isInteger(input.unitPriceMinor) || input.unitPriceMinor < 0) {
 		throw new Error('Enter a valid price.');
 	}
@@ -24,6 +23,8 @@ function validate(input: ItemInput): ItemInput {
 	if (barcode !== undefined && !isValidGtin(barcode)) {
 		throw new Error('Check the barcode: it should be the 8, 12 or 13 digits under the bars.');
 	}
+	// With a barcode the name can be looked up later, once there is signal.
+	if (!description && !barcode) throw new Error('Add a description.');
 	return { ...input, description, barcode };
 }
 
@@ -140,6 +141,11 @@ export async function deleteItem(id: string): Promise<void> {
 /** Undoes deleteItem. */
 export async function restoreItem(id: string): Promise<void> {
 	await db.items.update(id, { deletedAt: undefined, updatedAt: Date.now() });
+}
+
+/** What to call an item in the cart; unnamed items wait for a barcode lookup. */
+export function itemName(item: Pick<Item, 'description' | 'barcode'>): string {
+	return item.description || `Unnamed item ${item.barcode ?? ''}`.trim();
 }
 
 /** Newest first. */

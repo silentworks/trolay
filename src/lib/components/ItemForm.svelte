@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { isValidGtin } from '#lib/capture/gtin.ts';
 	import { confident, MIN_FIELD_CONFIDENCE } from '#lib/capture/parse-label.ts';
 	import type { CaptureSession } from '#lib/capture/session.svelte.ts';
 	import type { ExtractedFields, Item } from '#lib/data/db.ts';
 	import type { ItemInput } from '#lib/data/items.ts';
+	import { isLookupPending, lookupProductName } from '#lib/data/products.ts';
 	import { formatGBP, lineTotals, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
 
@@ -11,6 +13,8 @@
 		item?: Item;
 		/** A snapped label being added: its photo is shown and its readings fill the form. */
 		capture?: CaptureSession;
+		/** For naming a scanned barcode from earlier shops at this store. */
+		storeId: string;
 		defaultIncludesTax: boolean;
 		taxRateBps: number;
 		/** `extracted` holds what the label reader filled in, for a snapped label. */
@@ -19,8 +23,16 @@
 		onrevert?: () => Promise<void>;
 	}
 
-	let { item, capture, defaultIncludesTax, taxRateBps, onsave, ondelete, onrevert }: Props =
-		$props();
+	let {
+		item,
+		capture,
+		storeId,
+		defaultIncludesTax,
+		taxRateBps,
+		onsave,
+		ondelete,
+		onrevert
+	}: Props = $props();
 	const uid = $props.id();
 
 	// Initial values only: the form edits its own copy until it is saved.
@@ -40,6 +52,9 @@
 	let unread = $state({ description: false, price: false });
 	let extracted: ExtractedFields | undefined;
 	let applied = false;
+	// A name found for the barcode beats the label reading: labels are often abbreviated.
+	let nameLookup = $state<'looking' | 'own-item' | 'openfoodfacts' | 'queued'>();
+	let descriptionFromLookup = false;
 
 	$effect(() => {
 		const reading = capture?.reading;
@@ -52,7 +67,10 @@
 				unitPriceMinor: confident(reading?.unitPriceMinor),
 				priceIncludesTax: confident(reading?.priceIncludesTax)
 			};
-			if (read.description !== undefined && !touched.description) description = read.description;
+			if (descriptionFromLookup) read.description = description;
+			else if (read.description !== undefined && !touched.description) {
+				description = read.description;
+			}
 			if (read.unitPriceMinor !== undefined && !touched.price) {
 				price = minorToInput(read.unitPriceMinor);
 			}
@@ -60,7 +78,7 @@
 				priceIncludesTax = read.priceIncludesTax;
 			}
 			unread = {
-				description: read.description === undefined,
+				description: read.description === undefined && !descriptionFromLookup,
 				price: read.unitPriceMinor === undefined
 			};
 			const used = [reading?.description, reading?.unitPriceMinor, reading?.priceIncludesTax]
@@ -75,6 +93,33 @@
 		const code = capture?.barcode;
 		if (code) untrack(() => !touched.barcode && !barcode && (barcode = code));
 	});
+
+	// Name a new barcode (scanned, read or typed) from earlier shops or Open Food Facts.
+	let lookedUp = untrack(() => initial.item?.barcode ?? '');
+	$effect(() => {
+		const code = barcode.replace(/\s/g, '');
+		if (code === lookedUp || !isValidGtin(code)) return;
+		lookedUp = code;
+		untrack(() => lookUpName(code));
+	});
+
+	async function lookUpName(code: string) {
+		if (touched.description) return;
+		nameLookup = 'looking';
+		const found = await lookupProductName(code, storeId).catch(() => undefined);
+		if (lookedUp !== code) return;
+		if (!found) {
+			nameLookup = (await isLookupPending(code)) ? 'queued' : undefined;
+			return;
+		}
+		nameLookup = found.source;
+		if (touched.description) return;
+		description = found.name;
+		descriptionFromLookup = true;
+		// For a snapped label, the filled-in name is what Revert goes back to.
+		if (extracted) extracted.description = found.name;
+		else if (capture) extracted = { description: found.name, confidence: 1 };
+	}
 
 	const unitPriceMinor = $derived(parsePounds(price));
 	const preview = $derived(
@@ -136,7 +181,20 @@
 			autofocus={!item && !capture}
 			aria-describedby={unread.description && !description ? `${uid}-description-check` : undefined}
 		/>
-		{#if unread.description && !description}
+		{#if nameLookup && !touched.description}
+			<p class="lookup-hint" aria-live="polite">
+				{#if nameLookup === 'looking'}
+					Looking up the name…
+				{:else if nameLookup === 'own-item'}
+					Name from your earlier shopping.
+				{:else if nameLookup === 'openfoodfacts'}
+					Name from Open Food Facts.
+				{:else if !description}
+					No signal. Leave it blank and the name will be filled in when you're back online.
+				{/if}
+			</p>
+		{/if}
+		{#if unread.description && !description && nameLookup !== 'queued'}
 			<p class="check-hint" id="{uid}-description-check">Couldn't read this. Please type it.</p>
 		{/if}
 	</div>
@@ -271,6 +329,12 @@
 	.needs-check .input {
 		border-color: var(--warning-text);
 		background: var(--warning-bg);
+	}
+
+	.lookup-hint {
+		margin: 0;
+		color: var(--muted);
+		font-size: 0.9rem;
 	}
 
 	.check-hint {

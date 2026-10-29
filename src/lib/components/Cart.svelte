@@ -139,19 +139,16 @@
 	}
 
 	let menuOpen = $state(false);
-	let addOpen = $state(false);
 
-	/** A tap anywhere outside an open menu, or on its button, closes it. */
+	/** A tap anywhere outside the open menu, or on its button, closes it. */
 	function tapOutside(event: PointerEvent) {
 		const target = event.target as Element;
 		if (!target.closest('#cart-menu, .more')) menuOpen = false;
-		if (!target.closest('#add-menu, .plus')) addOpen = false;
 	}
 
 	function closeMenus(event: KeyboardEvent) {
 		if (event.key !== 'Escape') return;
 		menuOpen = false;
-		addOpen = false;
 	}
 
 	function tapStoreName() {
@@ -252,46 +249,19 @@
 					/>
 				{/key}
 			{/if}
-			<!-- The plus sits on the top edge of the total, and opens the two ways to add an item. -->
-			<div class="total">
-				<button
-					class="plus"
-					type="button"
-					aria-label="Add an item"
-					aria-expanded={addOpen}
-					aria-controls="add-menu"
-					onclick={() => (addOpen = !addOpen)}
-				>
-					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+			<div class="actions">
+				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
+					📷 Snap label
 				</button>
-				{#if addOpen}
-					<div id="add-menu" class="add-menu" role="group" aria-label="Add an item">
-						<button
-							type="button"
-							onclick={() => {
-								addOpen = false;
-								camera = true;
-							}}
-						>
-							<span aria-hidden="true">📷</span> Snap label
-						</button>
-						<button
-							type="button"
-							onclick={() => {
-								addOpen = false;
-								sheet = { kind: 'add' };
-							}}
-						>
-							<span aria-hidden="true">✏️</span> Add by hand
-						</button>
-					</div>
-				{/if}
-				<TotalsFooter
-					{totals}
-					budgetMinor={trip.budgetMinor}
-					onbudget={() => (sheet = { kind: 'budget' })}
-				/>
+				<button class="btn manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
+					Add by hand
+				</button>
 			</div>
+			<TotalsFooter
+				{totals}
+				budgetMinor={trip.budgetMinor}
+				onbudget={() => (sheet = { kind: 'budget' })}
+			/>
 		</div>
 	</div>
 
@@ -509,83 +479,19 @@
 		box-shadow: var(--shadow);
 	}
 
-	/* Room above the total for the half of the plus that stands out of it. */
-	.total {
-		position: relative;
-		margin-top: 30px;
-	}
-
-	/* The total's own top padding grows to clear the half of the plus inside it. */
-	.total :global(.totals) {
-		padding-top: 36px;
-	}
-
-	.plus {
-		position: absolute;
-		z-index: 1;
-		top: 0;
-		left: 50%;
-		translate: -50% -50%;
+	.actions {
 		display: grid;
-		place-items: center;
-		width: 60px;
-		height: 60px;
-		padding: 0;
-		border: 1px solid rgb(255 255 255 / 0.08);
-		border-radius: 20px;
-		background: linear-gradient(160deg, #1d1b2b, #2a2640);
-		box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
+		grid-template-columns: 3fr 2fr;
+		gap: 8px;
 	}
 
-	.plus:active {
-		scale: 0.96;
+	.actions .btn {
+		min-height: 56px;
+		padding: 0 12px;
+		white-space: nowrap;
 	}
 
-	.plus svg {
-		width: 30px;
-		height: 30px;
-		fill: none;
-		stroke: #fdc79a;
-		stroke-width: 3;
-		stroke-linecap: round;
-		transition: rotate 0.15s;
-	}
-
-	.plus[aria-expanded='true'] svg {
-		rotate: 45deg;
-	}
-
-	/* Opens upwards from the plus. */
-	.add-menu {
-		position: absolute;
-		z-index: 2;
-		bottom: calc(100% + 38px);
-		left: 50%;
-		translate: -50% 0;
-		display: grid;
-		width: max-content;
-		min-width: 12rem;
-		padding: 6px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--surface);
-		box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
-	}
-
-	.add-menu button {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-height: var(--tap);
-		padding: 0 14px;
-		border: none;
-		border-radius: 8px;
-		background: transparent;
-		font-weight: 600;
-		text-align: left;
-	}
-
-	.add-menu button:hover {
-		background: var(--surface-2);
+	.snap {
+		font-size: 1.15rem;
 	}
 </style>

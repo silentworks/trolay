@@ -139,6 +139,20 @@
 	}
 
 	let menuOpen = $state(false);
+	let addOpen = $state(false);
+
+	/** A tap anywhere outside an open menu, or on its button, closes it. */
+	function tapOutside(event: PointerEvent) {
+		const target = event.target as Element;
+		if (!target.closest('#cart-menu, .more')) menuOpen = false;
+		if (!target.closest('#add-menu, .plus')) addOpen = false;
+	}
+
+	function closeMenus(event: KeyboardEvent) {
+		if (event.key !== 'Escape') return;
+		menuOpen = false;
+		addOpen = false;
+	}
 
 	function tapStoreName() {
 		if (items.length > 0) show('The store can only be changed while the cart is empty.');
@@ -167,7 +181,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && (menuOpen = false)} />
+<svelte:window onkeydown={closeMenus} onpointerdown={tapOutside} />
 
 {#if trip && store}
 	<div class="page">
@@ -191,8 +205,6 @@
 				</svg>
 			</button>
 			{#if menuOpen}
-				<!-- Covers the page so a tap anywhere outside the menu closes it. -->
-				<div class="scrim" aria-hidden="true" onclick={() => (menuOpen = false)}></div>
 				<nav id="cart-menu" class="menu" aria-label="Menu">
 					<a href={resolve('/history')}>History</a>
 					<a href={resolve('/stores')}>Stores</a>
@@ -240,22 +252,46 @@
 					/>
 				{/key}
 			{/if}
-			<div class="actions">
-				<button class="snap" type="button" aria-label="Snap label" onclick={() => (camera = true)}>
-					<svg viewBox="0 0 64 64" aria-hidden="true">
-						<circle class="lens" cx="31" cy="34" r="13" />
-						<circle class="flash" cx="47" cy="17" r="5" />
-					</svg>
+			<!-- The plus sits on the top edge of the total, and opens the two ways to add an item. -->
+			<div class="total">
+				<button
+					class="plus"
+					type="button"
+					aria-label="Add an item"
+					aria-expanded={addOpen}
+					aria-controls="add-menu"
+					onclick={() => (addOpen = !addOpen)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
 				</button>
-				<button class="manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
-					Add by hand
-				</button>
+				{#if addOpen}
+					<div id="add-menu" class="add-menu" role="group" aria-label="Add an item">
+						<button
+							type="button"
+							onclick={() => {
+								addOpen = false;
+								camera = true;
+							}}
+						>
+							<span aria-hidden="true">📷</span> Snap label
+						</button>
+						<button
+							type="button"
+							onclick={() => {
+								addOpen = false;
+								sheet = { kind: 'add' };
+							}}
+						>
+							<span aria-hidden="true">✏️</span> Add by hand
+						</button>
+					</div>
+				{/if}
+				<TotalsFooter
+					{totals}
+					budgetMinor={trip.budgetMinor}
+					onbudget={() => (sheet = { kind: 'budget' })}
+				/>
 			</div>
-			<TotalsFooter
-				{totals}
-				budgetMinor={trip.budgetMinor}
-				onbudget={() => (sheet = { kind: 'budget' })}
-			/>
 		</div>
 	</div>
 
@@ -396,12 +432,6 @@
 		fill: currentColor;
 	}
 
-	.scrim {
-		position: fixed;
-		inset: 0;
-		z-index: 2;
-	}
-
 	/* A small panel under the menu button, lined up with the right edge of the page. */
 	.menu {
 		position: fixed;
@@ -479,55 +509,83 @@
 		box-shadow: var(--shadow);
 	}
 
-	/* The camera button in the middle, with adding by hand offered to its right. */
-	.actions {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
-		align-items: center;
-		gap: 12px;
+	/* Room above the total for the half of the plus that stands out of it. */
+	.total {
+		position: relative;
+		margin-top: 30px;
 	}
 
-	.snap {
-		grid-column: 2;
+	/* The total's own top padding grows to clear the half of the plus inside it. */
+	.total :global(.totals) {
+		padding-top: 36px;
+	}
+
+	.plus {
+		position: absolute;
+		z-index: 1;
+		top: 0;
+		left: 50%;
+		translate: -50% -50%;
 		display: grid;
 		place-items: center;
-		width: 72px;
-		height: 72px;
+		width: 60px;
+		height: 60px;
 		padding: 0;
 		border: 1px solid rgb(255 255 255 / 0.08);
-		border-radius: 22px;
+		border-radius: 20px;
 		background: linear-gradient(160deg, #1d1b2b, #2a2640);
 		box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
 	}
 
-	.snap:active {
-		transform: scale(0.96);
+	.plus:active {
+		scale: 0.96;
 	}
 
-	.snap svg {
-		width: 56px;
-		height: 56px;
-	}
-
-	.snap .lens {
+	.plus svg {
+		width: 30px;
+		height: 30px;
 		fill: none;
 		stroke: #fdc79a;
-		stroke-width: 7;
+		stroke-width: 3;
+		stroke-linecap: round;
+		transition: rotate 0.15s;
 	}
 
-	.snap .flash {
-		fill: #c9c3ff;
+	.plus[aria-expanded='true'] svg {
+		rotate: 45deg;
 	}
 
-	.manual {
-		justify-self: start;
+	/* Opens upwards from the plus. */
+	.add-menu {
+		position: absolute;
+		z-index: 2;
+		bottom: calc(100% + 38px);
+		left: 50%;
+		translate: -50% 0;
+		display: grid;
+		width: max-content;
+		min-width: 12rem;
+		padding: 6px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--surface);
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+	}
+
+	.add-menu button {
+		display: flex;
+		align-items: center;
+		gap: 10px;
 		min-height: var(--tap);
-		padding: 0 4px;
+		padding: 0 14px;
 		border: none;
+		border-radius: 8px;
 		background: transparent;
-		color: var(--accent);
 		font-weight: 600;
-		text-decoration: underline;
-		text-underline-offset: 3px;
+		text-align: left;
+	}
+
+	.add-menu button:hover {
+		background: var(--surface-2);
 	}
 </style>

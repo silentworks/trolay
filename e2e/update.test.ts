@@ -1,6 +1,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
+/** Presses the plus on the shopping screen and picks a way to add an item. */
+async function addBy(page: Page, way: 'Snap label' | 'Add by hand') {
+	await page.getByRole('button', { name: 'Add an item' }).click();
+	await page.getByRole('group', { name: 'Add an item' }).getByRole('button', { name: way }).click();
+}
+
 // A new deploy is simulated by changing the version baked into the built service worker that
 // the preview server serves. Same length, so the server's cached file size still fits.
 const WORKER = '.svelte-kit/output/client/service-worker.js';
@@ -22,7 +28,7 @@ async function startShop(page: Page) {
 	await page.getByRole('button', { name: 'Add a new store' }).click();
 	await page.getByLabel('Store name').fill('Tesco');
 	await page.getByRole('button', { name: 'Add store and start trip' }).click();
-	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await addBy(page, 'Add by hand');
 	await page.getByLabel('Description').fill('Milk');
 	await page.getByLabel('Unit price (£)').fill('1.45');
 	await page.getByRole('button', { name: 'Add to cart' }).click();

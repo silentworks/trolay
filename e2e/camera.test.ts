@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FAKE_CAMERA_BARCODE as BARCODE } from './global-setup';
 
+/** Presses the plus on the shopping screen and picks a way to add an item. */
+async function addBy(page: Page, way: 'Snap label' | 'Add by hand') {
+	await page.getByRole('button', { name: 'Add an item' }).click();
+	await page.getByRole('group', { name: 'Add an item' }).getByRole('button', { name: way }).click();
+}
+
 /** Picks an entry from the shopping screen's ⋮ menu. */
 async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
 	await page.getByRole('button', { name: 'Menu' }).click();
@@ -33,7 +39,7 @@ async function listOnOpenFoodFacts(page: Page, product: object) {
 }
 
 async function snapLabel(page: Page) {
-	await page.getByRole('button', { name: 'Snap label' }).click();
+	await addBy(page, 'Snap label');
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	await expect(camera.getByText('Fill the frame with the shelf label')).toBeVisible();
 	await expect(camera.getByRole('status')).toHaveText(`Barcode ${BARCODE} ✓`, READ_TIMEOUT);
@@ -74,7 +80,7 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 
 test('fields the reader could not read are left empty and highlighted', async ({ page }) => {
 	await startTrip(page);
-	await page.getByRole('button', { name: 'Snap label' }).click();
+	await addBy(page, 'Snap label');
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	// A real Swedish LCD label: its seven-segment price can't be read with confidence, so it is
 	// left for the shopper; the printed name can.
@@ -119,7 +125,7 @@ test('scan a barcode into an item typed by hand', async ({ page }) => {
 		quantity: '2.272 L'
 	});
 	await startTrip(page);
-	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await addBy(page, 'Add by hand');
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByRole('button', { name: 'Scan' }).click();
 
@@ -133,7 +139,7 @@ test('scan a barcode into an item typed by hand', async ({ page }) => {
 
 test('a name you gave the barcode before beats the label reading', async ({ page }) => {
 	await startTrip(page);
-	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await addBy(page, 'Add by hand');
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill('Chowder for Friday');
 	await sheet.getByLabel('Unit price (£)').fill('1.99');
@@ -159,7 +165,7 @@ test('a barcode scanned with no signal is named once the signal returns', async 
 	// Routes still answer while offline, so make the lookup fail as it would with no signal.
 	await page.unroute(OPEN_FOOD_FACTS);
 	await page.route(OPEN_FOOD_FACTS, (route) => route.abort('internetdisconnected'));
-	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await addBy(page, 'Add by hand');
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByRole('button', { name: 'Scan' }).click();
 	await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue(BARCODE, READ_TIMEOUT);

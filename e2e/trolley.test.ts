@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/** Presses the plus on the shopping screen and picks a way to add an item. */
+async function addBy(page: Page, way: 'Snap label' | 'Add by hand') {
+	await page.getByRole('button', { name: 'Add an item' }).click();
+	await page.getByRole('group', { name: 'Add an item' }).getByRole('button', { name: way }).click();
+}
+
 /** Picks an entry from the shopping screen's ⋮ menu. */
 async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
 	await page.getByRole('button', { name: 'Menu' }).click();
@@ -18,7 +24,7 @@ async function startTripAtNewStore(page: Page, name: string) {
 }
 
 async function addItem(page: Page, description: string, price: string, quantity = 1) {
-	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await addBy(page, 'Add by hand');
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill(description);
 	await sheet.getByLabel('Unit price (£)').fill(price);
@@ -318,7 +324,7 @@ test('history can be opened in the middle of a trip, and leads back to it', asyn
 	await expect(page.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
 });
 
-test('the header shows the store with its branch underneath, and the menu opens and closes', async ({
+test('the header shows the store and branch; the menu and the plus open and close', async ({
 	page
 }) => {
 	await page.goto('/');
@@ -337,6 +343,14 @@ test('the header shows the store with its branch underneath, and the menu opens 
 	await expect(nav.getByRole('link', { name: 'Stores' })).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(nav).toBeHidden();
+
+	// The plus offers both ways to add an item.
+	const add = page.getByRole('group', { name: 'Add an item' });
+	await page.getByRole('button', { name: 'Add an item' }).click();
+	await expect(add.getByRole('button', { name: 'Snap label' })).toBeVisible();
+	await expect(add.getByRole('button', { name: 'Add by hand' })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(add).toBeHidden();
 
 	await menu(page, 'Stores');
 	await expect(page.getByRole('heading', { name: 'Stores' })).toBeVisible();

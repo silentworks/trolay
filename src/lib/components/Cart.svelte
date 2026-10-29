@@ -138,7 +138,7 @@
 		run(() => restoreItem(itemId));
 	}
 
-	let menu = $state<HTMLElement>();
+	let menuOpen = $state(false);
 
 	function tapStoreName() {
 		if (items.length > 0) show('The store can only be changed while the cart is empty.');
@@ -167,6 +167,8 @@
 	}
 </script>
 
+<svelte:window onkeydown={(event) => event.key === 'Escape' && (menuOpen = false)} />
+
 {#if trip && store}
 	<div class="page">
 		<header class="bar">
@@ -174,27 +176,37 @@
 				<span class="name">{store.name}</span>
 				{#if store.branch}<span class="branch">{store.branch}</span>{/if}
 			</button>
-			<button class="round more" type="button" popovertarget="cart-menu" aria-label="Menu">
+			<button
+				class="round more"
+				type="button"
+				aria-label="Menu"
+				aria-expanded={menuOpen}
+				aria-controls="cart-menu"
+				onclick={() => (menuOpen = !menuOpen)}
+			>
 				<svg viewBox="0 0 24 24" aria-hidden="true">
 					<circle cx="12" cy="5" r="1.8" />
 					<circle cx="12" cy="12" r="1.8" />
 					<circle cx="12" cy="19" r="1.8" />
 				</svg>
 			</button>
-			<!-- A popover closes itself on a tap outside or Escape. -->
-			<nav id="cart-menu" class="menu" popover="auto" aria-label="Menu" bind:this={menu}>
-				<a href={resolve('/history')}>History</a>
-				<a href={resolve('/stores')}>Stores</a>
-				<button
-					type="button"
-					onclick={() => {
-						menu?.hidePopover();
-						tapFinish();
-					}}
-				>
-					Finish trip
-				</button>
-			</nav>
+			{#if menuOpen}
+				<!-- Covers the page so a tap anywhere outside the menu closes it. -->
+				<div class="scrim" aria-hidden="true" onclick={() => (menuOpen = false)}></div>
+				<nav id="cart-menu" class="menu" aria-label="Menu">
+					<a href={resolve('/history')}>History</a>
+					<a href={resolve('/stores')}>Stores</a>
+					<button
+						type="button"
+						onclick={() => {
+							menuOpen = false;
+							tapFinish();
+						}}
+					>
+						Finish trip
+					</button>
+				</nav>
+			{/if}
 		</header>
 
 		{#if items.length}
@@ -229,10 +241,13 @@
 				{/key}
 			{/if}
 			<div class="actions">
-				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
-					📷 Snap label
+				<button class="snap" type="button" aria-label="Snap label" onclick={() => (camera = true)}>
+					<svg viewBox="0 0 64 64" aria-hidden="true">
+						<circle class="lens" cx="31" cy="34" r="13" />
+						<circle class="flash" cx="47" cy="17" r="5" />
+					</svg>
 				</button>
-				<button class="btn manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
+				<button class="manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
 					Add by hand
 				</button>
 			</div>
@@ -381,23 +396,27 @@
 		fill: currentColor;
 	}
 
-	/* Opens under the menu button, lined up with the right edge of the page. */
+	.scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 2;
+	}
+
+	/* A small panel under the menu button, lined up with the right edge of the page. */
 	.menu {
-		inset: auto;
+		position: fixed;
+		z-index: 3;
 		top: calc(env(safe-area-inset-top) + 60px);
 		right: max(var(--gutter), (100vw - 560px) / 2 + var(--gutter));
+		display: grid;
+		width: max-content;
 		min-width: 12rem;
-		margin: 0;
+		max-width: calc(100vw - 2 * var(--gutter));
 		padding: 6px;
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		background: var(--surface);
-		color: var(--text);
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
-	}
-
-	.menu:popover-open {
-		display: grid;
 	}
 
 	.menu a,
@@ -460,19 +479,55 @@
 		box-shadow: var(--shadow);
 	}
 
+	/* The camera button in the middle, with adding by hand offered to its right. */
 	.actions {
 		display: grid;
-		grid-template-columns: 3fr 2fr;
-		gap: 8px;
-	}
-
-	.actions .btn {
-		min-height: 56px;
-		padding: 0 12px;
-		white-space: nowrap;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 12px;
 	}
 
 	.snap {
-		font-size: 1.15rem;
+		grid-column: 2;
+		display: grid;
+		place-items: center;
+		width: 72px;
+		height: 72px;
+		padding: 0;
+		border: 1px solid rgb(255 255 255 / 0.08);
+		border-radius: 22px;
+		background: linear-gradient(160deg, #1d1b2b, #2a2640);
+		box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
+	}
+
+	.snap:active {
+		transform: scale(0.96);
+	}
+
+	.snap svg {
+		width: 56px;
+		height: 56px;
+	}
+
+	.snap .lens {
+		fill: none;
+		stroke: #fdc79a;
+		stroke-width: 7;
+	}
+
+	.snap .flash {
+		fill: #c9c3ff;
+	}
+
+	.manual {
+		justify-self: start;
+		min-height: var(--tap);
+		padding: 0 4px;
+		border: none;
+		background: transparent;
+		color: var(--accent);
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 </style>

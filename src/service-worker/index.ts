@@ -46,6 +46,12 @@ self.addEventListener('install', (event) => {
 	);
 });
 
+// A new version waits until the shopper taps "Refresh to update" (src/lib/update.svelte.ts), so
+// the app never reloads under them mid-shop.
+self.addEventListener('message', (event) => {
+	if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {

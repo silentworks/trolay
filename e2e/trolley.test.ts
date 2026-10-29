@@ -241,3 +241,55 @@ test('exports one trip or all history as CSV for spreadsheets', async ({ page })
 	expect(lines).toHaveLength(3);
 	expect(lines[1]).toContain(',Milk 2L,');
 });
+
+test('a backup restores everything on a new phone', async ({ page, browser }) => {
+	await startTripAtNewStore(page, 'Lidl');
+	await addItem(page, 'Pâté, "smooth"', '2.50');
+	await finishTrip(page, '2.50');
+	await page.getByRole('button', { name: /^Lidl/ }).click();
+	await addItem(page, 'Eggs', '2.10');
+
+	await page.goto('/history');
+	const backup = await downloaded(page, () =>
+		page.getByRole('button', { name: 'Download backup' }).click()
+	);
+	expect(backup.name).toMatch(/^trolay-backup-\d{4}-\d{2}-\d{2}\.json$/);
+
+	// A fresh browser profile stands in for the new phone.
+	const phone = await browser.newContext();
+	const fresh = await phone.newPage();
+	await fresh.goto('/history');
+	await expect(fresh.getByText('No finished trips yet.')).toBeVisible();
+
+	// Something that is not a backup is refused, and nothing changes.
+	await fresh
+		.getByRole('region', { name: 'Backup' })
+		.locator('input[type=file]')
+		.setInputFiles({
+			name: 'notes.json',
+			mimeType: 'application/json',
+			buffer: Buffer.from('{"a":1}')
+		});
+	await expect(fresh.getByRole('alert')).toHaveText('This is not a Trolay backup.');
+
+	await fresh
+		.getByRole('region', { name: 'Backup' })
+		.locator('input[type=file]')
+		.setInputFiles({ name: backup.name, mimeType: 'application/json', buffer: backup.bytes });
+	const confirm = fresh.getByRole('dialog', { name: 'Restore this backup?' });
+	await expect(confirm).toContainText('has 1 store, 2 trips and 2 items');
+	await confirm.getByRole('button', { name: 'Replace with the backup' }).click();
+	await expect(fresh.getByRole('status')).toHaveText('Backup restored.');
+
+	const trips = fresh.getByRole('list', { name: 'Past trips' });
+	await expect(trips.getByRole('link')).toHaveCount(1);
+	await expect(trips.getByRole('link')).toContainText('✓ Receipt matched');
+	await trips.getByRole('link').click();
+	await expect(fresh.getByRole('list', { name: 'Items bought' })).toContainText('Pâté, "smooth"');
+
+	// The open trip came across too.
+	await fresh.goto('/');
+	await expect(fresh.getByRole('button', { name: 'Store: Lidl' })).toBeVisible();
+	await expect(fresh.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
+	await phone.close();
+});

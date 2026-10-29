@@ -293,3 +293,21 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	await expect(fresh.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
 	await phone.close();
 });
+
+test('history can be opened in the middle of a trip, and leads back to it', async ({ page }) => {
+	await startTripAtNewStore(page, 'Aldi');
+	await addItem(page, 'Bananas', '0.82');
+	await finishTrip(page);
+	await page.getByRole('button', { name: /^Aldi/ }).click();
+	await addItem(page, 'Eggs', '2.10');
+
+	await page.getByRole('link', { name: 'History' }).click();
+	const trips = page.getByRole('list', { name: 'Past trips' });
+	await expect(trips.getByRole('link')).toHaveCount(1);
+	await expect(trips.getByRole('link')).toContainText('£0.82');
+
+	// Back to the trolley, with the open trip as it was.
+	await page.getByRole('link', { name: '← Trolley' }).click();
+	await expect(page.getByRole('button', { name: 'Store: Aldi' })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
+});

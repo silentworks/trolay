@@ -173,6 +173,7 @@
 				<span class="name">{store.name}{store.branch ? ` · ${store.branch}` : ''}</span>
 			</button>
 			<nav class="links">
+				<a class="btn btn-ghost" href={resolve('/history')}>History</a>
 				<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
 				<button class="btn" type="button" onclick={tapFinish}>Finish</button>
 			</nav>
@@ -302,6 +303,7 @@
 		top: 0;
 		z-index: 1;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
@@ -309,7 +311,14 @@
 		background: var(--bg);
 	}
 
+	/*
+	 * The store name takes what the buttons leave. When that is too narrow for a name (a small
+	 * phone, a long name), the buttons move to a row of their own, so neither is ever squeezed.
+	 */
 	.store {
+		flex: 1 1 6em;
+		min-width: 0;
+		overflow-wrap: break-word;
 		display: grid;
 		justify-items: start;
 		min-height: var(--tap);
@@ -326,12 +335,18 @@
 
 	.store .name {
 		font-weight: 800;
-		font-size: 1.3rem;
+		font-size: 1.2rem;
 	}
 
 	.links {
+		flex: none;
+		margin-left: auto;
 		display: flex;
-		gap: 4px;
+		gap: 2px;
+	}
+
+	.links .btn {
+		padding: 0 10px;
 	}
 
 	.items {

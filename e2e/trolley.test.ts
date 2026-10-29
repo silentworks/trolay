@@ -189,3 +189,55 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 	await page.goto('/history/not-a-trip');
 	await expect(page.getByText("This trip isn't in your history.")).toBeVisible();
 });
+
+async function finishTrip(page: Page, receipt?: string) {
+	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	if (receipt) await finish.getByLabel('Receipt total (£)').fill(receipt);
+	await finish.getByRole('button', { name: 'Finish trip' }).click();
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+}
+
+async function downloaded(page: Page, click: () => Promise<void>) {
+	const [download] = await Promise.all([page.waitForEvent('download'), click()]);
+	const stream = await download.createReadStream();
+	const chunks: Buffer[] = [];
+	for await (const chunk of stream) chunks.push(chunk as Buffer);
+	return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
+}
+
+test('exports one trip or all history as CSV for spreadsheets', async ({ page }) => {
+	await startTripAtNewStore(page, 'Tesco');
+	await addItem(page, 'Pâté, "smooth"', '2.50');
+	await finishTrip(page);
+	await page.getByRole('button', { name: /^Tesco/ }).click();
+	await addItem(page, 'Milk 2L', '1.45', 2);
+	await finishTrip(page);
+
+	await page.goto('/history');
+	const all = await downloaded(page, () =>
+		page.getByRole('button', { name: 'Export all history as CSV' }).click()
+	);
+	expect(all.name).toMatch(/^trolay-history-\d{4}-\d{2}-\d{2}\.csv$/);
+	// UTF-8 with a byte order mark, so Excel shows "£" and "â" intact.
+	expect([...all.bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+	const rows = all.bytes.subarray(3).toString('utf8').split('\r\n');
+	expect(rows[0]).toBe(
+		'Date,Store,Description,Barcode,Quantity,Unit price (£),Unit price includes VAT,Line total incl. VAT (£),Line total excl. VAT (£),VAT (£)'
+	);
+	// Oldest trip first.
+	expect(rows[1]).toMatch(
+		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2},Tesco,"Pâté, ""smooth""",,1,2\.50,Yes,2\.50,2\.08,0\.42$/
+	);
+	expect(rows[2]).toMatch(/,Tesco,Milk 2L,,2,1\.45,Yes,2\.90,2\.42,0\.48$/);
+	expect(rows).toHaveLength(4);
+
+	await page.getByRole('link', { name: /Tesco/ }).first().click();
+	const one = await downloaded(page, () =>
+		page.getByRole('button', { name: 'Export as CSV' }).click()
+	);
+	expect(one.name).toMatch(/^trolay-tesco-\d{4}-\d{2}-\d{2}\.csv$/);
+	const lines = one.bytes.toString('utf8').split('\r\n');
+	expect(lines).toHaveLength(3);
+	expect(lines[1]).toContain(',Milk 2L,');
+});

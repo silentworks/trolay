@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-
 import { FAKE_CAMERA_BARCODE as BARCODE } from './global-setup';
+
+/** Picks an entry from the shopping screen's ⋮ menu. */
+async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
+	await page.getByRole('button', { name: 'Menu' }).click();
+	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();
+}
 
 // The fake camera shows a real shelf label (fixtures/labels/real/uk-cully-sully-chowder.jpg):
 // "Cully & Sully Smoked Salmon & Haddock Chowder 400g", £1.99, "49.8p per 100g".
@@ -210,7 +215,7 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
-	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	await finish.getByRole('button', { name: 'Read the receipt' }).click();
 	// A real Tesco receipt (fixtures/receipts/real/uk-tesco-1994.jpg): TOTAL 6.71, paid with £7.00

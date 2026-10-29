@@ -138,6 +138,8 @@
 		run(() => restoreItem(itemId));
 	}
 
+	let menu = $state<HTMLElement>();
+
 	function tapStoreName() {
 		if (items.length > 0) show('The store can only be changed while the cart is empty.');
 		else sheet = { kind: 'store' };
@@ -169,13 +171,29 @@
 	<div class="page">
 		<header class="bar">
 			<button class="store" type="button" onclick={tapStoreName} aria-label="Store: {store.name}">
-				<span class="label">Shopping at</span>
-				<span class="name">{store.name}{store.branch ? ` · ${store.branch}` : ''}</span>
+				<span class="name">{store.name}</span>
+				{#if store.branch}<span class="branch">{store.branch}</span>{/if}
 			</button>
-			<nav class="links">
-				<a class="btn btn-ghost" href={resolve('/history')}>History</a>
-				<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
-				<button class="btn" type="button" onclick={tapFinish}>Finish</button>
+			<button class="round more" type="button" popovertarget="cart-menu" aria-label="Menu">
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<circle cx="12" cy="5" r="1.8" />
+					<circle cx="12" cy="12" r="1.8" />
+					<circle cx="12" cy="19" r="1.8" />
+				</svg>
+			</button>
+			<!-- A popover closes itself on a tap outside or Escape. -->
+			<nav id="cart-menu" class="menu" popover="auto" aria-label="Menu" bind:this={menu}>
+				<a href={resolve('/history')}>History</a>
+				<a href={resolve('/stores')}>Stores</a>
+				<button
+					type="button"
+					onclick={() => {
+						menu?.hidePopover();
+						tapFinish();
+					}}
+				>
+					Finish trip
+				</button>
 			</nav>
 		</header>
 
@@ -298,55 +316,115 @@
 		padding-bottom: calc(260px + env(safe-area-inset-bottom));
 	}
 
+	/*
+	 * The header sits on its own surface, edge to edge. The menu button has an empty column of the
+	 * same width opposite it, so the store name is centred on the screen.
+	 */
 	.bar {
 		position: sticky;
 		top: 0;
 		z-index: 1;
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
+		grid-template-areas: '. store more';
 		align-items: center;
-		justify-content: space-between;
 		gap: 8px;
-		padding: calc(8px + env(safe-area-inset-top)) 0 8px;
-		background: var(--bg);
+		margin: 0 calc(-1 * var(--gutter)) 12px;
+		padding: calc(8px + env(safe-area-inset-top)) var(--gutter) 8px;
+		background: var(--surface);
+		border-bottom: 1px solid var(--border);
+		box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
 	}
 
-	/*
-	 * The store name takes what the buttons leave. When that is too narrow for a name (a small
-	 * phone, a long name), the buttons move to a row of their own, so neither is ever squeezed.
-	 */
 	.store {
-		flex: 1 1 6em;
+		grid-area: store;
 		min-width: 0;
-		overflow-wrap: break-word;
 		display: grid;
-		justify-items: start;
+		justify-items: center;
+		align-content: center;
 		min-height: var(--tap);
 		padding: 0;
 		border: none;
 		background: transparent;
-		text-align: left;
+		text-align: center;
+		overflow-wrap: break-word;
 	}
 
-	.store .label {
+	.store .name {
+		max-width: 100%;
+		font-weight: 800;
+		font-size: 1.2rem;
+		line-height: 1.2;
+	}
+
+	.store .branch {
+		max-width: 100%;
 		color: var(--muted);
 		font-size: 0.85rem;
 	}
 
-	.store .name {
-		font-weight: 800;
-		font-size: 1.2rem;
+	.round {
+		grid-area: more;
+		display: grid;
+		place-items: center;
+		width: var(--tap);
+		height: var(--tap);
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: var(--surface-2);
 	}
 
-	.links {
-		flex: none;
-		margin-left: auto;
+	.round svg {
+		width: 22px;
+		height: 22px;
+		fill: currentColor;
+	}
+
+	/* Opens under the menu button, lined up with the right edge of the page. */
+	.menu {
+		inset: auto;
+		top: calc(env(safe-area-inset-top) + 60px);
+		right: max(var(--gutter), (100vw - 560px) / 2 + var(--gutter));
+		min-width: 12rem;
+		margin: 0;
+		padding: 6px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+	}
+
+	.menu:popover-open {
+		display: grid;
+	}
+
+	.menu a,
+	.menu button {
 		display: flex;
-		gap: 2px;
+		align-items: center;
+		min-height: var(--tap);
+		padding: 0 14px;
+		border: none;
+		border-radius: 8px;
+		background: transparent;
+		color: var(--text);
+		font-weight: 600;
+		text-align: left;
+		text-decoration: none;
 	}
 
-	.links .btn {
-		padding: 0 10px;
+	.menu a:hover,
+	.menu button:hover {
+		background: var(--surface-2);
+	}
+
+	.menu button {
+		margin-top: 4px;
+		border-top: 1px solid var(--border);
+		border-radius: 0 0 8px 8px;
+		color: var(--accent);
 	}
 
 	.items {

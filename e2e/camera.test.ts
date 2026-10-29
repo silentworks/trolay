@@ -252,6 +252,6 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 		.click();
 	await expect(page.getByRole('button', { name: `Photo of ${DESCRIPTION}` })).toHaveCount(0);
 	await expect(page.getByText('The label photos are kept')).toBeHidden();
-	await page.getByRole('link', { name: '← History' }).click();
+	await page.getByRole('link', { name: 'Back to History' }).click();
 	await expect(page.getByRole('link', { name: /Tesco/ })).not.toContainText('Photos kept');
 });

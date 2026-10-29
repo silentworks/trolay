@@ -21,6 +21,7 @@
 	import { changeTripStore, finishTrip, setReceiptTotal, setTripBudget } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
+	import AppHeader from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
 	import FinishTrip from './FinishTrip.svelte';
@@ -138,19 +139,6 @@
 		run(() => restoreItem(itemId));
 	}
 
-	let menuOpen = $state(false);
-
-	/** A tap anywhere outside the open menu, or on its button, closes it. */
-	function tapOutside(event: PointerEvent) {
-		const target = event.target as Element;
-		if (!target.closest('#cart-menu, .more')) menuOpen = false;
-	}
-
-	function closeMenus(event: KeyboardEvent) {
-		if (event.key !== 'Escape') return;
-		menuOpen = false;
-	}
-
 	function tapStoreName() {
 		if (items.length > 0) show('The store can only be changed while the cart is empty.');
 		else sheet = { kind: 'store' };
@@ -178,45 +166,19 @@
 	}
 </script>
 
-<svelte:window onkeydown={closeMenus} onpointerdown={tapOutside} />
-
 {#if trip && store}
 	<div class="page">
-		<header class="bar">
-			<button class="store" type="button" onclick={tapStoreName} aria-label="Store: {store.name}">
-				<span class="name">{store.name}</span>
-				{#if store.branch}<span class="branch">{store.branch}</span>{/if}
-			</button>
-			<button
-				class="round more"
-				type="button"
-				aria-label="Menu"
-				aria-expanded={menuOpen}
-				aria-controls="cart-menu"
-				onclick={() => (menuOpen = !menuOpen)}
-			>
-				<svg viewBox="0 0 24 24" aria-hidden="true">
-					<circle cx="12" cy="5" r="1.8" />
-					<circle cx="12" cy="12" r="1.8" />
-					<circle cx="12" cy="19" r="1.8" />
-				</svg>
-			</button>
-			{#if menuOpen}
-				<nav id="cart-menu" class="menu" aria-label="Menu">
-					<a href={resolve('/history')}>History</a>
-					<a href={resolve('/stores')}>Stores</a>
-					<button
-						type="button"
-						onclick={() => {
-							menuOpen = false;
-							tapFinish();
-						}}
-					>
-						Finish trip
-					</button>
-				</nav>
-			{/if}
-		</header>
+		<AppHeader
+			title={store.name}
+			subtitle={store.branch}
+			ontitle={tapStoreName}
+			titleLabel="Store: {store.name}"
+			menu={[
+				{ label: 'History', href: resolve('/history') },
+				{ label: 'Stores', href: resolve('/stores') },
+				{ label: 'Finish trip', onclick: tapFinish, primary: true }
+			]}
+		/>
 
 		{#if items.length}
 			<ul class="items" aria-label="Items in your trolley">
@@ -335,115 +297,6 @@
 		padding: 0 var(--gutter);
 		/* Leaves room for the dock so the last item can scroll above it. */
 		padding-bottom: calc(260px + env(safe-area-inset-bottom));
-	}
-
-	/*
-	 * The header sits on its own surface, edge to edge. The menu button has an empty column of the
-	 * same width opposite it, so the store name is centred on the screen.
-	 */
-	.bar {
-		position: sticky;
-		top: 0;
-		z-index: 1;
-		display: grid;
-		grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
-		grid-template-areas: '. store more';
-		align-items: center;
-		gap: 8px;
-		margin: 0 calc(-1 * var(--gutter)) 12px;
-		padding: calc(8px + env(safe-area-inset-top)) var(--gutter) 8px;
-		background: var(--surface);
-		border-bottom: 1px solid var(--border);
-		box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
-	}
-
-	.store {
-		grid-area: store;
-		min-width: 0;
-		display: grid;
-		justify-items: center;
-		align-content: center;
-		min-height: var(--tap);
-		padding: 0;
-		border: none;
-		background: transparent;
-		text-align: center;
-		overflow-wrap: break-word;
-	}
-
-	.store .name {
-		max-width: 100%;
-		font-weight: 800;
-		font-size: 1.2rem;
-		line-height: 1.2;
-	}
-
-	.store .branch {
-		max-width: 100%;
-		color: var(--muted);
-		font-size: 0.85rem;
-	}
-
-	.round {
-		grid-area: more;
-		display: grid;
-		place-items: center;
-		width: var(--tap);
-		height: var(--tap);
-		padding: 0;
-		border: none;
-		border-radius: 50%;
-		background: var(--surface-2);
-	}
-
-	.round svg {
-		width: 22px;
-		height: 22px;
-		fill: currentColor;
-	}
-
-	/* A small panel under the menu button, lined up with the right edge of the page. */
-	.menu {
-		position: fixed;
-		z-index: 3;
-		top: calc(env(safe-area-inset-top) + 60px);
-		right: max(var(--gutter), (100vw - 560px) / 2 + var(--gutter));
-		display: grid;
-		width: max-content;
-		min-width: 12rem;
-		max-width: calc(100vw - 2 * var(--gutter));
-		padding: 6px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--surface);
-		box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
-	}
-
-	.menu a,
-	.menu button {
-		display: flex;
-		align-items: center;
-		min-height: var(--tap);
-		padding: 0 14px;
-		border: none;
-		border-radius: 8px;
-		background: transparent;
-		color: var(--text);
-		font-weight: 600;
-		text-align: left;
-		text-decoration: none;
-	}
-
-	.menu a:hover,
-	.menu button:hover {
-		background: var(--surface-2);
-	}
-
-	.menu button {
-		margin-top: 4px;
-		border-top: 1px solid var(--border);
-		border-radius: 0 0 8px 8px;
-		color: var(--accent);
 	}
 
 	.items {

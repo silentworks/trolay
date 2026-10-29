@@ -5,6 +5,7 @@
 	import { startTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { parsePounds } from '#lib/money.ts';
+	import AppHeader from './AppHeader.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
@@ -49,13 +50,14 @@
 </script>
 
 <div class="page">
-	<header>
-		<h1>Where are you shopping?</h1>
-		<nav class="links">
-			<a class="btn btn-ghost" href={resolve('/history')}>History</a>
-			<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
-		</nav>
-	</header>
+	<AppHeader
+		title="Trolay"
+		menu={[
+			{ label: 'History', href: resolve('/history') },
+			{ label: 'Stores', href: resolve('/stores') }
+		]}
+	/>
+	<h2 class="question">Where are you shopping?</h2>
 
 	{#if notice}
 		<p class="notice" role="status">
@@ -97,11 +99,6 @@
 </Sheet>
 
 <style>
-	.links {
-		display: flex;
-		flex: none;
-	}
-
 	.notice {
 		padding: 10px 12px;
 		border-radius: var(--radius);
@@ -112,19 +109,12 @@
 	.page {
 		max-width: 560px;
 		margin: 0 auto;
-		padding: var(--gutter);
+		padding: 0 var(--gutter);
 		padding-bottom: calc(96px + env(safe-area-inset-bottom));
 	}
 
-	header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		margin: 8px 0 20px;
-	}
-
-	h1 {
+	.question {
+		margin-bottom: 16px;
 		font-size: 1.5rem;
 	}
 

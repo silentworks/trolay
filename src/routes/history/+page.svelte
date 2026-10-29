@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import AppHeader from '#lib/components/AppHeader.svelte';
 	import BackupPanel from '#lib/components/BackupPanel.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import { listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
@@ -25,10 +26,7 @@
 </svelte:head>
 
 <div class="page">
-	<header>
-		<a class="btn btn-ghost" href={resolve('/')}>← Trolley</a>
-		<h1>History</h1>
-	</header>
+	<AppHeader title="History" back={{ href: resolve('/'), label: 'Trolley' }} />
 
 	{#if history.loaded}
 		{#if history.current?.length}
@@ -82,18 +80,7 @@
 	.page {
 		max-width: 560px;
 		margin: 0 auto;
-		padding: var(--gutter);
-	}
-
-	header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 12px;
-	}
-
-	h1 {
-		font-size: 1.5rem;
+		padding: 0 var(--gutter) var(--gutter);
 	}
 
 	.hint {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import AppHeader from '#lib/components/AppHeader.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
 	import StoreForm from '#lib/components/StoreForm.svelte';
 	import StoreList from '#lib/components/StoreList.svelte';
@@ -28,10 +29,7 @@
 </svelte:head>
 
 <div class="page">
-	<header>
-		<a class="btn btn-ghost" href={resolve('/')}>← Trolley</a>
-		<h1>Stores</h1>
-	</header>
+	<AppHeader title="Stores" back={{ href: resolve('/'), label: 'Trolley' }} />
 
 	{#if stores.loaded}
 		{#if stores.current?.length}
@@ -61,18 +59,7 @@
 	.page {
 		max-width: 560px;
 		margin: 0 auto;
-		padding: var(--gutter);
-	}
-
-	header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 12px;
-	}
-
-	h1 {
-		font-size: 1.5rem;
+		padding: 0 var(--gutter) var(--gutter);
 	}
 
 	.hint {

@@ -21,6 +21,7 @@
 	import { changeTripStore, finishTrip, setReceiptTotal, setTripBudget } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
+	import AppHeader from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
 	import FinishTrip from './FinishTrip.svelte';
@@ -167,17 +168,17 @@
 
 {#if trip && store}
 	<div class="page">
-		<header class="bar">
-			<button class="store" type="button" onclick={tapStoreName} aria-label="Store: {store.name}">
-				<span class="label">Shopping at</span>
-				<span class="name">{store.name}{store.branch ? ` · ${store.branch}` : ''}</span>
-			</button>
-			<nav class="links">
-				<a class="btn btn-ghost" href={resolve('/history')}>History</a>
-				<a class="btn btn-ghost" href={resolve('/stores')}>Stores</a>
-				<button class="btn" type="button" onclick={tapFinish}>Finish</button>
-			</nav>
-		</header>
+		<AppHeader
+			title={store.name}
+			subtitle={store.branch}
+			ontitle={tapStoreName}
+			titleLabel="Store: {store.name}"
+			menu={[
+				{ label: 'History', href: resolve('/history') },
+				{ label: 'Stores', href: resolve('/stores') },
+				{ label: 'Finish trip', onclick: tapFinish, primary: true }
+			]}
+		/>
 
 		{#if items.length}
 			<ul class="items" aria-label="Items in your trolley">
@@ -296,57 +297,6 @@
 		padding: 0 var(--gutter);
 		/* Leaves room for the dock so the last item can scroll above it. */
 		padding-bottom: calc(260px + env(safe-area-inset-bottom));
-	}
-
-	.bar {
-		position: sticky;
-		top: 0;
-		z-index: 1;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		padding: calc(8px + env(safe-area-inset-top)) 0 8px;
-		background: var(--bg);
-	}
-
-	/*
-	 * The store name takes what the buttons leave. When that is too narrow for a name (a small
-	 * phone, a long name), the buttons move to a row of their own, so neither is ever squeezed.
-	 */
-	.store {
-		flex: 1 1 6em;
-		min-width: 0;
-		overflow-wrap: break-word;
-		display: grid;
-		justify-items: start;
-		min-height: var(--tap);
-		padding: 0;
-		border: none;
-		background: transparent;
-		text-align: left;
-	}
-
-	.store .label {
-		color: var(--muted);
-		font-size: 0.85rem;
-	}
-
-	.store .name {
-		font-weight: 800;
-		font-size: 1.2rem;
-	}
-
-	.links {
-		flex: none;
-		margin-left: auto;
-		display: flex;
-		gap: 2px;
-	}
-
-	.links .btn {
-		padding: 0 10px;
 	}
 
 	.items {

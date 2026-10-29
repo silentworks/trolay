@@ -8,6 +8,7 @@
 	import { exportTripCsv } from '#lib/export/history.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
+	import AppHeader from './AppHeader.svelte';
 	import PhotoImage from './PhotoImage.svelte';
 	import PhotoViewer from './PhotoViewer.svelte';
 	import Sheet from './Sheet.svelte';
@@ -57,18 +58,15 @@
 </svelte:head>
 
 <div class="page">
-	<header>
-		<a class="btn btn-ghost" href={resolve('/history')}>← History</a>
-	</header>
+	<AppHeader
+		title={trip && totals ? (view.current?.store?.name ?? 'Deleted store') : 'Trip'}
+		subtitle={trip && totals ? view.current?.store?.branch : undefined}
+		back={{ href: resolve('/history'), label: 'History' }}
+	/>
 
 	{#if view.loaded && (!trip || !totals)}
 		<p class="hint">This trip isn't in your history.</p>
 	{:else if trip && totals}
-		<h1>
-			{view.current?.store?.name ?? 'Deleted store'}{view.current?.store?.branch
-				? ` · ${view.current.store.branch}`
-				: ''}
-		</h1>
 		<p class="when">{trip.finishedAt ? formatWhen(trip.finishedAt) : ''}</p>
 
 		<dl class="sums" aria-label="Trip totals">
@@ -172,15 +170,7 @@
 	.page {
 		max-width: 560px;
 		margin: 0 auto;
-		padding: var(--gutter);
-	}
-
-	header {
-		margin-bottom: 8px;
-	}
-
-	h1 {
-		font-size: 1.5rem;
+		padding: 0 var(--gutter) var(--gutter);
 	}
 
 	h2 {

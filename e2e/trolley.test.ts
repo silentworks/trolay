@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/** Picks an entry from the shopping screen's ⋮ menu. */
+async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
+	await page.getByRole('button', { name: 'Menu' }).click();
+	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();
+}
+
 const footer = (page: Page) => page.getByRole('region', { name: 'Trolley total' });
 
 async function startTripAtNewStore(page: Page, name: string) {
@@ -125,12 +131,12 @@ test('works offline after the first visit', async ({ page, context }) => {
 
 test('finishing a trip checks the receipt and starts afresh', async ({ page }) => {
 	await startTripAtNewStore(page, 'Asda');
-	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await menu(page, 'Finish trip');
 	await expect(page.getByRole('status')).toContainText('Add an item before finishing');
 
 	await addItem(page, 'Milk 2L', '1.45', 2);
 	await addItem(page, 'Bread', '0.99');
-	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	await expect(finish).toContainText('£3.89');
 	await expect(finish).toContainText('Add the receipt total');
@@ -149,7 +155,7 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	// The receipt total is kept if the sheet is closed before finishing.
 	await receipt.press('Tab');
 	await finish.getByRole('button', { name: 'Close' }).click();
-	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await menu(page, 'Finish trip');
 	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('3.89');
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
@@ -177,8 +183,8 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await expect(page.getByRole('button', { name: /Decrease|Delete/ })).toHaveCount(0);
 
 	// A new trip starts empty.
-	await page.getByRole('link', { name: '← History' }).click();
-	await page.getByRole('link', { name: '← Trolley' }).click();
+	await page.getByRole('link', { name: 'Back to History' }).click();
+	await page.getByRole('link', { name: 'Back to Trolley' }).click();
 	await page.getByRole('button', { name: /^Asda/ }).click();
 	await expect(page.getByText('Your trolley is empty.')).toBeVisible();
 });
@@ -191,7 +197,7 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 });
 
 async function finishTrip(page: Page, receipt?: string) {
-	await page.getByRole('button', { name: 'Finish', exact: true }).click();
+	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	if (receipt) await finish.getByLabel('Receipt total (£)').fill(receipt);
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
@@ -301,13 +307,37 @@ test('history can be opened in the middle of a trip, and leads back to it', asyn
 	await page.getByRole('button', { name: /^Aldi/ }).click();
 	await addItem(page, 'Eggs', '2.10');
 
-	await page.getByRole('link', { name: 'History' }).click();
+	await menu(page, 'History');
 	const trips = page.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
 	await expect(trips.getByRole('link')).toContainText('£0.82');
 
 	// Back to the trolley, with the open trip as it was.
-	await page.getByRole('link', { name: '← Trolley' }).click();
+	await page.getByRole('link', { name: 'Back to Trolley' }).click();
 	await expect(page.getByRole('button', { name: 'Store: Aldi' })).toBeVisible();
 	await expect(page.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
+});
+
+test('the header shows the store with its branch underneath, and the menu opens and closes', async ({
+	page
+}) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'Add a new store' }).click();
+	await page.getByLabel('Store name').fill('Sainsbury’s');
+	await page.getByLabel(/Branch or location/).fill('Watford');
+	await page.getByRole('button', { name: 'Add store and start trip' }).click();
+
+	const store = page.getByRole('button', { name: 'Store: Sainsbury’s' });
+	await expect(store.locator('.name')).toHaveText('Sainsbury’s');
+	await expect(store.locator('.sub')).toHaveText('Watford');
+
+	const nav = page.getByRole('navigation', { name: 'Menu' });
+	await expect(nav).toBeHidden();
+	await page.getByRole('button', { name: 'Menu' }).click();
+	await expect(nav.getByRole('link', { name: 'Stores' })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(nav).toBeHidden();
+
+	await menu(page, 'Stores');
+	await expect(page.getByRole('heading', { name: 'Stores' })).toBeVisible();
 });

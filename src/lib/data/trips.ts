@@ -1,5 +1,5 @@
 import { DEFAULT_VAT_BPS, tripTotals } from '#lib/money.ts';
-import { db, isLive, newId, type Item, type Trip } from './db';
+import { db, isLive, newId, type Item, type Store, type Trip } from './db';
 
 export async function getOpenTrip(): Promise<Trip | undefined> {
 	const trips = await db.trips.where('status').equals('open').toArray();
@@ -143,4 +143,23 @@ export async function deleteTripPhotos(tripId: string): Promise<void> {
 		await removePhotos(await liveItems(tripId), now);
 		await db.trips.update(tripId, { photosKept: false, updatedAt: now });
 	});
+}
+
+export interface FinishedTrip {
+	trip: Trip;
+	store?: Store;
+}
+
+/** Finished trips, newest first, each with its store (undefined if it was since deleted). */
+export async function listFinishedTrips(): Promise<FinishedTrip[]> {
+	const trips = (await db.trips.where('status').equals('finished').toArray()).filter(isLive);
+	trips.sort((a, b) => (b.finishedAt ?? 0) - (a.finishedAt ?? 0));
+	const stores = await db.stores.bulkGet([...new Set(trips.map((t) => t.storeId))]);
+	const byId = new Map(stores.filter(isLive).map((s) => [s.id, s]));
+	return trips.map((trip) => ({ trip, store: byId.get(trip.storeId) }));
+}
+
+export async function getTrip(id: string): Promise<Trip | undefined> {
+	const trip = await db.trips.get(id);
+	return isLive(trip) ? trip : undefined;
 }

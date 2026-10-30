@@ -18,6 +18,16 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// Sign-in links are emailed with Cloudflare Email Service. Set MAIL_FROM to an address on a
+	// domain you have set up for sending there (Email Service, then onboard the domain).
+	"send_email": [
+		{
+			"name": "EMAIL"
+		}
+	],
+	"vars": {
+		"MAIL_FROM": "Trolay <welcome@trolay.com>"
+	},
 	// Required by `wrangler preview` (non-production branch builds); top-level settings apply.
 	"previews": {}
 }

@@ -1,82 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { handleApi } from './api.ts';
 import type { Env } from './env.ts';
 import { FakeAuthenticator } from './fake-authenticator.ts';
-import { createTestEnv, type TestEnv } from './testing.ts';
-
-const ORIGIN = 'https://trolay.test';
-const RP_ID = 'trolay.test';
+import { createTestEnv, ORIGIN, RP_ID, testClient, type TestEnv } from './testing.ts';
 
 let test: TestEnv;
 let env: Env;
+let call: ReturnType<typeof testClient>['call'];
+let register: ReturnType<typeof testClient>['register'];
+let signIn: ReturnType<typeof testClient>['signIn'];
 beforeAll(async () => {
 	test = await createTestEnv();
 	env = test.env;
+	({ call, register, signIn } = testClient(env));
 });
 afterAll(() => test.dispose());
-
-interface Reply {
-	status: number;
-	// Untyped on purpose: each test reads the few fields of the JSON it cares about.
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	body: any;
-	cookie?: string;
-	setCookie?: string;
-}
-
-async function call(
-	path: string,
-	options: {
-		method?: string;
-		body?: unknown;
-		cookie?: string;
-		origin?: string | null;
-		type?: string;
-	} = {}
-): Promise<Reply> {
-	const headers: Record<string, string> = {};
-	if (options.origin !== null) headers.Origin = options.origin ?? ORIGIN;
-	if (options.cookie) headers.Cookie = options.cookie;
-	if (options.body !== undefined) headers['Content-Type'] = options.type ?? 'application/json';
-	const response = await handleApi(
-		new Request(ORIGIN + path, {
-			method: options.method ?? (options.body !== undefined ? 'POST' : 'GET'),
-			headers,
-			body: options.body === undefined ? undefined : JSON.stringify(options.body)
-		}),
-		env
-	);
-	const setCookie = response.headers.get('Set-Cookie') ?? undefined;
-	return {
-		status: response.status,
-		body: await response.json(),
-		setCookie,
-		cookie: setCookie?.split(';')[0]
-	};
-}
-
-/** Makes a new account with a fresh authenticator, signed in. */
-async function register(authenticator = new FakeAuthenticator(RP_ID, ORIGIN), cookie?: string) {
-	const start = await call('/api/auth/register/options', { method: 'POST', body: {}, cookie });
-	const credential = await authenticator.create(start.body.options);
-	const done = await call('/api/auth/register/verify', {
-		body: { challengeId: start.body.challengeId, credential },
-		cookie
-	});
-	return { authenticator, start, done };
-}
-
-async function signIn(authenticator: FakeAuthenticator, lies = {}) {
-	const start = await call('/api/auth/login/options', { method: 'POST', body: {} });
-	const credential = await authenticator.get(start.body.options, lies);
-	return {
-		start,
-		credential,
-		done: await call('/api/auth/login/verify', {
-			body: { challengeId: start.body.challengeId, credential }
-		})
-	};
-}
 
 describe('registering with a passkey', () => {
 	it('makes an account and signs in, with an HttpOnly Secure SameSite cookie', async () => {

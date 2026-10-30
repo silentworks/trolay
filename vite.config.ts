@@ -57,7 +57,11 @@ export default defineConfig({
 			// SPA mode: every route renders in the browser (`ssr = false` in the root layout) and
 			// unknown paths fall back to index.html, which Cloudflare serves for any URL that has
 			// no file of its own.
-			adapter: adapter({ fallback: 'index.html' })
+			adapter: adapter({ fallback: 'index.html' }),
+
+			// Absolute asset paths, as in the built index.html. Relative ones depend on how deep the
+			// URL is, and the service worker serves one cached shell for every URL.
+			paths: { relative: false }
 		})
 	],
 	test: {

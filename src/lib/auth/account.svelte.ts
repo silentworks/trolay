@@ -9,8 +9,17 @@ const MESSAGES: Record<string, string> = {
 	verification_failed: 'That passkey was not accepted. Try again.',
 	challenge_expired: 'That took too long. Try again.',
 	already_registered: 'This passkey is already registered.',
-	wrong_account: 'That passkey belongs to a different account.'
+	wrong_account: 'That passkey belongs to a different account.',
+	invalid_email: "That doesn't look like an email address.",
+	too_many_requests: 'Too many requests. Wait a minute and try again.',
+	email_failed: 'The email could not be sent. Try again later.',
+	link_invalid: 'That link has expired or was already used. Ask for a new one.',
+	email_in_use: 'That email belongs to a different account.'
 };
+
+/** What opening an emailed link did. */
+export type LinkResult =
+	{ kind: 'signedIn'; hasPasskey: boolean } | { kind: 'added'; email: string };
 
 function explain(cause: unknown): string {
 	if (cause instanceof DOMException || (cause instanceof Error && cause.name in WEBAUTHN_NAMES)) {
@@ -55,6 +64,8 @@ class Account {
 	status = $state<AccountStatus>('unknown');
 	busy = $state(false);
 	error = $state<string>();
+	/** The address a sign-in link was last sent to. */
+	linkSentTo = $state<string>();
 
 	/** Asks the server who is signed in. Offline, or with no API, the status stays unknown. */
 	async refresh(): Promise<void> {
@@ -99,6 +110,34 @@ class Account {
 			await api('/api/auth/login/verify', { challengeId, credential });
 			this.status = 'signedIn';
 		});
+	}
+
+	/** Emails a sign-in link; signed in, the link adds the address to this account instead. */
+	requestLink(email: string): Promise<void> {
+		return this.attempt(async () => {
+			await api('/api/auth/link/request', { email });
+			this.linkSentTo = email.trim();
+		});
+	}
+
+	/** Uses the token from an emailed link. Resolves to what it did, or undefined on failure. */
+	async completeLink(token: string): Promise<LinkResult | undefined> {
+		let result: LinkResult | undefined;
+		await this.attempt(async () => {
+			const reply = await api<{
+				user?: unknown;
+				hasPasskey?: boolean;
+				added?: boolean;
+				email?: string;
+			}>('/api/auth/link/verify', { token });
+			if (reply.added) {
+				result = { kind: 'added', email: reply.email ?? '' };
+			} else {
+				this.status = 'signedIn';
+				result = { kind: 'signedIn', hasPasskey: reply.hasPasskey === true };
+			}
+		});
+		return result;
 	}
 
 	signOut(): Promise<void> {

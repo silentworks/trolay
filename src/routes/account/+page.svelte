@@ -4,8 +4,36 @@
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
 
+	let email = $state('');
+
 	onMount(() => void account.refresh());
 </script>
+
+{#snippet emailForm(heading: string, button: string)}
+	<form
+		class="email"
+		onsubmit={(event) => {
+			event.preventDefault();
+			void account.requestLink(email);
+		}}
+	>
+		<label for="account-email">{heading}</label>
+		<input
+			id="account-email"
+			class="input"
+			type="email"
+			autocomplete="email"
+			required
+			bind:value={email}
+		/>
+		<button class="btn" type="submit" disabled={account.busy}>{button}</button>
+		{#if account.linkSentTo}
+			<p class="status" role="status">
+				Check your email. The link works once and expires in 15 minutes.
+			</p>
+		{/if}
+	</form>
+{/snippet}
 
 <svelte:head><title>Account · Trolay</title></svelte:head>
 
@@ -23,6 +51,10 @@
 				Sign out
 			</button>
 		</div>
+		{@render emailForm(
+			'Add an email address, so you can sign in without a passkey',
+			'Email me a link to confirm it'
+		)}
 	{:else}
 		<p class="hint">
 			Your stores, trips and items live on this phone, and you don't need an account to use Trolay.
@@ -42,6 +74,7 @@
 				Create an account with a passkey
 			</button>
 		</div>
+		{@render emailForm('No passkey on this device? Sign in by email', 'Email me a sign-in link')}
 	{/if}
 
 	{#if account.error}<p class="error" role="alert">{account.error}</p>{/if}
@@ -61,6 +94,18 @@
 	.status {
 		font-weight: 700;
 		color: var(--accent);
+	}
+
+	.email {
+		display: grid;
+		gap: 8px;
+		margin-top: 28px;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
+	}
+
+	.email label {
+		font-weight: 600;
 	}
 
 	.actions {

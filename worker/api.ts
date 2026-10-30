@@ -6,8 +6,10 @@ import {
 	registrationOptions,
 	registrationVerify
 } from './auth/passkeys.ts';
+import { linkRequest, linkVerify } from './auth/link.ts';
 import type { Env } from './env.ts';
 import { BadRequest, error, json } from './http.ts';
+import { capturedMail } from './mail.ts';
 
 type Handler = (request: Request, env: Env) => Promise<Response> | Response;
 
@@ -24,7 +26,16 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/register/verify': { POST: registrationVerify },
 	'/api/auth/login/options': { POST: loginOptions },
 	'/api/auth/login/verify': { POST: loginVerify },
-	'/api/auth/logout': { POST: logout }
+	'/api/auth/link/request': { POST: linkRequest },
+	'/api/auth/link/verify': { POST: linkVerify },
+	'/api/auth/logout': { POST: logout },
+	// Emails kept instead of sent, so tests can read the link. Only exists in "capture" mode.
+	'/api/dev/outbox': {
+		GET: (request, env) =>
+			env.MAIL_MODE === 'capture'
+				? json({ mail: capturedMail(new URL(request.url).searchParams.get('to') ?? undefined) })
+				: error(404, 'not_found')
+	}
 };
 
 /**

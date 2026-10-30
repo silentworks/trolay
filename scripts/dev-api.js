@@ -20,6 +20,9 @@ const migrate = spawnSync(wrangler, ['d1', 'migrations', 'apply', 'DB', '--local
 });
 if (migrate.status !== 0) process.exit(1);
 
-const worker = spawn(wrangler, ['dev', '--port', port, ...persist], { stdio: 'inherit' });
+// Emails are captured and printed here, not sent (see MAIL_MODE in worker/env.ts).
+const worker = spawn(wrangler, ['dev', '--port', port, ...persist, '--var', 'MAIL_MODE:capture'], {
+	stdio: 'inherit'
+});
 worker.on('exit', (code) => process.exit(code ?? 0));
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => worker.kill(signal));

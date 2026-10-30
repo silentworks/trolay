@@ -56,6 +56,19 @@ Work is tracked in the Linear project **Trolay**.
   challenge is single-use and expires in 5 minutes. State-changing requests must be JSON and
   must not come from another origin. Account screen: `/account`. The app is fully usable
   without an account.
+- **Sign-in by emailed link, for when a passkey isn't to hand** (`worker/auth/link.ts`,
+  `worker/mail.ts`). A link works once and expires after 15 minutes. It points at
+  `/account/link#token=…`: the token is in the fragment, which browsers never send to a server,
+  so it stays out of logs, and a mail scanner that opens the link without running the app cannot
+  use it up. Only a hash of the token is stored. Asking for a link answers the same whether or
+  not the address has an account, and is rate-limited (one a minute and five an hour per
+  address, ten an hour per source). An address with no account gets one when its link is opened;
+  a signed-in user can add an address to their account, and that link signs nobody in. After
+  signing in by link, the app offers to add a passkey on that device. Email goes through
+  Cloudflare Email Service (`send_email` binding `EMAIL`); set `MAIL_FROM` in `wrangler.jsonc` to
+  an address on a domain you have set up there. In development, emails are captured and printed
+  by the API instead of sent (`MAIL_MODE=capture`, set by `pnpm dev:api`); never set it in
+  production, because it exposes the captured emails at `/api/dev/outbox`.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

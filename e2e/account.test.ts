@@ -57,3 +57,39 @@ test('cancelling the passkey prompt says so and signs nobody in', async ({ page 
 	await expect(page.getByRole('alert')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
 });
+
+/** The sign-in link in the latest email to this address (the dev API captures emails). */
+async function emailedLink(page: Page, to: string): Promise<string> {
+	let link = '';
+	await expect(async () => {
+		const reply = await page.request.get(`/api/dev/outbox?to=${encodeURIComponent(to)}`);
+		const { mail } = await reply.json();
+		link = mail.at(-1)?.text.match(/https?:\S+/)?.[0] ?? '';
+		expect(link).toContain('/account/link#token=');
+	}).toPass();
+	return link;
+}
+
+test('sign in by emailed link, once; then add a passkey on this device', async ({ page }) => {
+	await withPasskeys(page);
+	const email = `shopper-${Date.now()}@example.com`;
+	await page.goto('/account');
+	await page.getByLabel('No passkey on this device? Sign in by email').fill(email);
+	await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+	await expect(page.getByRole('status')).toContainText('Check your email');
+
+	const link = await emailedLink(page, email);
+	await page.goto(link);
+	await expect(page.getByRole('status')).toHaveText("You're signed in on this device.");
+	// The token is gone from the address bar once the page has read it.
+	expect(page.url()).not.toContain('token');
+
+	// Signed in by email, so a passkey is offered; adding one works.
+	await page.getByRole('button', { name: 'Add a passkey on this device' }).click();
+	await expect(page.getByText('Passkey added.')).toBeVisible();
+
+	// A link works once. (Opened from an email it loads a fresh page, as going elsewhere first does.)
+	await page.goto('/account');
+	await page.goto(link);
+	await expect(page.getByRole('alert')).toContainText('expired or was already used');
+});

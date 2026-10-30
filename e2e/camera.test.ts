@@ -208,6 +208,25 @@ test('cart rows show the photo; tap for the full photo, retake from the edit she
 	await expect(thumb.locator('img')).not.toHaveAttribute('src', firstThumb!);
 });
 
+test('reads the total of a receipt photographed on a phone', async ({ page }) => {
+	await startTrip(page);
+	await snapLabel(page);
+	const review = page.getByRole('dialog', { name: 'Check the label' });
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+
+	await menu(page, 'Finish trip');
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	// A Korean food shop receipt (fixtures/receipts/real/uk-korean-shop.png): "Total ( 7 items )"
+	// 7.84 £, paid by credit card.
+	await page
+		.getByRole('dialog', { name: 'Snap the receipt' })
+		.locator('input[type=file]')
+		.setInputFiles('fixtures/receipts/real/uk-korean-shop.png');
+	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('7.84', READ_TIMEOUT);
+});
+
 test('reads the receipt total and keeps the photos when it does not match', async ({ page }) => {
 	await startTrip(page);
 	await snapLabel(page);

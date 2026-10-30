@@ -62,10 +62,10 @@ function ean13Svg(code: string, module = 6, height = 220): string {
 
 /**
  * Builds the one-frame portrait video Chromium's fake camera loops (needs ffmpeg, rsvg-convert,
- * magick), at the 1440 × 2560 the app asks for so it is not rescaled. The label fills the app's
- * guide frame as it falls on a Pixel 7 screen (412 × 915 CSS px, video scaled by 915 / 2560): the
- * guide is 88% of the width and centred about 49% down, so a snapped photo is cropped to the label
- * as on a phone.
+ * magick), at the 1728 × 2304 (3:4) the app asks for so it is not rescaled. The label fills the
+ * app's guide frame as it falls on a Pixel 7 screen (412 × 915 CSS px, the whole frame shown
+ * scaled by 412 / 1728, with bars above and below): the guide is 88% of the width and centred
+ * about 49% down, so a snapped photo is cropped to the label as on a phone.
  */
 export default function globalSetup() {
 	const dir = 'e2e/.generated';
@@ -74,17 +74,17 @@ export default function globalSetup() {
 	execFileSync('rsvg-convert', ['-o', `${dir}/barcode.png`, `${dir}/barcode.svg`]);
 	execFileSync('magick', [
 		'-size',
-		'1440x2560',
+		'1728x2304',
 		'xc:#8a8f8c',
 		'(',
 		FAKE_CAMERA_LABEL,
 		'-resize',
-		'980x',
+		'1480x',
 		')',
 		'-gravity',
 		'center',
 		'-geometry',
-		'+0-30',
+		'+0-46',
 		'-composite',
 		'(',
 		`${dir}/barcode.png`,

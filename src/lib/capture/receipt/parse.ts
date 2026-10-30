@@ -16,7 +16,12 @@ export interface ReceiptReading {
 	confirmedByPayment: boolean;
 }
 
-/** A total read on its own must be this sure; one the payments confirm, much less. */
+/**
+ * A total read on its own must be this sure; one the payments confirm, much less. For a
+ * confirmed total the bar applies to the amount alone: the caption has to spell a total caption
+ * exactly, and a stray bracket or colon beside it ("Total(") is enough to drag its confidence
+ * down.
+ */
 export const MIN_CONFIDENCE = { alone: 0.9, confirmed: 0.5 } as const;
 
 const TOTAL_CAPTIONS = new Set([
@@ -273,6 +278,8 @@ function tenderOf(caption: string): Tender | undefined {
 interface Candidate {
 	minor: number;
 	confidence: number;
+	/** Of the amount alone. */
+	amountConfidence: number;
 }
 
 interface Judgement {
@@ -297,7 +304,7 @@ function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
 				amount.token.confidence,
 				...piece.captionTokens.map((t) => t.confidence)
 			);
-			totals.push({ minor: amount.minor, confidence });
+			totals.push({ minor: amount.minor, confidence, amountConfidence: amount.token.confidence });
 			return;
 		}
 		const kind = tenderOf(piece.caption);
@@ -317,9 +324,10 @@ function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
 	const confirmed = totals.filter((t) => hasPaid && t.minor === paid);
 	if (confirmed.length) {
 		const confidence = Math.max(...confirmed.map((t) => t.confidence));
+		const sure = Math.max(...confirmed.map((t) => t.amountConfidence));
 		return {
 			reading: {
-				totalMinor: confidence >= MIN_CONFIDENCE.confirmed ? confirmed[0].minor : undefined,
+				totalMinor: sure >= MIN_CONFIDENCE.confirmed ? confirmed[0].minor : undefined,
 				confidence,
 				confirmedByPayment: true
 			},

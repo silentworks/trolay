@@ -11,6 +11,11 @@
 		"paths": { "#lib/*": ["../src/lib/*"] },
 		"types": ["@cloudflare/workers-types", "node"]
 	},
-	// The two-phone sync test is checked here too: it needs the Worker and the app side by side.
-	"include": [".", "../src/lib/sync/integration.spec.ts"]
+	// The sync tests are checked here too: they need the Worker and the app side by side.
+	"include": [
+		".",
+		"../src/lib/sync/integration.spec.ts",
+		"../src/lib/sync/harness.ts",
+		"../src/lib/sync/harness.spec.ts"
+	]
 }

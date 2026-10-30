@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleApi } from '../../../worker/api.ts';
 import { createTestEnv, ORIGIN, testClient, type TestEnv } from '../../../worker/testing.ts';
 import { TrolleyDB } from '#lib/data/db.ts';
@@ -15,6 +15,7 @@ beforeAll(async () => {
 afterAll(() => server.dispose());
 
 let cookie: string;
+let userId: string;
 let clock: number;
 let n = 0;
 /** Ids are global on the server, so every test gets its own (in use they are random UUIDs). */
@@ -38,7 +39,9 @@ const toServer =
 
 beforeEach(async () => {
 	// A new account each time, so what one test leaves on the server cannot reach another.
-	cookie = (await testClient(server.env).register()).done.cookie!;
+	const account = (await testClient(server.env).register()).done;
+	cookie = account.cookie!;
+	userId = account.body.user.id;
 	clock = 1_790_000_000_000;
 	ids = { store: `store-${n}`, trip: `trip-${n}`, item: `item-${n}` };
 	a = new TrolleyDB(`a-${++n}`);
@@ -374,5 +377,73 @@ describe('being signed out', () => {
 		);
 		await expect(out.run()).rejects.toThrow(SignedOutError);
 		expect(await out.pendingCount()).toBe(3);
+	});
+});
+
+describe('signing in on a phone that already has data', () => {
+	it('uploads a big history in batches, and the count still to send falls as it goes', async () => {
+		await a.stores.add(store());
+		await a.trips.add(trip());
+		for (let i = 0; i < 128; i++) await a.items.add(item(ids.trip, `big-${n}-${i}`));
+		const left: number[] = [];
+		const watched = new SyncCore(a, async (path, init) => {
+			if (path === '/api/sync/push') left.push(await watched.pendingCount());
+			return toServer(() => cookie)(path, init);
+		});
+		await watched.run();
+		// 130 records, 50 at a time: 130, then 80, then 30 still to send at each request.
+		expect(left).toEqual([130, 80, 30]);
+		expect(await watched.pendingCount()).toBe(0);
+		await phoneB.run();
+		expect(await b.items.count()).toBe(128);
+	});
+
+	it('does not send everything again when the same account signs in again', async () => {
+		await aTripOn(a);
+		await phoneA.adopt(userId);
+		await phoneA.run();
+		await phoneA.adopt(userId);
+		expect(await phoneA.pendingCount()).toBe(0);
+	});
+
+	it('gives a different account that signs in there the data the first never had, and keeps the rest local', async () => {
+		await aTripOn(a);
+		await phoneA.adopt(userId);
+		await phoneA.run();
+		// Signed out, the shopper makes a new store; then someone else signs in on this phone.
+		await a.stores.add(store(`new-store-${n}`));
+		const other = (await testClient(server.env).register()).done;
+		const theirs = new TrolleyDB(`theirs-${n}`);
+		await theirs.stores.add(store(`their-store-${n}`));
+		await new SyncCore(
+			theirs,
+			toServer(() => other.cookie!)
+		).run();
+
+		// What is already the first account's cannot be claimed by another: it is refused, and stays
+		// on the phone. The new store is the second account's to have.
+		const refused = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const core = new SyncCore(
+			a,
+			toServer(() => other.cookie!)
+		);
+		await core.adopt(other.body.user.id);
+		expect(await core.pendingCount()).toBe(4);
+		await core.run();
+		expect(await core.pendingCount()).toBe(0);
+		expect(refused).toHaveBeenCalled();
+		refused.mockRestore();
+
+		const ids_ = async (d: Device) => (await d.stores.toArray()).map((x) => x.id).sort();
+		expect(await ids_(a)).toEqual([`new-store-${n}`, ids.store, `their-store-${n}`].sort());
+		const second = new TrolleyDB(`second-${n}`);
+		await new SyncCore(
+			second,
+			toServer(() => other.cookie!)
+		).run();
+		expect(await ids_(second)).toEqual([`new-store-${n}`, `their-store-${n}`].sort());
+		// The first account has what it always had, and none of the new store.
+		await phoneB.run();
+		expect(await ids_(b)).toEqual([ids.store]);
 	});
 });

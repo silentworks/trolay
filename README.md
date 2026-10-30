@@ -97,7 +97,9 @@ Work is tracked in the Linear project **Trolay**.
   - _Known limits:_ clocks on your devices are trusted (to a day); if two phones each start a trip
     while apart, both are open after syncing and the app shows one; a restore from a backup
     merges with, and does not replace, what is already in your account; signing out leaves the
-    data on the phone, and a different account signing in there would receive it.
+    data on the phone. A different account signing in there gets the data that was never sent
+    to the first one (a new store made while signed out), and the rest, which the first account
+    owns, stays on the phone only: a record belongs to one account.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

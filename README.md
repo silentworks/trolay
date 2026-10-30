@@ -107,9 +107,9 @@ The app is served as Workers static assets, configured in `wrangler.jsonc`. The 
    - Non-production branch deploy command: `pnpm exec wrangler preview` (needs the `previews`
      block in `wrangler.jsonc`)
    - The Worker's name must match `name` in `wrangler.jsonc` (`trolay`).
-2. Create the database once: `pnpm exec wrangler d1 create trolay`, then add the `database_id`
-   it prints to the `d1_databases` entry in `wrangler.jsonc` and commit it. (Local development
-   does not need this.)
+2. The sync database was created once with `pnpm exec wrangler d1 create trolay`, and its
+   `database_id` is in `wrangler.jsonc` under the binding `DB`, the name the Worker reads. A
+   different Cloudflare account needs its own: create one and replace the id.
 3. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
    HTTPS is required for the camera and the service worker.
 

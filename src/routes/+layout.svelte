@@ -1,9 +1,11 @@
 <script lang="ts">
 	import '../app.css';
+	import { account } from '#lib/auth/account.svelte.ts';
 	import { requestPersistentStorage } from '#lib/data/db.ts';
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
+	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -20,6 +22,26 @@
 		retry();
 		window.addEventListener('online', retry);
 		return () => window.removeEventListener('online', retry);
+	});
+
+	// Syncing is optional: it runs only on a phone that has signed in. Who is signed in is asked
+	// at the start, and again when the signal returns if there was none to ask. The browser's
+	// "online" event is not always sent, so it is also tried now and then.
+	$effect(() => {
+		void account.restore();
+		const again = () => account.status === 'unknown' && void account.restore();
+		window.addEventListener('online', again);
+		const timer = setInterval(again, 15_000);
+		return () => {
+			window.removeEventListener('online', again);
+			clearInterval(timer);
+		};
+	});
+
+	$effect(() => syncEngine.watch());
+
+	$effect(() => {
+		if (account.status === 'signedIn') return syncEngine.start();
 	});
 </script>
 

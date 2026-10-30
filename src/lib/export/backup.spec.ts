@@ -16,12 +16,16 @@ const milk = { description: 'Milk 2L', unitPriceMinor: 145, priceIncludesTax: tr
 /** Every byte a photo holds, so a restored photo can be compared with the original. */
 const bytes = async (blob: Blob) => [...new Uint8Array(await blob.arrayBuffer())];
 
+/** The data without the bookkeeping of what still has to sync, which a restore starts afresh. */
+const dataOnly = <T extends { pending?: unknown; pendingAt?: unknown }>(records: T[]) =>
+	records.map(({ pending: _pending, pendingAt: _pendingAt, ...data }) => data);
+
 async function snapshot() {
 	const photos = await db.photos.toArray();
 	return {
-		stores: await db.stores.toArray(),
-		trips: await db.trips.toArray(),
-		items: await db.items.toArray(),
+		stores: dataOnly(await db.stores.toArray()),
+		trips: dataOnly(await db.trips.toArray()),
+		items: dataOnly(await db.items.toArray()),
 		photos: await Promise.all(
 			photos.map(async ({ blob, thumbBlob, ...rest }) => ({
 				...rest,
@@ -75,6 +79,22 @@ describe('JSON backup', () => {
 
 		await restoreBackup(readBackup(file));
 		expect(await snapshot()).toEqual(before);
+	});
+
+	it('queues what it restores to sync, and leaves that bookkeeping out of the file', async () => {
+		await fillDatabase();
+		const backup = await createBackup();
+		for (const record of [...backup.stores, ...backup.trips, ...backup.items]) {
+			expect(record).not.toHaveProperty('pending');
+			expect(record).not.toHaveProperty('pendingAt');
+		}
+		await db.stores.toCollection().modify((store) => {
+			delete store.pending;
+			delete store.pendingAt;
+		});
+		await restoreBackup(backup);
+		expect((await db.stores.toArray()).every((store) => store.pendingAt !== undefined)).toBe(true);
+		expect((await db.items.toArray()).every((item) => item.pendingAt !== undefined)).toBe(true);
 	});
 
 	it('replaces what is on the device rather than merging', async () => {

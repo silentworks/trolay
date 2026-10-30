@@ -13,7 +13,7 @@ import { base64url } from './auth/tokens.ts';
 const encoder = new TextEncoder();
 const concat = (...parts: Uint8Array[]) => Uint8Array.from(parts.flatMap((part) => [...part]));
 const sha256 = async (bytes: Uint8Array) =>
-	new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+	new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes)));
 const u32 = (n: number) => new Uint8Array([n >>> 24, n >>> 16, n >>> 8, n].map((v) => v & 255));
 
 function fromBase64url(text: string): Uint8Array<ArrayBuffer> {

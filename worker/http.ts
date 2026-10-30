@@ -10,18 +10,21 @@ export function error(status: number, code: string, headers: HeadersInit = {}): 
 	return json({ error: code }, status, headers);
 }
 
-/** The largest request body the API reads. Everything it takes is small JSON. */
+/** The largest request body the API reads by default. Most of what it takes is tiny JSON. */
 const MAX_BODY = 64 * 1024;
 
 export class BadRequest extends Error {}
 
 /** A JSON object body; anything else is a 400. */
-export async function readJson(request: Request): Promise<Record<string, unknown>> {
+export async function readJson(
+	request: Request,
+	maxBytes = MAX_BODY
+): Promise<Record<string, unknown>> {
 	if (!request.headers.get('Content-Type')?.startsWith('application/json')) {
 		throw new BadRequest('expected_json');
 	}
 	const text = await request.text();
-	if (text.length > MAX_BODY) throw new BadRequest('too_large');
+	if (text.length > maxBytes) throw new BadRequest('too_large');
 	let body: unknown;
 	try {
 		body = JSON.parse(text);

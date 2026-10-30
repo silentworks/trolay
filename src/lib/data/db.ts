@@ -1,4 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { installPendingHooks, type Pending } from '#lib/sync/pending.ts';
+import { SYNC_FIELDS, SYNC_TABLES } from '#lib/sync/schema.ts';
 
 // Every record that will sync (phase 4) carries this metadata from day one, so adding sync
 // later needs no migration. Deletes are tombstones: `deletedAt` is set instead of removing
@@ -9,7 +11,7 @@ export interface SyncMeta {
 	deletedAt?: number;
 }
 
-export interface Store extends SyncMeta {
+export interface Store extends SyncMeta, Pending {
 	id: string;
 	ownerId?: string;
 	name: string;
@@ -23,7 +25,7 @@ export interface Store extends SyncMeta {
 
 export type TripStatus = 'open' | 'finished';
 
-export interface Trip extends SyncMeta {
+export interface Trip extends SyncMeta, Pending {
 	id: string;
 	ownerId?: string;
 	storeId: string;
@@ -50,7 +52,7 @@ export interface ExtractedFields {
 	confidence: number;
 }
 
-export interface Item extends SyncMeta {
+export interface Item extends SyncMeta, Pending {
 	id: string;
 	tripId: string;
 	description: string;
@@ -87,6 +89,12 @@ export interface PendingLookup {
 	queuedAt: number;
 }
 
+/** Small facts about syncing, by name (see sync/core.ts). */
+export interface SyncState {
+	key: string;
+	value: unknown;
+}
+
 export class TrolleyDB extends Dexie {
 	stores!: EntityTable<Store, 'id'>;
 	trips!: EntityTable<Trip, 'id'>;
@@ -94,6 +102,7 @@ export class TrolleyDB extends Dexie {
 	photos!: EntityTable<Photo, 'id'>;
 	productCache!: EntityTable<ProductCacheEntry, 'barcode'>;
 	pendingLookups!: EntityTable<PendingLookup, 'barcode'>;
+	syncState!: EntityTable<SyncState, 'key'>;
 
 	constructor(name = 'trolay') {
 		super(name);
@@ -105,6 +114,33 @@ export class TrolleyDB extends Dexie {
 			productCache: 'barcode'
 		});
 		this.version(2).stores({ pendingLookups: 'barcode' });
+		// Records with changes still to send are found through pendingAt (see sync/pending.ts);
+		// syncState holds where the last pull got to.
+		this.version(3)
+			.stores({
+				stores: 'id, lastUsedAt, pendingAt',
+				trips: 'id, status, storeId, startedAt, pendingAt',
+				items: 'id, tripId, [tripId+createdAt], barcode, pendingAt',
+				syncState: 'key'
+			})
+			.upgrade(async (transaction) => {
+				// Everything made before syncing existed is waiting to be sent, so signing in uploads it.
+				for (const name of SYNC_TABLES) {
+					await transaction
+						.table(name)
+						.toCollection()
+						.modify((record) => {
+							const at = record.updatedAt ?? Date.now();
+							record.pending = Object.fromEntries(
+								Object.keys(SYNC_FIELDS[name])
+									.filter((field) => record[field] !== undefined)
+									.map((field) => [field, at])
+							);
+							record.pendingAt = at;
+						});
+				}
+			});
+		installPendingHooks(this);
 	}
 }
 

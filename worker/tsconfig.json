@@ -1,14 +1,16 @@
 {
 	"compilerOptions": {
 		"target": "ES2023",
-		"lib": ["ES2023"],
+		"lib": ["ES2023", "DOM"],
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
 		"noEmit": true,
 		"strict": true,
 		"skipLibCheck": true,
+		"paths": { "#lib/*": ["../src/lib/*"] },
 		"types": ["@cloudflare/workers-types", "node"]
 	},
-	"include": ["."]
+	// The two-phone sync test is checked here too: it needs the Worker and the app side by side.
+	"include": [".", "../src/lib/sync/integration.spec.ts"]
 }

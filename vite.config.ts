@@ -35,7 +35,16 @@ export default defineConfig({
 	worker: { format: 'es' },
 	// In development the API runs separately (`pnpm dev:api`) and the app reaches it on its own
 	// origin, as in production, so neither needs CORS.
-	server: { proxy: { '/api': 'http://localhost:8787' } },
+	server: {
+		proxy: {
+			'/api': {
+				target: `http://localhost:${process.env.API_PORT ?? 8787}`,
+				// Keep the browser's own Host, so the API sees the origin the browser used (passkeys
+				// are bound to it).
+				changeOrigin: false
+			}
+		}
+	},
 	plugins: [
 		crossOriginIsolation(),
 		sveltekit({

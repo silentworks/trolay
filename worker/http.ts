@@ -9,3 +9,27 @@ export function json(body: unknown, status = 200, headers: HeadersInit = {}): Re
 export function error(status: number, code: string, headers: HeadersInit = {}): Response {
 	return json({ error: code }, status, headers);
 }
+
+/** The largest request body the API reads. Everything it takes is small JSON. */
+const MAX_BODY = 64 * 1024;
+
+export class BadRequest extends Error {}
+
+/** A JSON object body; anything else is a 400. */
+export async function readJson(request: Request): Promise<Record<string, unknown>> {
+	if (!request.headers.get('Content-Type')?.startsWith('application/json')) {
+		throw new BadRequest('expected_json');
+	}
+	const text = await request.text();
+	if (text.length > MAX_BODY) throw new BadRequest('too_large');
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		throw new BadRequest('invalid_json');
+	}
+	if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+		throw new BadRequest('expected_object');
+	}
+	return body as Record<string, unknown>;
+}

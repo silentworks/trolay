@@ -5,10 +5,14 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:api": "node scripts/dev-api.js",
+		"dev:all": "node scripts/dev-all.js",
+		"db:migrate": "wrangler d1 migrations apply DB --local",
+		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"build": "node scripts/copy-ocr-assets.js && vite build",
 		"preview": "vite preview",
 		"prepare": "node scripts/copy-ocr-assets.js && (svelte-kit sync || echo '')",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p worker/tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
@@ -22,6 +26,7 @@
 		"fixtures:receipts": "node scripts/make-receipt-photos.ts"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20261030.1",
 		"@eslint/js": "^10.0.1",
 		"@playwright/test": "^1.64.1",
 		"@sveltejs/adapter-static": "^4.0.0",

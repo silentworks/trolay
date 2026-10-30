@@ -33,6 +33,9 @@ export default defineConfig({
 	// and can then start its own thread workers (the bundled build cannot inside our worker).
 	resolve: { conditions: [...defaultClientConditions, 'onnxruntime-web-use-extern-wasm'] },
 	worker: { format: 'es' },
+	// In development the API runs separately (`pnpm dev:api`) and the app reaches it on its own
+	// origin, as in production, so neither needs CORS.
+	server: { proxy: { '/api': 'http://localhost:8787' } },
 	plugins: [
 		crossOriginIsolation(),
 		sveltekit({
@@ -51,6 +54,10 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
+			{
+				// The Worker's tests run against a real local D1 (worker/testing.ts).
+				test: { name: 'worker', environment: 'node', include: ['worker/**/*.spec.ts'] }
+			},
 			{
 				extends: './vite.config.ts',
 				test: {

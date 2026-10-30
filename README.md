@@ -40,6 +40,12 @@ Work is tracked in the Linear project **Trolay**.
   plausible way and the arithmetic decides. Without that confirmation a total is only filled
   when it is read with high confidence and every pairing agrees. The shopper always sees it
   before finishing. `pnpm test:receipts` measures it (`fixtures/receipts/README.md`).
+- **Sync API: one Cloudflare Worker on `/api`, with a D1 (SQLite) database** (`worker/`,
+  `migrations/`). The app and API share one origin, so there is no CORS. Only `/api/*` runs the
+  Worker (`run_worker_first` in `wrangler.jsonc`); the app itself is still served straight from
+  static assets and works without it. The tables (`users`, `stores`, `trips`, `trip_members`,
+  `items`) carry the same `updated_at`, `updated_by` and `deleted_at` columns as the app's local
+  records. The app stays fully usable without an account; sync only adds to it.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.
@@ -56,8 +62,14 @@ Requires Node 22+ and pnpm 10 (pinned in `package.json` under `packageManager`).
 
 ```sh
 pnpm install
-pnpm dev            # http://localhost:5173
+pnpm dev            # the app alone, http://localhost:5173
+pnpm dev:all        # the app and the API together; the app reaches /api through a proxy
+pnpm dev:api        # the API alone, http://localhost:8787 (creates its local database)
+pnpm db:migrate     # apply new migrations to the local database
 ```
+
+The local database lives in `.wrangler/` (ignored by git). To add a table or column, add the next
+numbered file to `migrations/`; never edit one that has been deployed.
 
 Requires `rsvg-convert` and ImageMagick to generate the label and receipt fixtures
 (`pnpm fixtures:labels`, `pnpm fixtures:receipts`) and to run `pnpm test:labels` and
@@ -70,9 +82,9 @@ Imports from `src/lib` use the `#lib/*` alias with the file extension, e.g.
 ## Test
 
 ```sh
-pnpm check          # svelte-check (types and a11y)
+pnpm check          # svelte-check (types and a11y) and the Worker's types
 pnpm lint           # prettier + eslint
-pnpm test           # unit tests: VAT maths, data layer (fake-indexeddb)
+pnpm test           # unit tests: VAT maths, data layer (fake-indexeddb), the Worker (a real local D1)
 pnpm test:e2e       # Playwright against a production build, including offline and a fake camera
 pnpm fixtures:labels  # generate the dev/test label photos (once; not committed)
 pnpm test:labels    # label reader accuracy over fixtures/labels (see its README)
@@ -86,19 +98,24 @@ First run of the end-to-end tests: `pnpm exec playwright install chromium`.
 ## Deploy (Cloudflare Workers)
 
 The app is served as Workers static assets, configured in `wrangler.jsonc`. The build output in
-`build/` is uploaded as assets; there is no Worker script yet.
+`build/` is uploaded as assets, and the Worker in `worker/` answers `/api/*`.
 
 1. Create a Worker connected to this repository (Workers Builds) with:
    - Build command: `pnpm build`
-   - Deploy command: `pnpm exec wrangler deploy`
+   - Deploy command: `pnpm db:migrate:remote && pnpm exec wrangler deploy` (migrations are
+     applied before the new code goes live)
    - Non-production branch deploy command: `pnpm exec wrangler preview` (needs the `previews`
      block in `wrangler.jsonc`)
    - The Worker's name must match `name` in `wrangler.jsonc` (`trolay`).
-2. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
+2. Create the database once: `pnpm exec wrangler d1 create trolay`, then add the `database_id`
+   it prints to the `d1_databases` entry in `wrangler.jsonc` and commit it. (Local development
+   does not need this.)
+3. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
    HTTPS is required for the camera and the service worker.
 
-To deploy by hand: `pnpm build && pnpm exec wrangler deploy` (after `pnpm exec wrangler login`).
+To deploy by hand: `pnpm build && pnpm db:migrate:remote && pnpm exec wrangler deploy` (after `pnpm exec wrangler login`).
 
 `not_found_handling: "single-page-application"` serves `index.html` for any path without a file
 of its own, which is what the SPA needs. `static/_headers` stops browsers caching the service
-worker and app shell, so new versions are picked up. `/api` is reserved for the phase 4 sync API.
+worker and app shell, so new versions are picked up. `/api/*` runs the Worker instead of looking
+for a file.

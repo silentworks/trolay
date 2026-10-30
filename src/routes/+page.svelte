@@ -12,6 +12,10 @@
 			? 'Trip saved. Its photos are kept because the receipt did not match.'
 			: 'Trip saved.';
 	}
+
+	function left() {
+		notice = 'You left the store. Nothing was saved.';
+	}
 </script>
 
 <svelte:head>
@@ -21,7 +25,7 @@
 {#if openTrip.loaded}
 	{#if openTrip.current}
 		{#key openTrip.current.id}
-			<Cart tripId={openTrip.current.id} onfinished={finished} />
+			<Cart tripId={openTrip.current.id} onfinished={finished} onleft={left} />
 		{/key}
 	{:else}
 		<StartTrip {notice} />

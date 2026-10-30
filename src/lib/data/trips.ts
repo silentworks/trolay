@@ -136,6 +136,22 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 	});
 }
 
+/**
+ * Walks out of the store with nothing bought: an open trip with no items is deleted rather
+ * than saved to history, so there is no empty trip to clutter it.
+ */
+export async function leaveTrip(tripId: string): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, async () => {
+		const trip = await db.trips.get(tripId);
+		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
+		if ((await liveItems(tripId)).length > 0) {
+			throw new Error('Finish the trip instead, as there are items in the cart.');
+		}
+		const now = Date.now();
+		await db.trips.update(tripId, { deletedAt: now, updatedAt: now });
+	});
+}
+
 /** Deletes the photos a finished trip kept as receipt evidence, once they are no longer needed. */
 export async function deleteTripPhotos(tripId: string): Promise<void> {
 	await db.transaction('rw', db.trips, db.items, db.photos, async () => {

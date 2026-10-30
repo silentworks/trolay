@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** Picks an entry from the shopping screen's ⋮ menu. */
-async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
+async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip' | 'Leave store') {
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();
 }
@@ -129,10 +129,22 @@ test('works offline after the first visit', async ({ page, context }) => {
 	await context.setOffline(false);
 });
 
+test('leaving the store with an empty cart discards the trip', async ({ page }) => {
+	await startTripAtNewStore(page, 'Lidl');
+	await menu(page, 'Leave store');
+	await expect(page.getByText('You left the store. Nothing was saved.')).toBeVisible();
+
+	await page.goto('/history');
+	await expect(page.getByText('Lidl')).toHaveCount(0);
+});
+
 test('finishing a trip checks the receipt and starts afresh', async ({ page }) => {
 	await startTripAtNewStore(page, 'Asda');
-	await menu(page, 'Finish trip');
-	await expect(page.getByRole('status')).toContainText('Add an item before finishing');
+	// With nothing in the cart the menu offers to leave, not to finish.
+	await page.getByRole('button', { name: 'Menu' }).click();
+	const nav = page.getByRole('navigation', { name: 'Menu' });
+	await expect(nav.getByText('Finish trip')).toHaveCount(0);
+	await page.keyboard.press('Escape');
 
 	await addItem(page, 'Milk 2L', '1.45', 2);
 	await addItem(page, 'Bread', '0.99');

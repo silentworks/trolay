@@ -46,6 +46,16 @@ Work is tracked in the Linear project **Trolay**.
   static assets and works without it. The tables (`users`, `stores`, `trips`, `trip_members`,
   `items`) carry the same `updated_at`, `updated_by` and `deleted_at` columns as the app's local
   records. The app stays fully usable without an account; sync only adds to it.
+- **Sign-in: passkeys only, no passwords** (`worker/auth/`, `src/lib/auth/`, SimpleWebAuthn).
+  Signed out you can create an account or sign in; signed in you can add a passkey on another
+  device. A passkey belongs to the site it was made on, which the Worker takes from the request
+  (the app and API share an origin), so it works on `localhost` in development and on your
+  domain in production, but a passkey made in one place is not valid in the other. The session is
+  an `HttpOnly`, `Secure`, `SameSite=Lax` cookie (`__Host-session` over HTTPS); only a hash of its
+  token is stored, it lasts 30 days, and signing out ends it on that device only. Each ceremony's
+  challenge is single-use and expires in 5 minutes. State-changing requests must be JSON and
+  must not come from another origin. Account screen: `/account`. The app is fully usable
+  without an account.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

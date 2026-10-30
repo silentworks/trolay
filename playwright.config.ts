@@ -4,11 +4,22 @@ import { FAKE_CAMERA_VIDEO } from './e2e/global-setup';
 export default defineConfig({
 	testDir: 'e2e',
 	globalSetup: './e2e/global-setup.ts',
-	webServer: {
-		command: 'pnpm build && pnpm preview --port 4173 --strictPort',
-		port: 4173,
-		reuseExistingServer: !process.env.CI
-	},
+	webServer: [
+		{
+			// vite proxies /api to the API below, as in production where they share an origin.
+			command: 'pnpm build && pnpm preview --port 4173 --strictPort',
+			port: 4173,
+			env: { API_PORT: '8788' },
+			reuseExistingServer: !process.env.CI
+		},
+		{
+			// Its own port and a database that starts empty each run.
+			command: 'node scripts/dev-api.js',
+			url: 'http://localhost:8788/api/health',
+			env: { API_PORT: '8788', API_PERSIST: '.wrangler/e2e', API_FRESH: '1' },
+			reuseExistingServer: !process.env.CI
+		}
+	],
 	use: {
 		baseURL: 'http://localhost:4173',
 		...devices['Pixel 7']

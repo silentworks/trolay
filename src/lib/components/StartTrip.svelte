@@ -54,7 +54,8 @@
 		title="Trolay"
 		menu={[
 			{ label: 'History', href: resolve('/history') },
-			{ label: 'Stores', href: resolve('/stores') }
+			{ label: 'Stores', href: resolve('/stores') },
+			{ label: 'Account', href: resolve('/account') }
 		]}
 	/>
 	<h2 class="question">Where are you shopping?</h2>

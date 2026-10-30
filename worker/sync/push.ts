@@ -120,8 +120,6 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 				times[field] = incoming.at;
 			}
 		}
-		if (existing && !accepted.length) return result('ok');
-
 		if (!existing) {
 			const missing = Object.entries(specs).filter(
 				([field, spec]) => spec.required && resulting[column(field)] == null
@@ -130,6 +128,9 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 		}
 		const reason = await allowed(env, userId, table, existing, resulting);
 		if (reason) return result('rejected', reason);
+		// Nothing here is newer than what the row holds. Asked after permission, so another
+		// person's record is refused the same whether or not the change would have won.
+		if (existing && !accepted.length) return result('ok');
 
 		const now = Date.now();
 		const stamp = Math.max(...accepted.map((field) => change.fields[field].at));

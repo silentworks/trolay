@@ -275,6 +275,18 @@ describe('privacy', () => {
 		expect(bobSees).not.toContain(mine.item);
 	});
 
+	it("refuses another person's record even when the change is stale and would change nothing", async () => {
+		const mine = await aSmallTrip(alice);
+		const stale = await push(bob, [
+			change('stores', mine.store, storeFields, T),
+			change('items', mine.item, itemFields(mine.trip), T)
+		]);
+		expect(stale.body.results.map((r: PushResult) => [r.status, r.reason])).toEqual([
+			['rejected', 'forbidden'],
+			['rejected', 'forbidden']
+		]);
+	});
+
 	it("refuses to change, or build on, another person's records", async () => {
 		const mine = await aSmallTrip(alice);
 		const attempts = await push(bob, [

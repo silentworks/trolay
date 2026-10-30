@@ -44,7 +44,14 @@ export function installPendingHooks(db: Dexie): void {
 			const changes = modifications as Record<string, unknown>;
 			const changed = Object.keys(changes).filter((field) => field in fields);
 			if (!changed.length) return;
-			const at = typeof changes.updatedAt === 'number' ? changes.updatedAt : Date.now();
+			// The record's new updatedAt. Dexie leaves it out of the changes when it is unchanged (a
+			// write in the same millisecond as the last), and then it is the record's own.
+			const at =
+				typeof changes.updatedAt === 'number'
+					? changes.updatedAt
+					: typeof (obj as { updatedAt?: unknown }).updatedAt === 'number'
+						? (obj as { updatedAt: number }).updatedAt
+						: Date.now();
 			return {
 				pending: { ...obj.pending, ...Object.fromEntries(changed.map((field) => [field, at])) },
 				pendingAt: at

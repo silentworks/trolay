@@ -18,7 +18,13 @@
 		type ItemInput
 	} from '#lib/data/items.ts';
 	import { getStore, listStores } from '#lib/data/stores.ts';
-	import { changeTripStore, finishTrip, setReceiptTotal, setTripBudget } from '#lib/data/trips.ts';
+	import {
+		changeTripStore,
+		finishTrip,
+		leaveTrip,
+		setReceiptTotal,
+		setTripBudget
+	} from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
@@ -37,9 +43,11 @@
 		tripId: string;
 		/** The trip has moved to History; this cart is about to close. */
 		onfinished?: (photosKept: boolean) => void;
+		/** The shopper left with an empty cart; the trip is gone and this cart is about to close. */
+		onleft?: () => void;
 	}
 
-	let { tripId, onfinished }: Props = $props();
+	let { tripId, onfinished, onleft }: Props = $props();
 
 	// One live query for everything the cart shows; it re-runs when the trip, its store or
 	// its items change.
@@ -150,8 +158,14 @@
 	}
 
 	function tapFinish() {
-		if (items.length === 0) show('Add an item before finishing the trip.');
-		else sheet = { kind: 'finish' };
+		sheet = { kind: 'finish' };
+	}
+
+	async function leave() {
+		await run(async () => {
+			await leaveTrip(tripId);
+			onleft?.();
+		});
 	}
 
 	async function finish() {
@@ -176,7 +190,9 @@
 			menu={[
 				{ label: 'History', href: resolve('/history') },
 				{ label: 'Stores', href: resolve('/stores') },
-				{ label: 'Finish trip', onclick: tapFinish, primary: true }
+				items.length
+					? { label: 'Finish trip', onclick: tapFinish, primary: true }
+					: { label: 'Leave store', onclick: leave, primary: true }
 			]}
 		/>
 

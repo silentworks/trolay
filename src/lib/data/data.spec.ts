@@ -17,6 +17,7 @@ import {
 	changeTripStore,
 	deleteTripPhotos,
 	finishTrip,
+	leaveTrip,
 	getOpenTrip,
 	getTrip,
 	listFinishedTrips,
@@ -99,6 +100,29 @@ describe('trips', () => {
 
 		await addItem(trip.id, milk);
 		await expect(changeTripStore(trip.id, tesco.id)).rejects.toThrow('cart is empty');
+	});
+
+	it('lets the shopper leave with an empty cart, leaving no trip behind', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		const item = await addItem(trip.id, milk);
+		await deleteItem(item.id);
+
+		await leaveTrip(trip.id);
+
+		expect(await getOpenTrip()).toBeUndefined();
+		expect(await listFinishedTrips()).toEqual([]);
+		await expect(startTrip(store.id)).resolves.toBeDefined();
+	});
+
+	it('refuses to leave while the cart has items, or when the trip is not open', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		await addItem(trip.id, milk);
+		await expect(leaveTrip(trip.id)).rejects.toThrow('Finish the trip instead');
+
+		await finishTrip(trip.id);
+		await expect(leaveTrip(trip.id)).rejects.toThrow('not open');
 	});
 
 	it('allows a store change again once every item is deleted', async () => {

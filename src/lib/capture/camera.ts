@@ -5,8 +5,9 @@ export function canUseCamera(): boolean {
 
 /**
  * The rear camera, asking for frames in the screen's orientation (portrait when the phone is
- * upright) at up to 1440 × 2560: a mismatched request makes some browsers crop or stretch the
- * frame, and the label in the guide should keep every pixel the camera has.
+ * upright), 4:3 like the sensor, at about 1728 × 2304. A taller request (9:16) makes the browser
+ * crop the sides off the sensor's frame, which reads as a zoom: the shopper has to step back to
+ * fit a receipt in. 4:3 keeps the camera's whole view.
  */
 export function openRearCamera(): Promise<MediaStream> {
 	const portrait = window.innerHeight >= window.innerWidth;
@@ -14,8 +15,9 @@ export function openRearCamera(): Promise<MediaStream> {
 		audio: false,
 		video: {
 			facingMode: { ideal: 'environment' },
-			width: { ideal: portrait ? 1440 : 2560 },
-			height: { ideal: portrait ? 2560 : 1440 }
+			aspectRatio: { ideal: portrait ? 3 / 4 : 4 / 3 },
+			width: { ideal: portrait ? 1728 : 2304 },
+			height: { ideal: portrait ? 2304 : 1728 }
 		}
 	});
 }
@@ -34,12 +36,12 @@ export interface FrameCrop {
 /**
  * The part of the video frame under an element drawn over it (the label guide), in video
  * pixels, grown by `margin` of the guide's size on each side and kept inside the frame. The video
- * is shown with object-fit: cover, so it is scaled up and centred.
+ * is shown with object-fit: contain, so the whole frame is visible, scaled to fit and centred.
  */
 export function cropUnder(video: HTMLVideoElement, guide: Element, margin = 0.15): FrameCrop {
 	const view = video.getBoundingClientRect();
 	const box = guide.getBoundingClientRect();
-	const scale = Math.max(view.width / video.videoWidth, view.height / video.videoHeight);
+	const scale = Math.min(view.width / video.videoWidth, view.height / video.videoHeight);
 	const left = view.left + (view.width - video.videoWidth * scale) / 2;
 	const top = view.top + (view.height - video.videoHeight * scale) / 2;
 	const x0 = Math.max(0, (box.left - box.width * margin - left) / scale);
@@ -54,17 +56,35 @@ export function cropUnder(video: HTMLVideoElement, guide: Element, margin = 0.15
 	};
 }
 
-/** The current video frame (or the cropped part of it) at full resolution, as a JPEG. */
+/**
+ * The longest edge of a captured photo. The readers were tuned on photos about this big (the
+ * guide's part of a 1440-wide frame); a sharper frame reads no better and some readings, such as
+ * a big price, get less certain, so a larger crop is scaled down to it.
+ */
+export const CAPTURE_MAX_EDGE = 1320;
+
+/** The current video frame (or the cropped part of it), as a JPEG at most CAPTURE_MAX_EDGE across. */
 export function grabFrame(video: HTMLVideoElement, crop?: FrameCrop): Promise<Blob> {
 	const area = crop ?? { x: 0, y: 0, width: video.videoWidth, height: video.videoHeight };
+	const shrink = Math.min(1, CAPTURE_MAX_EDGE / Math.max(area.width, area.height));
 	const canvas = document.createElement('canvas');
-	canvas.width = area.width;
-	canvas.height = area.height;
+	canvas.width = Math.round(area.width * shrink);
+	canvas.height = Math.round(area.height * shrink);
 	const context = canvas.getContext('2d');
 	if (!context || !canvas.width || !canvas.height) {
 		return Promise.reject(new Error('The camera is not ready yet.'));
 	}
-	context.drawImage(video, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height);
+	context.drawImage(
+		video,
+		area.x,
+		area.y,
+		area.width,
+		area.height,
+		0,
+		0,
+		canvas.width,
+		canvas.height
+	);
 	return new Promise((resolve, reject) =>
 		canvas.toBlob(
 			(blob) => (blob ? resolve(blob) : reject(new Error('Could not take the photo.'))),

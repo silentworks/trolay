@@ -239,7 +239,8 @@
 		inset: 0;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		/* The whole frame, so what the camera sees is what the shopper sees. */
+		object-fit: contain;
 	}
 
 	video.hidden {

@@ -16,3 +16,6 @@ Crops of CC BY-SA images are shared under the same licence.
 - `au-woolworths-subtotal.jpg` shows only a SUBTOTAL, so the right answer is to find no total.
 - The two Dutch receipts word their totals in Dutch ("Te betalen", "Bedrag"), which the reader
   does not look for: they show that unknown captions are left alone rather than misread.
+- `uk-korean-shop.png` is a photo of the shop's own receipt, taken for this project and added
+  because the reader failed on it: the total reads "Total ( 7 items )", amounts end in "£" and
+  the amount sits below its caption.

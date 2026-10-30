@@ -1,7 +1,20 @@
 {
-	"uk-tesco-1994.jpg": { "totalMinor": 671 },
-	"pg-cash-sale.jpg": { "totalMinor": 1950 },
-	"au-woolworths-subtotal.jpg": { "totalMinor": null },
-	"nl-lidl.jpg": { "totalMinor": 848 },
-	"nl-aldi.jpg": { "totalMinor": 500 }
+	"uk-tesco-1994.jpg": {
+		"totalMinor": 671
+	},
+	"pg-cash-sale.jpg": {
+		"totalMinor": 1950
+	},
+	"au-woolworths-subtotal.jpg": {
+		"totalMinor": null
+	},
+	"nl-lidl.jpg": {
+		"totalMinor": 848
+	},
+	"nl-aldi.jpg": {
+		"totalMinor": 500
+	},
+	"uk-korean-shop.png": {
+		"totalMinor": 784
+	}
 }

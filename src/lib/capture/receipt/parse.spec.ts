@@ -237,4 +237,146 @@ describe('parseReceipt', () => {
 		);
 		expect(parseReceipt(lines)).toMatchObject({ totalMinor: 2281, confirmedByPayment: true });
 	});
+
+	it('reads the total of a Korean food shop receipt, from the photo that failed', () => {
+		// "Total ( 7 items )" has the count on its own, the amounts end in "£", the card line has a
+		// stray digit, and the tax lines below must not be mistaken for the total.
+		const korean: [string, string?][] = [
+			['MOGU MOGU Nata De Coco Drink Lychee', '0.99 01'],
+			['Glico Pocky Stick Cookies & Cream 45G', '2.38 02'],
+			['110155/56/57/58 Buy 1 Get', '-1.39'],
+			['Oreo Cookies - Birthday Cake 97G', '2.29 02'],
+			['Total ( 7 items )', '7.84 £'],
+			['Without tax', '7.54£'],
+			['Total tax', '0.30£'],
+			['Credit Card 5', '7.84£'],
+			['Sale tax description'],
+			['UK Std rat02', '0.00% 7.45 0.00'],
+			['UK Std rat01', '20.00% 1.78 0.30'],
+			['Total tax', '0.30']
+		];
+		expect(parseReceipt(receipt(korean))).toMatchObject({
+			totalMinor: 784,
+			confirmedByPayment: true
+		});
+	});
+
+	it('reads a total whose amount is printed lower than its caption', () => {
+		// A total in larger type: the amount sits most of a line below the caption, while the
+		// other lines line up. The card payment settles it.
+		const lines = receipt([
+			['MILK', '1.45'],
+			['BREAD', '1.40'],
+			['Total ( 2 items )', '2.85 £'],
+			['Credit Card', '2.85£']
+		]).map((l, i) =>
+			i === 5
+				? {
+						...l,
+						region: { ...l.region, cy: l.region.cy + 16 },
+						words: l.words.map((w) => ({
+							...w,
+							box: w.box.map(([x, y]) => [x, y + 16] as [number, number])
+						}))
+					}
+				: l
+		);
+		expect(parseReceipt(lines)).toMatchObject({ totalMinor: 285, confirmedByPayment: true });
+	});
+
+	it('does not take the tax lines for the total', () => {
+		const reading = parseReceipt(
+			receipt([
+				['Without tax', '7.54£'],
+				['Total tax', '0.30£'],
+				['UK Std rat01', '20.00% 1.78 0.30']
+			])
+		);
+		expect(reading.totalMinor).toBeUndefined();
+	});
+
+	// The same reader on the layouts different kinds of shop print.
+	describe.each<[string, [string, string?][], number]>([
+		[
+			'supermarket, VAT summary and loyalty points',
+			[
+				['ASDA STORES LTD'],
+				['SEMI SKIMMED 2L', '1.55'],
+				['CHICKEN BREAST', '4.50'],
+				['SUBTOTAL', '6.05'],
+				['TOTAL SAVINGS', '0.50'],
+				['TOTAL TO PAY', '6.05'],
+				['DEBIT CARD', '6.05'],
+				['VAT A 20.00%', '0.62'],
+				['POINTS BALANCE', '120.00']
+			],
+			605
+		],
+		[
+			'convenience store, cash with change',
+			[
+				['LONDON NEWS LTD'],
+				['MARS BAR', '0.95'],
+				['LUCOZADE', '1.60'],
+				['BALANCE DUE', '2.55'],
+				['CASH TENDERED', '5.00'],
+				['CHANGE DUE', '2.45']
+			],
+			255
+		],
+		[
+			'takeaway, total in brackets with the item count after it',
+			[
+				['KING WOK'],
+				['SWEET & SOUR CHICKEN', '8.50'],
+				['EGG FRIED RICE', '3.00'],
+				['Total ( 2 items )', '11.50 £'],
+				['Cash', '20.00 £'],
+				['Change', '8.50 £']
+			],
+			1150
+		],
+		[
+			'restaurant with a service charge',
+			[
+				['THE ROYAL OAK'],
+				['SUNDAY ROAST', '14.50'],
+				['SERVICE CHARGE 12.5%', '1.81'],
+				['AMOUNT DUE', '16.31'],
+				['VISA CONTACTLESS', '16.31']
+			],
+			1631
+		],
+		[
+			'pharmacy with a multibuy and a voucher',
+			[
+				['BOOTS PHARMACY'],
+				['SHAMPOO 3 FOR 2', '9.00'],
+				['MULTIBUY SAVING', '-3.00'],
+				['ADVANTAGE VOUCHER', '-2.00'],
+				['TOTAL', '4.00'],
+				['MASTERCARD', '4.00']
+			],
+			400
+		],
+		[
+			'amounts followed by a pound sign, card line with a masked number',
+			[
+				['ORIENTAL MART'],
+				['RAMEN CUP', '1.39 £'],
+				['PEAR DRINK', '0.79 £'],
+				['TOTAL ( 2 ITEMS )', '2.18 £'],
+				['CREDIT CARD ************5678', '2.18 £']
+			],
+			218
+		]
+	])('%s', (_, rows, totalMinor) => {
+		it('is read and confirmed by the payment', () => {
+			expect(parseReceipt(receipt(rows))).toMatchObject({ totalMinor, confirmedByPayment: true });
+		});
+
+		it('is read from a photo taken at an angle', () => {
+			expect(parseReceipt(receipt(rows, { angle: 4 })).totalMinor).toBe(totalMinor);
+		});
+	});
 });

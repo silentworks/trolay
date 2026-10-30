@@ -16,7 +16,12 @@ export interface ReceiptReading {
 	confirmedByPayment: boolean;
 }
 
-/** A total read on its own must be this sure; one the payments confirm, much less. */
+/**
+ * A total read on its own must be this sure; one the payments confirm, much less. For a
+ * confirmed total the bar applies to the amount alone: the caption has to spell a total caption
+ * exactly, and a stray bracket or colon beside it ("Total(") is enough to drag its confidence
+ * down.
+ */
 export const MIN_CONFIDENCE = { alone: 0.9, confirmed: 0.5 } as const;
 
 const TOTAL_CAPTIONS = new Set([
@@ -77,8 +82,14 @@ const DIGIT_AS_LETTER: Record<string, string> = {
 	'3': 'E'
 };
 
-/** An amount with pence; "-" or "CR" around it marks a refund or discount, which is skipped. */
-const AMOUNT = /^(-)?£?(\d{1,3}(?:,\d{3})+|\d{1,5})[.,](\d{2})(-|CR)?$/i;
+/**
+ * An amount with pence, the pound sign before or after it; "-" or "CR" around it marks a refund
+ * or discount, which is skipped.
+ */
+const AMOUNT = /^(-)?£?(\d{1,3}(?:,\d{3})+|\d{1,5})[.,](\d{2})£?(-|CR)?$/i;
+
+/** A currency sign on its own, which some tills print after the amount: "7.84 £". */
+const CURRENCY = /^(£|GBP)$/i;
 
 function amountOf(text: string): number | null | undefined {
 	const cleaned = text.replace(/[Oo](?=[\d.,]*$)/g, '0');
@@ -97,6 +108,7 @@ interface Piece {
 /** Splits a row into its caption words and an amount at the right end. */
 function split(row: Row): Piece {
 	const tokens = [...row.tokens];
+	while (tokens.length > 1 && CURRENCY.test(tokens.at(-1)!.text)) tokens.pop();
 	let amount: Piece['amount'];
 	// "£ 12.34" can come apart into a currency sign and a number.
 	const last = tokens.at(-1);
@@ -108,17 +120,19 @@ function split(row: Row): Piece {
 		tokens.pop();
 	}
 	const words = tokens
-		.map((t) => t.text.toUpperCase().replace(/[£*:=#.\-_]+/g, ''))
+		.map((t) => t.text.toUpperCase().replace(/[£*:=#.\-_()[\]]+/g, ''))
 		.filter((w) => w !== '')
 		.map((w) => (/[A-Z]/.test(w) ? w.replace(/[0-9]/g, (d) => DIGIT_AS_LETTER[d] ?? d) : w));
-	// A count of items is often printed with the total: "4 BALANCE DUE", "TOTAL 12 ITEMS".
-	const caption = words
+	// A count of items is often printed with the total: "4 BALANCE DUE", "TOTAL 12 ITEMS",
+	// "Total ( 7 items )". Read on its own line, the count is not a caption at all.
+	let caption = words
 		.join(' ')
 		.replace(/\b\d+ (ITEMS?|ARTICLES?)\b/g, '')
 		.replace(/\b(ITEMS?|ARTICLES?) \d+\b/g, '')
 		.replace(/^\d+ /, '')
 		.replace(/\s+/g, ' ')
 		.trim();
+	if (/^(\d+|ITEMS?|ARTICLES?)( (\d+|ITEMS?|ARTICLES?))*$/.test(caption)) caption = '';
 	return {
 		caption,
 		captionTokens: tokens.filter((t) => /[a-z]/i.test(t.text)),
@@ -228,6 +242,10 @@ const DEGREE = Math.PI / 180;
 function pairings(rows: Row[], pieces: Piece[]): Pairing[] {
 	const paper = paperAngle(rows);
 	const found: Pairing[] = [pairLocally(rows, pieces, paper)];
+	// A line printed in a larger type (a total) can have its amount sit most of a line off the
+	// caption's. Pairing that loosely is only believed when the payment lines confirm it.
+	const loose = pairRows(rows, pieces, (c, a) => guessSlope(c, a, paper), 1);
+	if (!same(found[0], loose)) found.push(loose);
 	const sweep: Pairing[] = [];
 	for (let step = -40; step <= 40; step++) {
 		const angle = paper + step * 0.25 * DEGREE;
@@ -260,6 +278,8 @@ function tenderOf(caption: string): Tender | undefined {
 interface Candidate {
 	minor: number;
 	confidence: number;
+	/** Of the amount alone. */
+	amountConfidence: number;
 }
 
 interface Judgement {
@@ -284,7 +304,7 @@ function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
 				amount.token.confidence,
 				...piece.captionTokens.map((t) => t.confidence)
 			);
-			totals.push({ minor: amount.minor, confidence });
+			totals.push({ minor: amount.minor, confidence, amountConfidence: amount.token.confidence });
 			return;
 		}
 		const kind = tenderOf(piece.caption);
@@ -304,9 +324,10 @@ function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
 	const confirmed = totals.filter((t) => hasPaid && t.minor === paid);
 	if (confirmed.length) {
 		const confidence = Math.max(...confirmed.map((t) => t.confidence));
+		const sure = Math.max(...confirmed.map((t) => t.amountConfidence));
 		return {
 			reading: {
-				totalMinor: confidence >= MIN_CONFIDENCE.confirmed ? confirmed[0].minor : undefined,
+				totalMinor: sure >= MIN_CONFIDENCE.confirmed ? confirmed[0].minor : undefined,
 				confidence,
 				confirmedByPayment: true
 			},

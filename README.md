@@ -100,6 +100,19 @@ Work is tracked in the Linear project **Trolay**.
     data on the phone. A different account signing in there gets the data that was never sent
     to the first one (a new store made while signed out), and the rest, which the first account
     owns, stays on the phone only: a record belongs to one account.
+- **Testing sync** (`src/lib/sync/harness.ts`, `harness.spec.ts`). Simulated phones, each with its
+  own IndexedDB, go offline, edit and reconnect against the real Worker and a real local D1, all
+  in-process: no browser, no network, part of `pnpm test`. A virtual clock gives every edit a
+  known moment, so a test can say which edit must win. The documented outcomes, each tested:
+  - a field settles on the newest edit made to it anywhere; edits to different fields of one
+    item are all kept; edits at the very same moment settle the same on every device;
+  - a delete is the field `deletedAt`: it is not undone by an edit to another field (even a newer
+    one), and that edit is kept for if the delete is undone; only a newer undo or delete changes
+    it;
+  - however many phones, and whatever order they reconnect in, they end with the same data;
+  - random histories (several phones making random edits, deletes, undos and new items, losing
+    and regaining signal, syncing at random) are checked against an answer worked out separately:
+    for every field, the value of the newest edit made to it anywhere.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

@@ -5,5 +5,10 @@
 		"types": ["$app/types", "node"]
 	},
 	"include": ["src", "vite.config.ts"],
-	"exclude": ["src/service-worker", "src/lib/sync/integration.spec.ts"]
+	"exclude": [
+		"src/service-worker",
+		"src/lib/sync/integration.spec.ts",
+		"src/lib/sync/harness.ts",
+		"src/lib/sync/harness.spec.ts"
+	]
 }

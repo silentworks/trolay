@@ -6,6 +6,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { parsePounds } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
+	import SyncStatus from './SyncStatus.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
@@ -58,6 +59,7 @@
 			{ label: 'Account', href: resolve('/account') }
 		]}
 	/>
+	<SyncStatus />
 	<h2 class="question">Where are you shopping?</h2>
 
 	{#if notice}

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
+	import SyncStatus from '#lib/components/SyncStatus.svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
 
 	let email = $state('');
@@ -42,6 +43,7 @@
 
 	{#if account.status === 'signedIn'}
 		<p class="status" role="status">You're signed in on this device.</p>
+		<SyncStatus />
 		<p class="hint">Sign in with a passkey on another device to use the same account there.</p>
 		<div class="actions">
 			<button class="btn" type="button" disabled={account.busy} onclick={() => account.register()}>
@@ -55,6 +57,12 @@
 			'Add an email address, so you can sign in without a passkey',
 			'Email me a link to confirm it'
 		)}
+	{:else if account.status === 'unknown' && account.maybeSignedIn}
+		<p class="hint">
+			You were signed in here, and there is no signal to check right now. Everything you do is kept
+			on this phone and will sync when you're back online.
+		</p>
+		<SyncStatus />
 	{:else}
 		<p class="hint">
 			Your stores, trips and items live on this phone, and you don't need an account to use Trolay.

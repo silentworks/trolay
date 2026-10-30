@@ -1,4 +1,5 @@
 import { db, type Item, type Photo, type Store, type Trip } from '#lib/data/db.ts';
+import type { Pending } from '#lib/sync/pending.ts';
 
 // A backup for shoppers who don't sign in: every store, trip, item and kept label photo, as one
 // JSON file. Records are written exactly as stored, tombstones included, so restoring gives back
@@ -51,6 +52,18 @@ function decode({ type, base64 }: EncodedBlob): Blob {
 	return new Blob([bytes], { type });
 }
 
+/**
+ * Changes waiting to be synced are bookkeeping for this phone, not data. A restored record is a
+ * new record here, so it is queued to sync again when it is written back.
+ */
+function withoutPending<T extends Pending>({
+	pending: _pending,
+	pendingAt: _pendingAt,
+	...record
+}: T) {
+	return record;
+}
+
 export async function createBackup(): Promise<Backup> {
 	return db.transaction('r', db.stores, db.trips, db.items, db.photos, async () => {
 		const [stores, trips, items, photos] = await Promise.all([
@@ -63,9 +76,9 @@ export async function createBackup(): Promise<Backup> {
 			app: 'trolay' as const,
 			format: BACKUP_FORMAT,
 			exportedAt: new Date().toISOString(),
-			stores,
-			trips,
-			items,
+			stores: stores.map(withoutPending),
+			trips: trips.map(withoutPending),
+			items: items.map(withoutPending),
 			photos: await Promise.all(
 				photos.map(async ({ blob, thumbBlob, ...rest }) => ({
 					...rest,

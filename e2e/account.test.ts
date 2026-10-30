@@ -1,20 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-
-// A virtual authenticator stands in for the phone's passkey store (Chromium only).
-async function withPasskeys(page: Page) {
-	const client = await page.context().newCDPSession(page);
-	await client.send('WebAuthn.enable');
-	await client.send('WebAuthn.addVirtualAuthenticator', {
-		options: {
-			protocol: 'ctap2',
-			transport: 'internal',
-			hasResidentKey: true,
-			hasUserVerification: true,
-			isUserVerified: true,
-			automaticPresenceSimulation: true
-		}
-	});
-}
+import { withPasskeys } from './passkeys';
 
 test('create an account with a passkey, stay signed in, sign out, sign in again', async ({
 	page
@@ -24,11 +9,11 @@ test('create an account with a passkey, stay signed in, sign out, sign in again'
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
 
 	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
-	await expect(page.getByRole('status')).toHaveText("You're signed in on this device.");
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 
 	// The session is a cookie, so it survives a reload.
 	await page.reload();
-	await expect(page.getByRole('status')).toHaveText("You're signed in on this device.");
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 
 	await page.getByRole('button', { name: 'Sign out' }).click();
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
@@ -36,7 +21,7 @@ test('create an account with a passkey, stay signed in, sign out, sign in again'
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
 
 	await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
-	await expect(page.getByRole('status')).toHaveText("You're signed in on this device.");
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 });
 
 test('the app keeps working without an account', async ({ page }) => {
@@ -80,7 +65,7 @@ test('sign in by emailed link, once; then add a passkey on this device', async (
 
 	const link = await emailedLink(page, email);
 	await page.goto(link);
-	await expect(page.getByRole('status')).toHaveText("You're signed in on this device.");
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 	// The token is gone from the address bar once the page has read it.
 	expect(page.url()).not.toContain('token');
 

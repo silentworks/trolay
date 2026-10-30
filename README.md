@@ -69,6 +69,35 @@ Work is tracked in the Linear project **Trolay**.
   an address on a domain you have set up there. In development, emails are captured and printed
   by the API instead of sent (`MAIL_MODE=capture`, set by `pnpm dev:api`); never set it in
   production, because it exposes the captured emails at `/api/dev/outbox`.
+- **Sync across your own devices** (`src/lib/sync/`, `worker/sync/`). Stores, trips and items
+  sync; label photos stay on the phone that took them. The app works the same without it.
+  - _Outbox:_ a hook on the local tables records, on each record itself, every field that changed
+    and when (`pending`). It is written in the same IndexedDB transaction as the change, so a
+    change and its entry can never be separated or lost, and nothing needs a table of its own.
+    `pendingAt` is indexed, so finding what to send is one query. Records made before sync
+    existed are marked by the upgrade to schema 3, so signing in uploads them.
+  - _Sending and receiving:_ when signed in, the app sends what is pending (stores, then trips,
+    then items), then pulls what changed on the server since the position it last saw. It runs
+    shortly after a change, when the signal returns, when the app is opened and now and then.
+    Sent fields are cleared only if they have not changed again since, so an edit made while a
+    request is in flight is not lost. A record whose store or trip has not arrived yet waits.
+  - _Conflicts:_ settled by the server **per field**: the change with the newest time wins
+    (`field_times` on every row), so two phones editing different fields of one item both keep
+    their edits, and a tie goes to the larger value, so every device and server picks the same
+    winner in any order. A delete is the field `deletedAt` and an undo a newer change that unsets
+    it. A pulled value never overwrites a field with an edit still waiting to be sent: that edit
+    goes to the server, which decides, and the next pull brings the winner back.
+  - _Order:_ pulls follow a server-side sequence (`changes`), not the devices' clocks, so an edit
+    from a phone that was offline for days still reaches every other phone. A change dated more
+    than a day ahead of the server is refused, so one wrong clock cannot win every conflict.
+  - _Who sees what:_ your stores, and trips (and their items) you are a member of; the owner is a
+    member of their own trips.
+  - _Shows:_ "✓ Synced", "N changes waiting to sync", "Syncing…" (with a count for a big
+    upload) or "Offline" on the Home and Account screens.
+  - _Known limits:_ clocks on your devices are trusted (to a day); if two phones each start a trip
+    while apart, both are open after syncing and the app shows one; a restore from a backup
+    merges with, and does not replace, what is already in your account; signing out leaves the
+    data on the phone, and a different account signing in there would receive it.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

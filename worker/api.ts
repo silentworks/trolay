@@ -10,6 +10,8 @@ import { linkRequest, linkVerify } from './auth/link.ts';
 import type { Env } from './env.ts';
 import { BadRequest, error, json } from './http.ts';
 import { capturedMail } from './mail.ts';
+import { pull } from './sync/pull.ts';
+import { push } from './sync/push.ts';
 
 type Handler = (request: Request, env: Env) => Promise<Response> | Response;
 
@@ -29,6 +31,8 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/link/request': { POST: linkRequest },
 	'/api/auth/link/verify': { POST: linkVerify },
 	'/api/auth/logout': { POST: logout },
+	'/api/sync/push': { POST: push },
+	'/api/sync/pull': { GET: pull },
 	// Emails kept instead of sent, so tests can read the link. Only exists in "capture" mode.
 	'/api/dev/outbox': {
 		GET: (request, env) =>

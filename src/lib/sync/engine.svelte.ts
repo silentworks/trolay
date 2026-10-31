@@ -5,8 +5,11 @@ import { SignedOutError, SyncCore } from './core.ts';
 
 export type SyncStatus = 'off' | 'synced' | 'pending' | 'syncing' | 'offline' | 'error';
 
-/** After a change, wait this long for the shopper to stop tapping before sending. */
-const SETTLE_MS = 1500;
+/**
+ * After a change, wait this long for the shopper to stop tapping before sending. Short, so that
+ * on a shared trip a change reaches the other phone within a couple of seconds.
+ */
+const SETTLE_MS = 400;
 /** While the app is open, look for changes made on other devices this often. */
 const POLL_MS = 60_000;
 /** After a round fails for lack of signal, try again this soon. */

@@ -128,6 +128,20 @@ Work is tracked in the Linear project **Trolay**.
   delete items, set the budget, and finish the trip; they cannot move it to another store, delete
   it, or change the store. Every write checks membership of the trip the record is in now as well
   as the one it is going to, so knowing an item's id is not enough to take it.
+- **Live trip updates** (`worker/trips/room.ts`, `live.ts`, `src/lib/sync/live.ts`). While signed
+  in with a trip open, a phone keeps a WebSocket to that trip's `TripRoom`, a Durable Object (one
+  per trip, found by the trip's id; SQLite-backed, with hibernating sockets, so an idle trip costs
+  nothing). The room holds a version that goes up on every change and the connected sockets. When
+  a push changes a trip or its items, the Worker tells the room, which sends every phone on the
+  trip a nudge; a nudge only makes the phone sync, so the change arrives the way every change does
+  and the socket never carries data. A phone that connects syncs straight away, so one that was
+  offline or dropped catches up on reconnecting (with a growing pause, 1 s to 30 s). Opening a
+  socket is checked like a sync (signed in, a member, the trip open, and the handshake from this
+  site, since cookies go with it); when the trip finishes the room lets the phones go. Changes
+  are sent 0.4 s after the last tap, so a change reaches the other phone within a couple of
+  seconds. The room runs only under a real Worker, so the end-to-end tests cover it (`pnpm
+test:e2e`); the Worker tests cover the door. Deploying creates the class through the
+  `migrations` entry in `wrangler.jsonc`.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

@@ -41,7 +41,9 @@ export default defineConfig({
 				target: `http://localhost:${process.env.API_PORT ?? 8787}`,
 				// Keep the browser's own Host, so the API sees the origin the browser used (passkeys
 				// are bound to it).
-				changeOrigin: false
+				changeOrigin: false,
+				// Live trip updates are a WebSocket.
+				ws: true
 			}
 		}
 	},

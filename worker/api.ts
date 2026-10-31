@@ -12,6 +12,7 @@ import { BadRequest, error, json } from './http.ts';
 import { capturedMail } from './mail.ts';
 import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
+import { liveTrip } from './trips/live.ts';
 import { push } from './sync/push.ts';
 
 type Handler = (request: Request, env: Env) => Promise<Response> | Response;
@@ -36,6 +37,7 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/sync/pull': { GET: pull },
 	'/api/trips/invite': { POST: createInvite },
 	'/api/trips/join': { POST: acceptInvite },
+	'/api/trips/live': { GET: liveTrip },
 	// Emails kept instead of sent, so tests can read the link. Only exists in "capture" mode.
 	'/api/dev/outbox': {
 		GET: (request, env) =>

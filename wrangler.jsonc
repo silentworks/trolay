@@ -18,6 +18,11 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// One Durable Object per open shared trip, which tells each phone on the trip when it changes.
+	"durable_objects": {
+		"bindings": [{ "name": "TRIPS", "class_name": "TripRoom" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["TripRoom"] }],
 	// Sign-in links are emailed with Cloudflare Email Service. Set MAIL_FROM to an address on a
 	// domain you have set up for sending there (Email Service, then onboard the domain).
 	"send_email": [
@@ -42,6 +47,10 @@
 				"migrations_dir": "migrations"
 			}
 		],
+		// Each preview gets its own Durable Object namespace; the class and migrations stay above.
+		"durable_objects": {
+			"bindings": [{ "name": "TRIPS", "class_name": "TripRoom" }]
+		},
 		"send_email": [{ "name": "EMAIL" }],
 		"vars": { "MAIL_FROM": "Trolay <welcome@trolay.com>" }
 	}

@@ -93,6 +93,11 @@ class SyncEngine {
 		this.timer = setTimeout(() => void this.syncNow(), delay);
 	}
 
+	/** Whether the server refused this trip as another account's, so it can never be synced here. */
+	wasRefused(table: 'stores' | 'trips', id: string): Promise<boolean> {
+		return this.core.wasRefused(table, id);
+	}
+
 	/**
 	 * One round now, or, if one is running, another straight after it. Resolves when the round
 	 * (and the one after it, if asked for) has finished, however it ended.

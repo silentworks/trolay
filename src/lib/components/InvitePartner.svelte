@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createInviteLink, InviteError } from '#lib/sharing/invites.ts';
+	import { account } from '#lib/auth/account.svelte.ts';
+	import { createInviteLink, explainMissingTrip, InviteError } from '#lib/sharing/invites.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 
 	interface Props {
@@ -21,14 +22,31 @@
 		error = undefined;
 		copied = false;
 		try {
+			// Right after the app opens, who is signed in may still be being asked.
+			if (account.status === 'unknown') await account.refresh();
+			if (account.status !== 'signedIn') {
+				error = 'Sign in on the Account page to share this trip.';
+				return;
+			}
 			// The trip has to be on the server before anyone can be let into it.
 			await syncEngine.syncNow();
 			link = await createInviteLink(tripId);
 		} catch (cause) {
-			error = cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.';
+			error = await explain(cause);
 		} finally {
 			busy = false;
 		}
+	}
+
+	/** The server not having the trip has several causes; say which one it is. */
+	async function explain(cause: unknown): Promise<string> {
+		if (!(cause instanceof InviteError)) return 'Something went wrong. Try again.';
+		if (cause.code !== 'trip_not_found') return cause.message;
+		return explainMissingTrip({
+			refused: await syncEngine.wasRefused('trips', tripId),
+			sync: syncEngine.status,
+			pending: syncEngine.pending
+		});
 	}
 
 	onMount(() => void make());

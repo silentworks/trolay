@@ -433,6 +433,15 @@ describe('signing in on a phone that already has data', () => {
 		expect(await core.pendingCount()).toBe(0);
 		expect(refused).toHaveBeenCalled();
 		refused.mockRestore();
+		// What was refused is remembered, so the app can say why it will never reach this account.
+		expect(await core.wasRefused('stores', ids.store)).toBe(true);
+		expect(await core.wasRefused('trips', ids.trip)).toBe(true);
+		expect(await core.wasRefused('stores', `new-store-${n}`)).toBe(false);
+		// Back in the first account, which owns them, nothing is refused: the marker belonged to
+		// the other account's turn on this phone.
+		await phoneA.adopt(userId);
+		expect(await phoneA.wasRefused('trips', ids.trip)).toBe(false);
+		expect(await phoneA.wasRefused('stores', ids.store)).toBe(false);
 
 		const ids_ = async (d: Device) => (await d.stores.toArray()).map((x) => x.id).sort();
 		expect(await ids_(a)).toEqual([`new-store-${n}`, ids.store, `their-store-${n}`].sort());

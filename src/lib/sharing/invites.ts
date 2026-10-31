@@ -2,7 +2,7 @@
 
 const MESSAGES: Record<string, string> = {
 	unauthorized: 'Sign in to do that.',
-	trip_not_found: "This trip hasn't reached your account yet. Check your connection and try again.",
+	trip_not_found: "This trip isn't on your account.",
 	trip_finished: 'This trip has finished, so it can no longer be shared.',
 	trip_full: 'This trip already has a partner.',
 	too_many_requests: 'Too many invites. Try again later.',
@@ -38,6 +38,31 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 		throw new InviteError(code, MESSAGES[code] ?? 'Something went wrong. Try again.');
 	}
 	return data as T;
+}
+
+/**
+ * Why a trip the server does not have cannot be shared yet, and what to do about it: the
+ * connection is not the only thing that can keep a trip from reaching an account.
+ */
+export function explainMissingTrip(state: {
+	/** The server refused the trip as another account's. */
+	refused: boolean;
+	/** Where syncing is up to (SyncStatus in src/lib/sync/engine.svelte.ts). */
+	sync: string;
+	/** Records still waiting to be sent. */
+	pending: number;
+}): string {
+	if (state.refused) {
+		return "This trip was started under a different account on this phone, so it can't be shared from this one. Start a new trip here and invite from that.";
+	}
+	if (state.sync === 'error') {
+		return "Syncing isn't working right now, so this trip hasn't reached your account. Try again in a moment.";
+	}
+	if (state.sync === 'offline') return 'You need a connection to share this trip.';
+	if (state.pending > 0 || state.sync === 'syncing') {
+		return 'This trip is still being sent to your account. Try again in a moment.';
+	}
+	return "This trip isn't on your account. If it was started under a different account on this phone, start a new trip here and invite from that.";
 }
 
 /** A link that lets one other person join this open trip. It works once, for a day. */

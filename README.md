@@ -104,7 +104,10 @@ Work is tracked in the Linear project **Trolay**.
     merges with, and does not replace, what is already in your account; signing out leaves the
     data on the phone. A different account signing in there gets the data that was never sent
     to the first one (a new store made while signed out), and the rest, which the first account
-    owns, stays on the phone only: a record belongs to one account.
+    owns, stays on the phone only: a record belongs to one account. The refusal is remembered (per
+    account's turn on the phone), so "Invite a partner" can say that a trip started under another
+    account here cannot be shared from this one, and to start a new trip, instead of blaming the
+    connection.
 - **Testing sync** (`src/lib/sync/harness.ts`, `harness.spec.ts`). Simulated phones, each with its
   own IndexedDB, go offline, edit and reconnect against the real Worker and a real local D1, all
   in-process: no browser, no network, part of `pnpm test`. A virtual clock gives every edit a

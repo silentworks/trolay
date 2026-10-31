@@ -212,14 +212,14 @@ describe('accepting an invite', () => {
 	});
 
 	it('puts the trip and its items after every position, so the partner’s phone pulls them', async () => {
-		const { trip, item } = await aTrip();
+		const { trip, item, store } = await aTrip();
 		const before = (await call('/api/sync/pull?since=0', { cookie: alice })).body.cursor;
 		const token = tokenOf((await invite(alice, trip)).body.link);
 		await join(bob, token);
-		// Bob's phone, up to date as of now, is told about the trip and its item.
+		// Bob's phone, up to date as of now, is told about the trip, its item and its store.
 		const pulled = await call(`/api/sync/pull?since=${before}`, { cookie: bob });
 		expect(pulled.body.records.map((r: { id: string }) => r.id).sort()).toEqual(
-			[item, trip].sort()
+			[item, store, trip].sort()
 		);
 	});
 

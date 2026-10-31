@@ -17,12 +17,17 @@ const columns = (table: SyncTable, alias: string) =>
 		.map((name) => `${alias}.${name}`)
 		.join(', ');
 
-// What a user may read: their own stores, and the trips (and those trips' items) they are a
-// member of. Each query takes the records that changed after `since`, oldest change first.
+// What a user may read: their own stores, the trips (and those trips' items) they are a member
+// of, and the stores of those trips. A partner sees the one trip they were invited to and the
+// store it is at, and nothing else of the owner's. Each query takes the records that changed after `since`, oldest change first.
 const QUERIES: Record<SyncTable, string> = {
 	stores: `SELECT ${columns('stores', 's')}, c.seq FROM changes c
 		JOIN stores s ON s.id = c.record_id
-		WHERE c.table_name = 'stores' AND c.seq > ? AND s.owner_id = ?
+		WHERE c.table_name = 'stores' AND c.seq > ?
+		  AND (s.owner_id = ? OR EXISTS (
+		    SELECT 1 FROM trips t
+		    JOIN trip_members m ON m.trip_id = t.id AND m.user_id = ? AND m.deleted_at IS NULL
+		    WHERE t.store_id = s.id AND t.deleted_at IS NULL))
 		ORDER BY c.seq LIMIT ?`,
 	trips: `SELECT ${columns('trips', 't')}, c.seq FROM changes c
 		JOIN trips t ON t.id = c.record_id
@@ -51,8 +56,9 @@ export async function pull(request: Request, env: Env): Promise<Response> {
 	// many and the results are merged by seq.
 	const found = await Promise.all(
 		(Object.keys(QUERIES) as SyncTable[]).map(async (table) => {
-			// stores binds (since, user); the other two bind (user, since): see the queries.
-			const binds = table === 'stores' ? [since, userId, limit + 1] : [userId, since, limit + 1];
+			// stores binds (since, user, user); the other two bind (user, since): see the queries.
+			const binds =
+				table === 'stores' ? [since, userId, userId, limit + 1] : [userId, since, limit + 1];
 			const { results } = await env.DB.prepare(QUERIES[table])
 				.bind(...binds)
 				.all<Record<string, unknown>>();

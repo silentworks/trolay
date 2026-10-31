@@ -113,6 +113,17 @@ Work is tracked in the Linear project **Trolay**.
   - random histories (several phones making random edits, deletes, undos and new items, losing
     and regaining signal, syncing at random) are checked against an answer worked out separately:
     for every field, the value of the newest edit made to it anywhere.
+- **Inviting a partner to a trip** (`worker/trips/invite.ts`, `src/lib/sharing/`, the shopping
+  screen's ⋮ menu → "Invite a partner", and `/join`). The owner makes a link for an open trip;
+  the trip is synced first so the server knows it. The link is `/join#token=…`, with the token in
+  the fragment like the sign-in link, and only its hash is stored. It works once, for one person,
+  for a day, and making another replaces it. Whoever opens it signs in (the invite waits in this
+  tab's session storage meanwhile) and taps Join, which makes them the trip's `partner` in
+  `trip_members`. A trip has at most one partner, enforced by a unique index, so two people
+  accepting at once cannot both get in; others are told the trip is full. You cannot accept your
+  own invite, and a finished trip cannot be shared. Joining also moves the trip and its items to
+  the end of the change log, so the partner's phone picks them up whatever position it is at.
+  Showing the trip and its store on the partner's phone, and live updates, come next.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

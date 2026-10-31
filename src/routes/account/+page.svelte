@@ -4,6 +4,7 @@
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import SyncStatus from '#lib/components/SyncStatus.svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
+	import { pendingInvite } from '#lib/sharing/invites.ts';
 
 	let email = $state('');
 
@@ -43,6 +44,9 @@
 
 	{#if account.status === 'signedIn'}
 		<p class="status" role="status">You're signed in on this device.</p>
+		{#if pendingInvite()}
+			<a class="btn btn-primary btn-block" href={resolve('/join')}>Continue joining the trip</a>
+		{/if}
 		<SyncStatus />
 		<p class="hint">Sign in with a passkey on another device to use the same account there.</p>
 		<div class="actions">

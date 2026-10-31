@@ -116,8 +116,8 @@ export async function acceptInvite(request: Request, env: Env): Promise<Response
 				   AND EXISTS (SELECT 1 FROM trip_members
 				               WHERE trip_id = ? AND user_id = ? AND role = 'partner' AND deleted_at IS NULL)`
 			).bind(now, userId, hash, tripId, userId),
-			// The trip and its items move to the end of the change log, so the partner's phone,
-			// wherever its position is, picks them up as new.
+			// The trip, its items and its store move to the end of the change log, so the partner's
+			// phone, wherever its position is, picks them up as new.
 			env.DB.prepare(
 				`DELETE FROM changes WHERE (table_name = 'trips' AND record_id = ?)
 				 OR (table_name = 'items' AND record_id IN (SELECT id FROM items WHERE trip_id = ?))`
@@ -125,6 +125,15 @@ export async function acceptInvite(request: Request, env: Env): Promise<Response
 			env.DB.prepare(`INSERT INTO changes (table_name, record_id) VALUES ('trips', ?)`).bind(
 				tripId
 			),
+			// And the store it is at, which the partner is allowed to see.
+			env.DB.prepare(
+				`DELETE FROM changes WHERE table_name = 'stores'
+				 AND record_id = (SELECT store_id FROM trips WHERE id = ?)`
+			).bind(tripId),
+			env.DB.prepare(
+				`INSERT INTO changes (table_name, record_id)
+				 SELECT 'stores', store_id FROM trips WHERE id = ?`
+			).bind(tripId),
 			env.DB.prepare(
 				`INSERT INTO changes (table_name, record_id)
 				 SELECT 'items', id FROM items WHERE trip_id = ?`

@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
+	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import {
 		forgetInvite,
 		InviteError,
@@ -37,6 +38,8 @@
 		try {
 			joined = await joinTrip(token);
 			forgetInvite();
+			// Fetch the trip now, rather than at the next round.
+			void syncEngine.syncNow();
 		} catch (cause) {
 			error = cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.';
 			// A link that can never work is not worth keeping.
@@ -67,8 +70,8 @@
 				? `, ${joined.store.branch}`
 				: ''}.
 		</p>
-		<p class="hint">It will appear on your phone once your account has synced.</p>
-		<a class="btn btn-block next" href={resolve('/')}>Continue</a>
+		<p class="hint">It is on its way to your phone. You can add to it and edit it from here.</p>
+		<a class="btn btn-block next" href={resolve('/')}>Go to the trip</a>
 	{:else if !token}
 		<p class="hint">
 			This page opens from an invite link. Ask the person who invited you to send the link again.

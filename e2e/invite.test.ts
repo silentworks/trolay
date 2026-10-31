@@ -51,14 +51,36 @@ test('an owner invites a partner by link, who signs in and joins; a second partn
 	// The token is not left in the address.
 	expect(partner.url()).not.toContain('token');
 
+	// The trip, its store and its items are on the partner's phone, and they can add to it.
+	await partner.getByRole('link', { name: 'Go to the trip' }).click();
+	await expect(partner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	await partner.getByRole('button', { name: 'Add by hand' }).click();
+	const add = partner.getByRole('dialog', { name: 'Add item' });
+	await add.getByLabel('Description').fill('Bread');
+	await add.getByLabel('Unit price (£)').fill('0.95');
+	await add.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(add).toBeHidden();
+	// Each phone syncs on the Account page; the owner looks until Bread has come across.
+	await partner.goto('/account');
+	await expect(synced(partner)).toBeVisible();
+	await expect(async () => {
+		await owner.goto('/account');
+		await expect(synced(owner)).toBeVisible();
+		await owner.goto('/');
+		await expect(owner.getByText('Bread')).toBeVisible({ timeout: 2000 });
+	}).toPass({ timeout: 20_000 });
+
 	// The link is used up, and the trip is full.
 	const third = await newPhone(browser);
 	await signUp(third);
 	await third.goto(invite);
 	await third.getByRole('button', { name: 'Join the trip' }).click();
 	await expect(third.getByRole('alert')).toContainText('expired or was already used');
-	await owner.getByRole('button', { name: 'Make a new link' }).click();
-	await expect(owner.getByRole('alert')).toContainText('This trip already has a partner.');
+	await owner.getByRole('button', { name: 'Menu' }).click();
+	await owner.getByRole('navigation', { name: 'Menu' }).getByText('Invite a partner').click();
+	await expect(
+		owner.getByRole('dialog', { name: 'Invite a partner' }).getByRole('alert')
+	).toContainText('This trip already has a partner.');
 });
 
 test('inviting needs an account', async ({ page }) => {

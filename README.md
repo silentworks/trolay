@@ -123,7 +123,11 @@ Work is tracked in the Linear project **Trolay**.
   accepting at once cannot both get in; others are told the trip is full. You cannot accept your
   own invite, and a finished trip cannot be shared. Joining also moves the trip and its items to
   the end of the change log, so the partner's phone picks them up whatever position it is at.
-  Showing the trip and its store on the partner's phone, and live updates, come next.
+  **What a partner can reach** (`worker/sync/pull.ts`, `push.ts`, `worker/partner.spec.ts`): the
+  trip, its items and the store it is at, and nothing else of the owner's. They can add, edit and
+  delete items, set the budget, and finish the trip; they cannot move it to another store, delete
+  it, or change the store. Every write checks membership of the trip the record is in now as well
+  as the one it is going to, so knowing an item's id is not enough to take it.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

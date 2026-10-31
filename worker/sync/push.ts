@@ -53,6 +53,14 @@ const isMember = async (env: Env, tripId: string, userId: string) =>
 		.bind(tripId, userId)
 		.first()) !== null;
 
+const isPartner = async (env: Env, tripId: string, userId: string) =>
+	(await env.DB.prepare(
+		`SELECT 1 AS ok FROM trip_members
+		 WHERE trip_id = ? AND user_id = ? AND role = 'partner' AND deleted_at IS NULL`
+	)
+		.bind(tripId, userId)
+		.first()) !== null;
+
 /** Whether this user may write this record, given the row it will end up as. */
 async function allowed(
 	env: Env,
@@ -66,6 +74,16 @@ async function allowed(
 	}
 	if (table === 'trips') {
 		if (existing && !(await isMember(env, existing.id as string, userId))) return 'forbidden';
+		if (existing && (await isPartner(env, existing.id as string, userId))) {
+			// A partner shops the trip: they cannot move it to another store or delete it.
+			if (
+				resulting.store_id !== existing.store_id ||
+				resulting.deleted_at !== existing.deleted_at
+			) {
+				return 'forbidden';
+			}
+			return undefined;
+		}
 		const store = await env.DB.prepare('SELECT owner_id FROM stores WHERE id = ?')
 			.bind(resulting.store_id)
 			.first<{ owner_id: string }>();
@@ -76,6 +94,9 @@ async function allowed(
 		.bind(resulting.trip_id)
 		.first();
 	if (!trip) return 'missing_parent';
+	// An item can only be moved by someone who may touch the trip it is in now, as well as the
+	// one it is going to: otherwise knowing an item's id would be enough to take it.
+	if (existing && !(await isMember(env, existing.trip_id as string, userId))) return 'forbidden';
 	return (await isMember(env, resulting.trip_id as string, userId)) ? undefined : 'forbidden';
 }
 

@@ -53,6 +53,8 @@
 		"durable_objects": {
 			"bindings": [{ "name": "TRIPS", "class_name": "TripRoom" }]
 		},
+		// Photos on a shared trip go to a bucket of the preview's own, not production's.
+		"r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "trolay-photos-preview" }],
 		"send_email": [{ "name": "EMAIL" }],
 		"vars": { "MAIL_FROM": "Trolay <welcome@trolay.com>" }
 	}

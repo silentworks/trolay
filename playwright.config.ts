@@ -3,6 +3,9 @@ import { FAKE_CAMERA_VIDEO } from './e2e/global-setup';
 
 export default defineConfig({
 	testDir: 'e2e',
+	// Several tests run two or three phones against one local API with one SQLite database; with
+	// more than three tests at once that API falls behind and sign-ups time out now and then.
+	workers: 3,
 	globalSetup: './e2e/global-setup.ts',
 	webServer: [
 		{

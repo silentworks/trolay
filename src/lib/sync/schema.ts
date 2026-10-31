@@ -90,8 +90,16 @@ export interface PulledRecord {
 	updatedAt: number;
 }
 
+/** A trip this account is no longer on (it left, or the owner took it off), and its store. */
+export interface LeftTrip {
+	tripId: string;
+	storeId: string;
+}
+
 export interface PullResponse {
 	records: PulledRecord[];
+	/** Trips to let go of: see LeftTrip. Absent when there are none. */
+	left?: LeftTrip[];
 	/** Send this back as `since` to get what came after. */
 	cursor: number;
 	more: boolean;

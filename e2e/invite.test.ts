@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addItem, inviteLink, menu, newPhone, ownerWithTrip, signUp, synced } from './shared';
+import { addItem, inviteLink, newPhone, ownerWithTrip, signUp, synced } from './shared';
 
 test('an owner invites a partner by link, who signs in and joins; a second partner is refused', async ({
 	browser
@@ -42,10 +42,11 @@ test('an owner invites a partner by link, who signs in and joins; a second partn
 	await third.goto(invite);
 	await third.getByRole('button', { name: 'Join the trip' }).click();
 	await expect(third.getByRole('alert')).toContainText('expired or was already used');
-	await menu(owner, 'Invite a partner');
-	await expect(
-		owner.getByRole('dialog', { name: 'Invite a partner' }).getByRole('alert')
-	).toContainText('This trip already has a partner.');
+	// With a partner on the trip the owner is no longer offered another invite.
+	await owner.getByRole('button', { name: 'Menu' }).click();
+	const nav = owner.getByRole('navigation', { name: 'Menu' });
+	await expect(nav.getByText('Remove partner')).toBeVisible({ timeout: 15_000 });
+	await expect(nav.getByText('Invite a partner')).toHaveCount(0);
 });
 
 test('inviting needs an account', async ({ page }) => {

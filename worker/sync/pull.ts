@@ -1,5 +1,6 @@
 import {
 	SYNC_FIELDS,
+	type LeftTrip,
 	type PullResponse,
 	type PulledRecord,
 	type SyncTable
@@ -41,6 +42,14 @@ const QUERIES: Record<SyncTable, string> = {
 		ORDER BY c.seq LIMIT ?`
 };
 
+// The trips this user was taken off (or left): their membership row was deleted. The phone is
+// told so it can let go of an open trip it holds a copy of.
+const LEFT = `SELECT t.id AS trip_id, t.store_id, c.seq FROM changes c
+	JOIN trip_members m ON c.record_id = m.trip_id || ':' || m.user_id
+	JOIN trips t ON t.id = m.trip_id
+	WHERE c.table_name = 'trip_members' AND c.seq > ? AND m.user_id = ? AND m.deleted_at IS NOT NULL
+	ORDER BY c.seq LIMIT ?`;
+
 /** What changed after `since`, in the order the server accepted it, a page at a time. */
 export async function pull(request: Request, env: Env): Promise<Response> {
 	const userId = await sessionUser(request, env);
@@ -62,14 +71,29 @@ export async function pull(request: Request, env: Env): Promise<Response> {
 			const { results } = await env.DB.prepare(QUERIES[table])
 				.bind(...binds)
 				.all<Record<string, unknown>>();
-			return results.map((row) => ({ seq: row.seq as number, record: toRecord(table, row) }));
+			return results.map((row) => ({
+				seq: row.seq as number,
+				record: toRecord(table, row) as PulledRecord | undefined,
+				left: undefined as LeftTrip | undefined
+			}));
 		})
 	);
-	const merged = found.flat().sort((a, b) => a.seq - b.seq);
+	const goneRows = (
+		await env.DB.prepare(LEFT)
+			.bind(since, userId, limit + 1)
+			.all<{ trip_id: string; store_id: string; seq: number }>()
+	).results.map((row) => ({
+		seq: row.seq,
+		record: undefined as PulledRecord | undefined,
+		left: { tripId: row.trip_id, storeId: row.store_id } as LeftTrip | undefined
+	}));
+	const merged = [...found.flat(), ...goneRows].sort((a, b) => a.seq - b.seq);
 	const page = merged.slice(0, limit);
-	const records: PulledRecord[] = page.map(({ record }) => record);
+	const records = page.flatMap(({ record }) => (record ? [record] : []));
+	const left = page.flatMap((entry) => (entry.left ? [entry.left] : []));
 	const body: PullResponse = {
 		records,
+		...(left.length ? { left } : {}),
 		cursor: page.length ? page[page.length - 1].seq : since,
 		more: merged.length > limit
 	};

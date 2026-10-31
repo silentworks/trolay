@@ -3,6 +3,7 @@
 	import StartTrip from '#lib/components/StartTrip.svelte';
 	import { getOpenTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 
 	const openTrip = new LiveQuery(() => getOpenTrip());
 	let notice = $state<string>();
@@ -13,9 +14,17 @@
 			: 'Trip saved.';
 	}
 
-	function left() {
-		notice = 'You left the store. Nothing was saved.';
+	function left(message?: string) {
+		notice = message ?? 'You left the store. Nothing was saved.';
 	}
+
+	// The owner took this phone off a shared trip: its copy has been let go of.
+	$effect(() => {
+		const store = syncEngine.removedFrom;
+		if (store === undefined) return;
+		notice = `You are no longer on the trip${store ? ` at ${store}` : ''}. The person who invited you ended it.`;
+		syncEngine.removedFrom = undefined;
+	});
 </script>
 
 <svelte:head>

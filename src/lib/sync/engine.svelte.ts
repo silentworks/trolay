@@ -17,7 +17,9 @@ const POLL_MS = 60_000;
 const RETRY_MS = 10_000;
 
 class SyncEngine {
-	private readonly core = new SyncCore(db);
+	/** The store of a trip this phone was just taken off, for saying so; cleared once shown. */
+	removedFrom = $state<string>();
+	private readonly core = new SyncCore(db, undefined, (stores) => (this.removedFrom = stores[0]));
 	private readonly photos = new PhotoSync(db);
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	private again = false;

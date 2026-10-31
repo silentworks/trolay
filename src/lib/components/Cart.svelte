@@ -28,10 +28,12 @@
 	} from '#lib/data/trips.ts';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { InviteError, leaveSharedTrip, removeTripPartner } from '#lib/sharing/invites.ts';
+	import { letGoOfTrip } from '#lib/sync/letgo.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
-	import AppHeader from './AppHeader.svelte';
+	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
 	import FinishTrip from './FinishTrip.svelte';
@@ -49,7 +51,7 @@
 		/** The trip has moved to History; this cart is about to close. */
 		onfinished?: (photosKept: boolean) => void;
 		/** The shopper left with an empty cart; the trip is gone and this cart is about to close. */
-		onleft?: () => void;
+		onleft?: (message?: string) => void;
 	}
 
 	let { tripId, onfinished, onleft }: Props = $props();
@@ -84,6 +86,8 @@
 		| { kind: 'budget' }
 		| { kind: 'store' }
 		| { kind: 'invite' }
+		| { kind: 'leaveShared' }
+		| { kind: 'removePartner' }
 		| { kind: 'finish' };
 	let sheet = $state<SheetState | null>(null);
 	let camera = $state(false);
@@ -177,6 +181,53 @@
 		await run(() => changeTripStore(tripId, next.id));
 	}
 
+	/** Leaving or removing is about the trip's people, so the cart says what it will do first. */
+	const role = $derived(members.roleOf(account.userId));
+	const menu = $derived.by(() => {
+		const entries: MenuEntry[] = [
+			{ label: 'History', href: resolve('/history') },
+			{ label: 'Stores', href: resolve('/stores') }
+		];
+		if (role === 'partner') {
+			entries.push({ label: 'Leave this trip', onclick: () => (sheet = { kind: 'leaveShared' }) });
+		} else if (members.shared) {
+			entries.push({ label: 'Remove partner', onclick: () => (sheet = { kind: 'removePartner' }) });
+		} else {
+			entries.push({ label: 'Invite a partner', onclick: tapInvite });
+		}
+		if (items.length) entries.push({ label: 'Finish trip', onclick: tapFinish, primary: true });
+		// A partner cannot delete the owner's trip, so an empty cart is left by leaving the trip.
+		else if (role !== 'partner')
+			entries.push({ label: 'Leave store', onclick: leave, primary: true });
+		return entries;
+	});
+
+	async function leaveSharedTripNow() {
+		sheet = null;
+		try {
+			await leaveSharedTrip(tripId);
+		} catch (cause) {
+			show(cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.');
+			return;
+		}
+		// The trip stays with its owner; this phone lets go of its copy.
+		await letGoOfTrip(db, { tripId, storeId: trip!.storeId });
+		onleft?.(
+			`You left the trip at ${store?.name ?? 'the store'}. It stays with whoever invited you.`
+		);
+	}
+
+	async function removePartnerNow() {
+		sheet = null;
+		try {
+			await removeTripPartner(tripId);
+			await members.refresh(tripId);
+			show('Your partner is off the trip. What they added stays.');
+		} catch (cause) {
+			show(cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.');
+		}
+	}
+
 	async function tapInvite() {
 		// Right after the app opens, who is signed in may still be being asked.
 		if (account.status === 'unknown') await account.refresh();
@@ -214,14 +265,7 @@
 			subtitle={store.branch}
 			ontitle={tapStoreName}
 			titleLabel="Store: {store.name}"
-			menu={[
-				{ label: 'History', href: resolve('/history') },
-				{ label: 'Stores', href: resolve('/stores') },
-				{ label: 'Invite a partner', onclick: tapInvite },
-				items.length
-					? { label: 'Finish trip', onclick: tapFinish, primary: true }
-					: { label: 'Leave store', onclick: leave, primary: true }
-			]}
+			{menu}
 		/>
 
 		{#if items.length}
@@ -332,6 +376,34 @@
 
 	<Sheet open={sheet?.kind === 'invite'} title="Invite a partner" onclose={() => (sheet = null)}>
 		{#if sheet?.kind === 'invite'}<InvitePartner {tripId} />{/if}
+	</Sheet>
+
+	<Sheet
+		open={sheet?.kind === 'leaveShared'}
+		title="Leave this trip?"
+		onclose={() => (sheet = null)}
+	>
+		<p>
+			The trip stays with the person who invited you, along with the items you added. It will be
+			gone from your phone.
+		</p>
+		<button class="btn btn-danger btn-block" type="button" onclick={leaveSharedTripNow}>
+			Leave the trip
+		</button>
+	</Sheet>
+
+	<Sheet
+		open={sheet?.kind === 'removePartner'}
+		title="Remove your partner?"
+		onclose={() => (sheet = null)}
+	>
+		<p>
+			They will no longer see or change this trip. What they added stays, and you can invite someone
+			else.
+		</p>
+		<button class="btn btn-danger btn-block" type="button" onclick={removePartnerNow}>
+			Remove partner
+		</button>
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'store'} title="Change store" onclose={() => (sheet = null)}>

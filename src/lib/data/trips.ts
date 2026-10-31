@@ -165,6 +165,26 @@ export async function deleteTripPhotos(tripId: string): Promise<void> {
 	});
 }
 
+/**
+ * Deletes a finished trip from history, with its items and any photos it kept. Like every delete
+ * it is a tombstone, so it reaches the account; but a record cannot be un-deleted by the app, and
+ * the photos go outright.
+ */
+export async function deleteTrip(tripId: string): Promise<void> {
+	await db.transaction('rw', [db.trips, db.items, db.photos], async () => {
+		const trip = await db.trips.get(tripId);
+		if (!isLive(trip)) return;
+		if (trip.status !== 'finished') throw new Error('Finish or leave the current trip first.');
+		const items = await liveItems(tripId);
+		const now = Date.now();
+		await db.photos.bulkDelete(items.flatMap((item) => (item.photoId ? [item.photoId] : [])));
+		for (const item of items) {
+			await db.items.update(item.id, { photoId: undefined, deletedAt: now, updatedAt: now });
+		}
+		await db.trips.update(tripId, { deletedAt: now, updatedAt: now });
+	});
+}
+
 export interface FinishedTrip {
 	trip: Trip;
 	store?: Store;

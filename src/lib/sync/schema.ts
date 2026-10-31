@@ -61,6 +61,34 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 	}
 };
 
+/**
+ * What a record made before a required field existed gets for it, when it is sent: a number is
+ * the record's own `updatedAt`, the nearest thing to when it was made. A field with no entry
+ * here (a name, say) cannot be guessed, and such a record is refused as invalid.
+ */
+export const FIELD_DEFAULTS: Record<SyncTable, Record<string, boolean | number | 'updatedAt'>> = {
+	stores: {
+		taxRateBps: 0,
+		pricesIncludeTax: true,
+		createdAt: 'updatedAt',
+		lastUsedAt: 'updatedAt'
+	},
+	trips: { photosKept: false, startedAt: 'updatedAt' },
+	items: {
+		unitPriceMinor: 0,
+		priceIncludesTax: true,
+		quantity: 1,
+		edited: false,
+		createdAt: 'updatedAt'
+	}
+};
+
+/** The table a record's parent is in, and the field that names it. */
+export const PARENTS: Partial<Record<SyncTable, { table: SyncTable; field: string }>> = {
+	trips: { table: 'stores', field: 'storeId' },
+	items: { table: 'trips', field: 'tripId' }
+};
+
 /** One field's new value and when it was set, in ms since the epoch. null unsets it. */
 export interface FieldChange {
 	value: unknown;

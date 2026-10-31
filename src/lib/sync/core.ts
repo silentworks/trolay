@@ -2,6 +2,8 @@ import type { TrolleyDB } from '#lib/data/db.ts';
 import { letGoOfTrip } from './letgo.ts';
 import { markRemote, type Pending } from './pending.ts';
 import {
+	FIELD_DEFAULTS,
+	PARENTS,
 	SYNC_FIELDS,
 	SYNC_TABLES,
 	type PullResponse,
@@ -128,7 +130,16 @@ export class SyncCore {
 				for (const [field, at] of Object.entries(record.pending ?? {})) {
 					if (!(field in SYNC_FIELDS[name])) continue;
 					times[field] = at;
-					fields[field] = { value: record[field] ?? null, at };
+					fields[field] = { value: record[field] ?? this.defaultFor(name, record, field), at };
+				}
+				if (Object.keys(fields).length) {
+					// A record older than a required field lacks it, and the server would refuse the
+					// record for that; send the default too, as old as the record so that any real
+					// value the server has wins.
+					for (const field of Object.keys(FIELD_DEFAULTS[name])) {
+						if (record[field] == null && !(field in fields))
+							fields[field] = { value: this.defaultFor(name, record, field), at: record.updatedAt };
+					}
 				}
 				if (Object.keys(fields).length)
 					batch.push({ change: { table: name, id: record.id, fields }, times });
@@ -137,10 +148,18 @@ export class SyncCore {
 		return batch;
 	}
 
+	/** What a record lacking a required field is sent for it: see FIELD_DEFAULTS; null if unknown. */
+	private defaultFor(name: SyncTable, record: Record_, field: string): unknown {
+		const fill = FIELD_DEFAULTS[name][field];
+		return fill === 'updatedAt' ? record.updatedAt : (fill ?? null);
+	}
+
 	async push(): Promise<void> {
 		// Records the server could not take yet (its store or trip has not arrived): left for
 		// the next run, and not asked about again in this one.
 		const waiting = new Set<string>();
+		// Parents sent again because a child could not find them, once each per run.
+		const resent = new Set<string>();
 		for (;;) {
 			const batch = await this.collect(waiting);
 			if (!batch.length) return;
@@ -156,6 +175,11 @@ export class SyncCore {
 					const key = `${sent.change.table}/${sent.change.id}`;
 					if (result?.status === 'rejected' && result.reason === 'missing_parent') {
 						waiting.add(key);
+						// With its parent on the way again, the child is worth another try this run.
+						if (await this.resendParent(sent.change, resent)) {
+							waiting.delete(key);
+							settled++;
+						}
 						continue;
 					}
 					if (result?.status === 'rejected') console.warn('Sync refused a change', result);
@@ -171,6 +195,38 @@ export class SyncCore {
 			await this.db.syncState.put({ key: REFUSED, value: [...refused] });
 			if (!settled) return;
 		}
+	}
+
+	/**
+	 * A child the server cannot place is waiting for its parent. Usually the parent is still to be
+	 * sent and that settles it; but if the parent was sent before and lost (refused, say), nothing
+	 * will send it again, and the child would wait for ever. So the parent is queued afresh, once
+	 * per run. Returns whether it was.
+	 */
+	private async resendParent({ table, id }: PushedChange, resent: Set<string>): Promise<boolean> {
+		const link = PARENTS[table];
+		if (!link) return false;
+		const parentId = (await this.table(table).get(id))?.[link.field];
+		if (typeof parentId !== 'string') return false;
+		const key = `${link.table}/${parentId}`;
+		const parent = await this.table(link.table).get(parentId);
+		if (!parent || parent.pendingAt || resent.has(key)) return false;
+		resent.add(key);
+		await this.queueAll(link.table, parent);
+		return true;
+	}
+
+	/** Queues every field of one record to be sent. */
+	private async queueAll(name: SyncTable, record: Record_): Promise<void> {
+		const at = record.updatedAt;
+		await this.table(name).update(record.id, {
+			pending: Object.fromEntries(
+				Object.keys(SYNC_FIELDS[name])
+					.filter((field) => record[field] !== undefined)
+					.map((field) => [field, at])
+			),
+			pendingAt: at
+		});
 	}
 
 	private async refusedKeys(): Promise<string[]> {

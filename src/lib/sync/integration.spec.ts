@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { handleApi } from '../../../worker/api.ts';
 import { createTestEnv, ORIGIN, testClient, type TestEnv } from '../../../worker/testing.ts';
 import { TrolleyDB } from '#lib/data/db.ts';
+import { markRemote } from './pending.ts';
 import { SignedOutError, SyncCore, type Fetcher } from './core.ts';
 
 // Two phones, each with its own IndexedDB, syncing through the real Worker and a real local D1.
@@ -454,5 +455,39 @@ describe('signing in on a phone that already has data', () => {
 		// The first account has what it always had, and none of the new store.
 		await phoneB.run();
 		expect(await ids_(b)).toEqual([ids.store]);
+	});
+
+	describe('records from before a required field existed', () => {
+		it('sends a trip that lacks photosKept, and its items follow', async () => {
+			await a.stores.add(store());
+			await a.trips.add(trip());
+			await a.items.add(item());
+			// As an older version of the app left it.
+			await a.trips
+				.where('id')
+				.equals(ids.trip)
+				.modify((record) => {
+					delete (record as { photosKept?: boolean }).photosKept;
+				});
+			await phoneA.run();
+			expect(await phoneA.pendingCount()).toBe(0);
+			await phoneB.run();
+			expect((await b.trips.get(ids.trip))?.photosKept).toBe(false);
+			expect(await b.items.get(ids.item)).toBeDefined();
+		});
+
+		it('sends a parent again when its child cannot find it', async () => {
+			await aTripOn(a);
+			// The trip was marked as sent, but the server never got it (a refusal that was cleared).
+			await a.transaction('rw', a.trips, async (tx) => {
+				markRemote(tx);
+				await a.trips.update(ids.trip, { pending: undefined, pendingAt: undefined });
+			});
+			await phoneA.run();
+			expect(await phoneA.pendingCount()).toBe(0);
+			await phoneB.run();
+			expect(await b.trips.get(ids.trip)).toBeDefined();
+			expect(await b.items.get(ids.item)).toBeDefined();
+		});
 	});
 });

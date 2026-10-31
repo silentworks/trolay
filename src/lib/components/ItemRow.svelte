@@ -11,9 +11,11 @@
 		ondelete: () => void;
 		onquantity: (quantity: number) => void;
 		onphoto: () => void;
+		/** Who added it, on a shared trip: "you", a name. Nothing on a trip that is not shared. */
+		addedBy?: string;
 	}
 
-	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto }: Props = $props();
+	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto, addedBy }: Props = $props();
 
 	const totals = $derived(lineTotals(item, taxRateBps));
 	const name = $derived(itemName(item));
@@ -81,6 +83,7 @@
 				<span class="badge">{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}</span>
 				{#if item.edited}<span class="badge edited">edited</span>{/if}
 			</span>
+			{#if addedBy}<span class="meta by">Added by {addedBy}</span>{/if}
 		</button>
 
 		<div class="side">

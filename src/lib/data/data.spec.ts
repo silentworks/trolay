@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from './db';
 import {
 	addItem,
+	backfillAddedBy,
 	deleteItem,
 	getPhoto,
 	listTripItems,
@@ -404,5 +405,27 @@ describe('history', () => {
 		]);
 		expect(await getTrip(first.id)).toMatchObject({ status: 'finished' });
 		expect(await getTrip('missing')).toBeUndefined();
+	});
+});
+
+describe('who added an item', () => {
+	it('is recorded when given, and backfilled only where nobody is recorded', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		const mine = await addItem(trip.id, milk, { addedBy: 'alice' });
+		const theirs = await addItem(trip.id, { ...milk, description: 'Bread' }, { addedBy: 'bob' });
+		const nobody = await addItem(trip.id, { ...milk, description: 'Eggs' });
+		const gone = await addItem(trip.id, { ...milk, description: 'Gone' });
+		await deleteItem(gone.id);
+
+		await backfillAddedBy(trip.id, 'alice');
+
+		expect((await db.items.get(mine.id))?.addedBy).toBe('alice');
+		expect((await db.items.get(theirs.id))?.addedBy).toBe('bob');
+		expect((await db.items.get(nobody.id))?.addedBy).toBe('alice');
+		// A deleted item is left alone.
+		expect((await db.items.get(gone.id))?.addedBy).toBeUndefined();
+		// And the change is on its way to the server.
+		expect((await db.items.get(nobody.id))?.pending).toHaveProperty('addedBy');
 	});
 });

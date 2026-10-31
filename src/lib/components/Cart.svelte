@@ -7,6 +7,7 @@
 	import { db, type ExtractedFields, type Item, type Store } from '#lib/data/db.ts';
 	import {
 		addItem,
+		backfillAddedBy,
 		deleteItem,
 		itemName,
 		listTripItems,
@@ -27,6 +28,8 @@
 	} from '#lib/data/trips.ts';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { TripMembers } from '#lib/sharing/members.svelte.ts';
+	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
@@ -60,6 +63,20 @@
 		return { trip, store, items };
 	});
 	const stores = new LiveQuery(() => listStores());
+
+	// Who is on the trip, so a shared one can say who added each item. Asked again after each
+	// sync, since a partner can join at any time.
+	const members = new TripMembers();
+	$effect(() => {
+		void syncEngine.lastSyncedAt;
+		if (account.status === 'signedIn') void members.refresh(tripId);
+	});
+	// A trip that has just become shared: the owner owns what was put in before it was shared.
+	$effect(() => {
+		if (members.shared && members.roleOf(account.userId) === 'owner' && account.userId) {
+			void backfillAddedBy(tripId, account.userId);
+		}
+	});
 
 	type SheetState =
 		| { kind: 'add'; capture?: CaptureSession }
@@ -120,7 +137,7 @@
 	) {
 		// The photo is usually compressed by now; if it failed, the item is saved without it.
 		const photo = capture && (await capture.ready.catch(() => undefined));
-		await addItem(tripId, input, { photo, extracted });
+		await addItem(tripId, input, { photo, extracted, addedBy: account.userId });
 		sheet = null;
 	}
 
@@ -217,6 +234,7 @@
 						ondelete={() => remove(item)}
 						onquantity={(quantity) => run(() => setQuantity(item.id, quantity))}
 						onphoto={() => (viewing = item)}
+						addedBy={members.label(item.addedBy, account.userId)}
 					/>
 				{/each}
 			</ul>

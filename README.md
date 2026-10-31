@@ -155,6 +155,13 @@ test:e2e`); the Worker tests cover the door. Deploying creates the class through
   case deleting the evidence later (which syncs as `photosKept = false`) deletes them too. The
   partner's phone drops its copies once the items lose their `photoId`. R2 needs a bucket named
   `trolay-photos` (`wrangler r2 bucket create trolay-photos`).
+- **Who added each item** (`src/lib/sharing/members.svelte.ts`, the cart). An item records the
+  account that added it (`addedBy`, a synced field), and on a trip with more than one person the
+  row says "Added by you", by their name, or, for a passkey-only account with no name, by their
+  part ("your partner", "the trip owner"). A trip that is not shared shows nothing extra. The
+  phone asks `GET /api/trips/members` after each sync, since a partner can join at any moment;
+  when the trip becomes shared, the owner marks the items they put in before signing in as theirs.
+  A name is, for now, the part of the person's email before the `@`.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

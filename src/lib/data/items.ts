@@ -43,6 +43,8 @@ export interface AddItemOptions {
 	/** What the label reader filled in, kept so later edits can be reverted. */
 	extracted?: ExtractedFields;
 	photo?: CompressedPhoto;
+	/** Who added it: the signed-in account, so a shared trip can say. Unset when signed out. */
+	addedBy?: string;
 }
 
 function newPhoto(itemId: string, photo: CompressedPhoto, now: number): Photo {
@@ -52,7 +54,7 @@ function newPhoto(itemId: string, photo: CompressedPhoto, now: number): Photo {
 export async function addItem(
 	tripId: string,
 	input: ItemInput,
-	{ extracted, photo }: AddItemOptions = {}
+	{ extracted, photo, addedBy }: AddItemOptions = {}
 ): Promise<Item> {
 	const fields = validate(input);
 	return db.transaction('rw', db.trips, db.items, db.photos, async () => {
@@ -67,6 +69,7 @@ export async function addItem(
 			tripId,
 			...fields,
 			photoId: stored?.id,
+			addedBy,
 			extracted,
 			edited: differsFromExtracted(fields, extracted),
 			createdAt: now,
@@ -91,6 +94,21 @@ export async function setItemPhoto(itemId: string, photo: CompressedPhoto): Prom
 		await db.photos.add(stored);
 		if (item.photoId) await db.photos.delete(item.photoId);
 		await db.items.update(itemId, { photoId: stored.id, updatedAt: now });
+	});
+}
+
+/**
+ * Marks the trip's items that nobody is recorded as having added as added by this person. The
+ * owner does it when a trip becomes shared, for the items they put in before signing in.
+ */
+export async function backfillAddedBy(tripId: string, userId: string): Promise<void> {
+	await db.transaction('rw', db.items, async () => {
+		const items = await db.items.where('tripId').equals(tripId).toArray();
+		for (const item of items) {
+			if (isLive(item) && item.addedBy === undefined) {
+				await db.items.update(item.id, { addedBy: userId });
+			}
+		}
 	});
 }
 

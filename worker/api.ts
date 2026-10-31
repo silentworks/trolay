@@ -13,6 +13,7 @@ import { capturedMail } from './mail.ts';
 import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
 import { liveTrip } from './trips/live.ts';
+import { members, photo } from './trips/photos.ts';
 import { push } from './sync/push.ts';
 
 type Handler = (request: Request, env: Env) => Promise<Response> | Response;
@@ -38,6 +39,7 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/trips/invite': { POST: createInvite },
 	'/api/trips/join': { POST: acceptInvite },
 	'/api/trips/live': { GET: liveTrip },
+	'/api/trips/members': { GET: members },
 	// Emails kept instead of sent, so tests can read the link. Only exists in "capture" mode.
 	'/api/dev/outbox': {
 		GET: (request, env) =>
@@ -57,9 +59,18 @@ function crossSite(request: Request): boolean {
 	return origin !== null && origin !== new URL(request.url).origin;
 }
 
+/** A trip's photos are addressed by trip and photo: /api/trips/<trip>/photos/<photo>. */
+const PHOTO_PATH = /^\/api\/trips\/([^/]+)\/photos\/([^/]+)$/;
+
 export async function handleApi(request: Request, env: Env): Promise<Response> {
 	const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
-	const route = routes[path];
+	const photoPath = PHOTO_PATH.exec(path);
+	const route: Partial<Record<string, Handler>> | undefined = photoPath
+		? {
+				GET: (req, e) => photo(req, e, photoPath[1], photoPath[2]),
+				PUT: (req, e) => photo(req, e, photoPath[1], photoPath[2])
+			}
+		: routes[path];
 	if (!route) return error(404, 'not_found');
 	const handler = route[request.method];
 	if (!handler) {

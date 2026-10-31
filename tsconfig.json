@@ -8,6 +8,7 @@
 	"exclude": [
 		"src/service-worker",
 		"src/lib/sync/integration.spec.ts",
+		"src/lib/sync/photos.spec.ts",
 		"src/lib/sync/harness.ts",
 		"src/lib/sync/harness.spec.ts"
 	]

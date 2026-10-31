@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { liveQuery } from 'dexie';
 	import { getPhoto } from '#lib/data/items.ts';
 
 	interface Props {
@@ -11,17 +12,22 @@
 	let { photoId, size, alt }: Props = $props();
 	let url = $state<string>();
 
-	// Photos are Blobs in IndexedDB; each is shown through an object URL released on change.
+	// Photos are Blobs in IndexedDB; each is shown through an object URL released on change. A
+	// partner's photo may arrive after the item does, so this follows the photo being stored.
 	$effect(() => {
 		let objectUrl: string | undefined;
-		let cancelled = false;
-		getPhoto(photoId).then((photo) => {
-			if (cancelled || !photo) return;
-			objectUrl = URL.createObjectURL(size === 'full' ? photo.blob : photo.thumbBlob);
-			url = objectUrl;
+		const subscription = liveQuery(() => getPhoto(photoId)).subscribe({
+			next: (photo) => {
+				if (objectUrl) URL.revokeObjectURL(objectUrl);
+				objectUrl = photo
+					? URL.createObjectURL(size === 'full' ? photo.blob : photo.thumbBlob)
+					: undefined;
+				url = objectUrl;
+			},
+			error: (error) => console.error(error)
 		});
 		return () => {
-			cancelled = true;
+			subscription.unsubscribe();
 			if (objectUrl) URL.revokeObjectURL(objectUrl);
 			url = undefined;
 		};

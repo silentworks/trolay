@@ -14,6 +14,8 @@ export interface Env {
 	DB: D1Database;
 	/** One TripRoom per open trip: tells the phones on it when it changes (worker/trips/room.ts). */
 	TRIPS?: DurableObjectNamespace;
+	/** Label photos of shared open trips, under trips/<trip id>/<photo id>. */
+	PHOTOS?: R2Bucket;
 	/** Sends sign-in links. Needs the sending domain set up in Cloudflare Email Service. */
 	EMAIL?: EmailBinding;
 	/** Who sign-in links are sent from, e.g. "Trolay <signin@your-domain>". */

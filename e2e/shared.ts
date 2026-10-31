@@ -1,12 +1,12 @@
-import { expect, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
 import { withPasskeys } from './passkeys';
 
 export const BASE = 'http://localhost:4173';
 export const synced = (page: Page) => page.getByRole('status').filter({ hasText: '✓ Synced' });
 
 /** A phone with its own passkey store and nothing on it. */
-export async function newPhone(browser: Browser) {
-	const page = await (await browser.newContext({ baseURL: BASE })).newPage();
+export async function newPhone(browser: Browser, options: BrowserContextOptions = {}) {
+	const page = await (await browser.newContext({ baseURL: BASE, ...options })).newPage();
 	await withPasskeys(page);
 	return page;
 }
@@ -19,8 +19,13 @@ export async function signUp(page: Page) {
 }
 
 /** A phone with a store and an open trip, signed in. */
-export async function ownerWithTrip(browser: Browser, store = 'Tesco', branch = 'Watford') {
-	const owner = await newPhone(browser);
+export async function ownerWithTrip(
+	browser: Browser,
+	store = 'Tesco',
+	branch = 'Watford',
+	options: BrowserContextOptions = {}
+) {
+	const owner = await newPhone(browser, options);
 	await owner.goto('/');
 	await owner.getByRole('button', { name: 'Add a new store' }).click();
 	await owner.getByLabel('Store name').fill(store);
@@ -58,8 +63,12 @@ export async function inviteLink(owner: Page): Promise<string> {
 }
 
 /** A new phone and account that has joined the trip by the invite link. */
-export async function joinedPartner(browser: Browser, invite: string) {
-	const partner = await newPhone(browser);
+export async function joinedPartner(
+	browser: Browser,
+	invite: string,
+	options: BrowserContextOptions = {}
+) {
+	const partner = await newPhone(browser, options);
 	await partner.goto(invite);
 	await partner.getByRole('link', { name: 'Sign in' }).click();
 	await partner.getByRole('button', { name: 'Create an account with a passkey' }).click();

@@ -142,6 +142,19 @@ Work is tracked in the Linear project **Trolay**.
   seconds. The room runs only under a real Worker, so the end-to-end tests cover it (`pnpm
 test:e2e`); the Worker tests cover the door. Deploying creates the class through the
   `migrations` entry in `wrangler.jsonc`.
+- **Photos on a shared trip** (`worker/trips/photos.ts`, `src/lib/sync/photos.ts`, R2). Photo
+  bytes never sync as records; an item carries its photo's `photoId` (a synced field), and while a
+  trip is open and has a partner, each phone uploads the photos it took to R2
+  (`PUT /api/trips/<trip>/photos/<photo>`, under `trips/<trip>/`) and fetches the other's, after
+  each sync round. The upload tells the partner's phone, through the trip's live connection. A
+  trip with no partner uploads nothing; a phone asks the server whether there is one each round
+  until it says yes. An upload that fails for lack of signal is retried when the signal returns;
+  it is sent once (marked `uploaded`). Only members can read or write a trip's photos; an upload
+  must be an image of at most 2 MB and only while the trip is open. When the trip finishes the
+  Worker deletes the trip's photos from R2, unless they were kept as receipt evidence, in which
+  case deleting the evidence later (which syncs as `photosKept = false`) deletes them too. The
+  partner's phone drops its copies once the items lose their `photoId`. R2 needs a bucket named
+  `trolay-photos` (`wrangler r2 bucket create trolay-photos`).
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

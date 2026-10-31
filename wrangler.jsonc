@@ -23,6 +23,8 @@
 		"bindings": [{ "name": "TRIPS", "class_name": "TripRoom" }]
 	},
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["TripRoom"] }],
+	// Label photos on a shared open trip (create it with `wrangler r2 bucket create trolay-photos`).
+	"r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "trolay-photos" }],
 	// Sign-in links are emailed with Cloudflare Email Service. Set MAIL_FROM to an address on a
 	// domain you have set up for sending there (Email Service, then onboard the domain).
 	"send_email": [

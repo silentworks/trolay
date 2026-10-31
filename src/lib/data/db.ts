@@ -73,6 +73,8 @@ export interface Photo extends SyncMeta {
 	blob: Blob;
 	thumbBlob: Blob;
 	createdAt: number;
+	/** The photo is on the server too, for the partner on a shared trip (src/lib/sync/photos.ts). */
+	uploaded?: boolean;
 }
 
 export interface ProductCacheEntry {

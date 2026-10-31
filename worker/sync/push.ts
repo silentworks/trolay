@@ -9,6 +9,7 @@ import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
 import { sessionUser } from '../auth/session.ts';
 import { notifyTrips } from '../trips/live.ts';
+import { cleanUpPhotos } from '../trips/photos.ts';
 import { beats, column, encode, validValue } from './records.ts';
 
 const MAX_CHANGES = 100;
@@ -212,7 +213,7 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 /** The trips that a push changed something in, so the phones on them can be told. */
 async function tripsTouched(env: Env, results: PushResult[]): Promise<Set<string>> {
 	const trips = new Set<string>();
-	if (!env.TRIPS) return trips;
+	if (!env.TRIPS && !env.PHOTOS) return trips;
 	for (const result of results) {
 		if (result.status !== 'ok') continue;
 		if (result.table === 'trips') trips.add(result.id);
@@ -249,6 +250,8 @@ export async function push(request: Request, env: Env): Promise<Response> {
 		}
 		results.push(await applyChange(env, userId, change));
 	}
-	await notifyTrips(env, await tripsTouched(env, results));
+	const touched = await tripsTouched(env, results);
+	await notifyTrips(env, touched);
+	for (const tripId of touched) await cleanUpPhotos(env, tripId);
 	return json({ results });
 }

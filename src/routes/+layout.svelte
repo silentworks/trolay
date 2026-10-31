@@ -2,10 +2,13 @@
 	import '../app.css';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { requestPersistentStorage } from '#lib/data/db.ts';
+	import { getOpenTrip } from '#lib/data/trips.ts';
+	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
+	import { LiveTrip } from '#lib/sync/live.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -39,6 +42,19 @@
 	});
 
 	$effect(() => syncEngine.watch());
+
+	// While signed in with a trip open, listen for changes made to it on the other phone, so they
+	// arrive in a moment rather than at the next round.
+	const openTrip = new LiveQuery(() => getOpenTrip());
+	const live = new LiveTrip({
+		sync: () => void syncEngine.syncNow(),
+		url: (tripId) =>
+			`${location.origin.replace(/^http/, 'ws')}/api/trips/live?trip=${encodeURIComponent(tripId)}`
+	});
+	$effect(() => {
+		const trip = openTrip.current;
+		if (account.status === 'signedIn' && trip) return live.connect(trip.id);
+	});
 
 	$effect(() => {
 		if (account.status === 'signedIn') return syncEngine.start();

@@ -1,40 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
-import { withPasskeys } from './passkeys';
-
-const BASE = 'http://localhost:4173';
-const synced = (page: Page) => page.getByRole('status').filter({ hasText: '✓ Synced' });
-
-async function newPhone(browser: import('@playwright/test').Browser) {
-	const page = await (await browser.newContext({ baseURL: BASE })).newPage();
-	await withPasskeys(page);
-	return page;
-}
-
-async function signUp(page: Page) {
-	await page.goto('/account');
-	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
-	await expect(synced(page)).toBeVisible();
-}
+import { expect, test } from '@playwright/test';
+import { addItem, inviteLink, menu, newPhone, ownerWithTrip, signUp, synced } from './shared';
 
 test('an owner invites a partner by link, who signs in and joins; a second partner is refused', async ({
 	browser
 }) => {
-	const owner = await newPhone(browser);
-	await owner.goto('/');
-	await owner.getByRole('button', { name: 'Add a new store' }).click();
-	await owner.getByLabel('Store name').fill('Tesco');
-	await owner.getByLabel(/Branch or location/).fill('Watford');
-	await owner.getByRole('button', { name: 'Add store and start trip' }).click();
-	await expect(owner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
-	await signUp(owner);
-	await owner.goto('/');
-
-	await owner.getByRole('button', { name: 'Menu' }).click();
-	await owner.getByRole('navigation', { name: 'Menu' }).getByText('Invite a partner').click();
-	const sheet = owner.getByRole('dialog', { name: 'Invite a partner' });
-	const link = sheet.getByLabel('Invite link');
-	await expect(link).toHaveValue(/\/join#token=/);
-	const invite = await link.inputValue();
+	const owner = await ownerWithTrip(browser);
+	const invite = await inviteLink(owner);
 
 	// Signed out, the partner is asked to sign in, and the invite waits while they do.
 	const partner = await newPhone(browser);
@@ -54,12 +25,7 @@ test('an owner invites a partner by link, who signs in and joins; a second partn
 	// The trip, its store and its items are on the partner's phone, and they can add to it.
 	await partner.getByRole('link', { name: 'Go to the trip' }).click();
 	await expect(partner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
-	await partner.getByRole('button', { name: 'Add by hand' }).click();
-	const add = partner.getByRole('dialog', { name: 'Add item' });
-	await add.getByLabel('Description').fill('Bread');
-	await add.getByLabel('Unit price (£)').fill('0.95');
-	await add.getByRole('button', { name: 'Add to cart' }).click();
-	await expect(add).toBeHidden();
+	await addItem(partner, 'Bread', '0.95');
 	// Each phone syncs on the Account page; the owner looks until Bread has come across.
 	await partner.goto('/account');
 	await expect(synced(partner)).toBeVisible();
@@ -76,8 +42,7 @@ test('an owner invites a partner by link, who signs in and joins; a second partn
 	await third.goto(invite);
 	await third.getByRole('button', { name: 'Join the trip' }).click();
 	await expect(third.getByRole('alert')).toContainText('expired or was already used');
-	await owner.getByRole('button', { name: 'Menu' }).click();
-	await owner.getByRole('navigation', { name: 'Menu' }).getByText('Invite a partner').click();
+	await menu(owner, 'Invite a partner');
 	await expect(
 		owner.getByRole('dialog', { name: 'Invite a partner' }).getByRole('alert')
 	).toContainText('This trip already has a partner.');

@@ -39,7 +39,9 @@ export async function createTestEnv(): Promise<TestEnv> {
 		await proxy.env.DB.batch(statements(sql).map((statement) => proxy.env.DB.prepare(statement)));
 	}
 	return {
-		env: proxy.env,
+		// The Durable Object only runs under a real Worker (the end-to-end tests); here the trip
+		// rooms are left out, and the API skips them.
+		env: { ...proxy.env, TRIPS: undefined },
 		dispose: async () => {
 			await proxy.dispose();
 			rmSync(persist, { recursive: true, force: true });

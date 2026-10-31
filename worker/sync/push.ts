@@ -8,6 +8,7 @@ import {
 import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
 import { sessionUser } from '../auth/session.ts';
+import { notifyTrips } from '../trips/live.ts';
 import { beats, column, encode, validValue } from './records.ts';
 
 const MAX_CHANGES = 100;
@@ -208,6 +209,23 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 	throw new Error(`Could not settle ${table}/${id}: it kept changing`);
 }
 
+/** The trips that a push changed something in, so the phones on them can be told. */
+async function tripsTouched(env: Env, results: PushResult[]): Promise<Set<string>> {
+	const trips = new Set<string>();
+	if (!env.TRIPS) return trips;
+	for (const result of results) {
+		if (result.status !== 'ok') continue;
+		if (result.table === 'trips') trips.add(result.id);
+		if (result.table === 'items') {
+			const item = await env.DB.prepare('SELECT trip_id FROM items WHERE id = ?')
+				.bind(result.id)
+				.first<{ trip_id: string }>();
+			if (item) trips.add(item.trip_id);
+		}
+	}
+	return trips;
+}
+
 /** Merges the app's changes into the server's records. */
 export async function push(request: Request, env: Env): Promise<Response> {
 	const userId = await sessionUser(request, env);
@@ -231,5 +249,6 @@ export async function push(request: Request, env: Env): Promise<Response> {
 		}
 		results.push(await applyChange(env, userId, change));
 	}
+	await notifyTrips(env, await tripsTouched(env, results));
 	return json({ results });
 }

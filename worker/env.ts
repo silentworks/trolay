@@ -12,6 +12,8 @@ export interface EmailBinding {
 /** What the Worker is bound to, as declared in wrangler.jsonc. */
 export interface Env {
 	DB: D1Database;
+	/** One TripRoom per open trip: tells the phones on it when it changes (worker/trips/room.ts). */
+	TRIPS?: DurableObjectNamespace;
 	/** Sends sign-in links. Needs the sending domain set up in Cloudflare Email Service. */
 	EMAIL?: EmailBinding;
 	/** Who sign-in links are sent from, e.g. "Trolay <signin@your-domain>". */

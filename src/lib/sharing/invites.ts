@@ -8,7 +8,8 @@ const MESSAGES: Record<string, string> = {
 	too_many_requests: 'Too many invites. Try again later.',
 	invite_invalid: 'That invite has expired or was already used. Ask for a new link.',
 	own_trip: "That's your own trip: send the link to your partner instead.",
-	already_member: "You've already joined this trip."
+	already_member: "You've already joined this trip.",
+	no_partner: 'This trip has no partner.'
 };
 
 export class InviteError extends Error {
@@ -42,6 +43,16 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 /** A link that lets one other person join this open trip. It works once, for a day. */
 export async function createInviteLink(tripId: string): Promise<string> {
 	return (await post<{ link: string }>('/api/trips/invite', { tripId })).link;
+}
+
+/** The partner leaves the trip. The phone lets go of it afterwards (src/lib/sync/letgo.ts). */
+export async function leaveSharedTrip(tripId: string): Promise<void> {
+	await post('/api/trips/leave', { tripId });
+}
+
+/** The owner takes the partner off the trip. */
+export async function removeTripPartner(tripId: string): Promise<void> {
+	await post('/api/trips/remove-partner', { tripId });
 }
 
 export interface JoinedTrip {

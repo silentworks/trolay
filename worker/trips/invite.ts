@@ -126,6 +126,10 @@ export async function acceptInvite(request: Request, env: Env): Promise<Response
 			env.DB.prepare(`INSERT INTO changes (table_name, record_id) VALUES ('trips', ?)`).bind(
 				tripId
 			),
+			// Someone who left and comes back is no longer told they have left.
+			env.DB.prepare(
+				`DELETE FROM changes WHERE table_name = 'trip_members' AND record_id = ?`
+			).bind(`${tripId}:${userId}`),
 			// And the store it is at, which the partner is allowed to see.
 			env.DB.prepare(
 				`DELETE FROM changes WHERE table_name = 'stores'

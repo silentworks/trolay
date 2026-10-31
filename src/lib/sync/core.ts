@@ -1,4 +1,5 @@
 import type { TrolleyDB } from '#lib/data/db.ts';
+import { letGoOfTrip } from './letgo.ts';
 import { markRemote, type Pending } from './pending.ts';
 import {
 	SYNC_FIELDS,
@@ -33,7 +34,9 @@ const CURSOR = 'cursor';
 export class SyncCore {
 	constructor(
 		private readonly db: TrolleyDB,
-		private readonly send: Fetcher = (path, init) => fetch(path, init)
+		private readonly send: Fetcher = (path, init) => fetch(path, init),
+		/** Told the names of the stores of open trips that this account was taken off. */
+		private readonly onLetGo: (stores: string[]) => void = () => {}
 	) {}
 
 	private table(name: SyncTable) {
@@ -181,6 +184,12 @@ export class SyncCore {
 		for (;;) {
 			const page = await this.request<PullResponse>(`/api/sync/pull?since=${since}`);
 			await this.apply(page.records);
+			const dropped: string[] = [];
+			for (const trip of page.left ?? []) {
+				const store = await letGoOfTrip(this.db, trip);
+				if (store !== undefined) dropped.push(store);
+			}
+			if (dropped.length) this.onLetGo(dropped);
 			since = page.cursor;
 			await this.db.syncState.put({ key: CURSOR, value: since });
 			if (!page.more) return;

@@ -162,6 +162,18 @@ test:e2e`); the Worker tests cover the door. Deploying creates the class through
   phone asks `GET /api/trips/members` after each sync, since a partner can join at any moment;
   when the trip becomes shared, the owner marks the items they put in before signing in as theirs.
   A name is, for now, the part of the person's email before the `@`.
+- **Leaving a shared trip, or removing the partner** (`worker/trips/membership.ts`,
+  `src/lib/sync/letgo.ts`, the cart's ⋮ menu). The partner's menu has "Leave this trip" and the
+  owner's, once there is a partner, "Remove partner" (in place of "Invite a partner"); both ask
+  first. Only an open trip can be left: a finished shared trip stays in both histories, and a
+  partner can't delete the owner's trip, so on an empty cart they leave rather than "Leave
+  store". The partner's membership row is deleted, not removed, and what they added stays with
+  the owner ("Added by someone who has left"). The owner can then invite someone else, and a
+  partner who left can be invited back. The partner's phone is told through the change log: a
+  pull answers with `left` (the trip and its store), and the phone lets go of the open trip, its
+  items, their photos and the owner's store (only that store id; its own stores are untouched, and
+  a store another trip here uses stays). Nothing is queued to sync from that. If the owner removed
+  them, the start screen says so.
 - **Finishing a trip** snapshots its totals, so editing a store's VAT rate later does not
   rewrite history. Photos are deleted on finish unless the receipt total differs from the app's
   by a penny or more, when they are kept as evidence.

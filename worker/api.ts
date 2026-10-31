@@ -13,6 +13,7 @@ import { capturedMail } from './mail.ts';
 import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
 import { liveTrip } from './trips/live.ts';
+import { leaveTrip, removePartner } from './trips/membership.ts';
 import { members, photo } from './trips/photos.ts';
 import { push } from './sync/push.ts';
 
@@ -40,6 +41,8 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/trips/join': { POST: acceptInvite },
 	'/api/trips/live': { GET: liveTrip },
 	'/api/trips/members': { GET: members },
+	'/api/trips/leave': { POST: leaveTrip },
+	'/api/trips/remove-partner': { POST: removePartner },
 	// Emails kept instead of sent, so tests can read the link. Only exists in "capture" mode.
 	'/api/dev/outbox': {
 		GET: (request, env) =>

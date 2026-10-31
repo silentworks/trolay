@@ -3,38 +3,80 @@
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import SyncStatus from '#lib/components/SyncStatus.svelte';
-	import { account } from '#lib/auth/account.svelte.ts';
+	import { account, type CodeResult } from '#lib/auth/account.svelte.ts';
 	import { pendingInvite } from '#lib/sharing/invites.ts';
 
 	let email = $state('');
+	let code = $state('');
+	let result = $state<CodeResult>();
+
+	const digits = $derived(code.replace(/\D/g, ''));
 
 	onMount(() => void account.refresh());
+
+	async function submitCode() {
+		result = await account.verifyCode(digits);
+		if (result) code = '';
+	}
 </script>
 
-{#snippet emailForm(heading: string, button: string)}
-	<form
-		class="email"
-		onsubmit={(event) => {
-			event.preventDefault();
-			void account.requestLink(email);
-		}}
-	>
-		<label for="account-email">{heading}</label>
-		<input
-			id="account-email"
-			class="input"
-			type="email"
-			autocomplete="email"
-			required
-			bind:value={email}
-		/>
-		<button class="btn" type="submit" disabled={account.busy}>{button}</button>
-		{#if account.linkSentTo}
+{#snippet emailForm(heading: string, button: string, confirm: string)}
+	{#if account.codeSentTo}
+		<form
+			class="email"
+			onsubmit={(event) => {
+				event.preventDefault();
+				void submitCode();
+			}}
+		>
 			<p class="status" role="status">
-				Check your email. The link works once and expires in 15 minutes.
+				Check your email. The code works once and expires in 10 minutes.
 			</p>
-		{/if}
-	</form>
+			<label for="account-code">Enter the 6-digit code sent to {account.codeSentTo}</label>
+			<input
+				id="account-code"
+				class="input code"
+				inputmode="numeric"
+				autocomplete="one-time-code"
+				maxlength="7"
+				placeholder="123 456"
+				bind:value={code}
+			/>
+			<button class="btn btn-primary" type="submit" disabled={account.busy || digits.length !== 6}>
+				{confirm}
+			</button>
+			<button
+				class="btn btn-ghost"
+				type="button"
+				onclick={() => {
+					code = '';
+					account.startOver();
+				}}
+			>
+				Use a different email
+			</button>
+		</form>
+	{:else}
+		<form
+			class="email"
+			onsubmit={(event) => {
+				event.preventDefault();
+				result = undefined;
+				void account.requestCode(email);
+			}}
+		>
+			<label for="account-email">{heading}</label>
+			<input
+				id="account-email"
+				class="input"
+				type="email"
+				autocomplete="email"
+				required
+				bind:value={email}
+			/>
+			<button class="btn" type="submit" disabled={account.busy}>{button}</button>
+		</form>
+	{/if}
 {/snippet}
 
 <svelte:head><title>Account · Trolay</title></svelte:head>
@@ -44,6 +86,13 @@
 
 	{#if account.status === 'signedIn'}
 		<p class="status" role="status">You're signed in on this device.</p>
+		{#if result?.kind === 'signedIn' && !result.hasPasskey}
+			<p class="hint">
+				Add a passkey on this device, and you can sign in here without waiting for an email.
+			</p>
+		{:else if result?.kind === 'added'}
+			<p class="status">{result.email} is now on your account.</p>
+		{/if}
 		{#if pendingInvite()}
 			<a class="btn btn-primary btn-block" href={resolve('/join')}>Continue joining the trip</a>
 		{/if}
@@ -59,7 +108,8 @@
 		</div>
 		{@render emailForm(
 			'Add an email address, so you can sign in without a passkey',
-			'Email me a link to confirm it'
+			'Email me a code to confirm it',
+			'Confirm email'
 		)}
 	{:else if account.status === 'unknown' && account.maybeSignedIn}
 		<p class="hint">
@@ -86,7 +136,11 @@
 				Create an account with a passkey
 			</button>
 		</div>
-		{@render emailForm('No passkey on this device? Sign in by email', 'Email me a sign-in link')}
+		{@render emailForm(
+			'No passkey on this device? Sign in by email',
+			'Email me a sign-in code',
+			'Sign in'
+		)}
 	{/if}
 
 	{#if account.error}<p class="error" role="alert">{account.error}</p>{/if}
@@ -106,6 +160,12 @@
 	.status {
 		font-weight: 700;
 		color: var(--accent);
+	}
+
+	.code {
+		font-size: 1.4rem;
+		letter-spacing: 0.2em;
+		text-align: center;
 	}
 
 	.email {

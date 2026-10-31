@@ -13,12 +13,14 @@ const MESSAGES: Record<string, string> = {
 	invalid_email: "That doesn't look like an email address.",
 	too_many_requests: 'Too many requests. Wait a minute and try again.',
 	email_failed: 'The email could not be sent. Try again later.',
-	link_invalid: 'That link has expired or was already used. Ask for a new one.',
+	code_invalid: "That code isn't right, or it has expired. Check it, or ask for a new one.",
+	code_locked: 'Too many wrong tries. Ask for a new code.',
+	invalid_code: 'The code is six digits.',
 	email_in_use: 'That email belongs to a different account.'
 };
 
-/** What opening an emailed link did. */
-export type LinkResult =
+/** What entering an emailed code did. */
+export type CodeResult =
 	{ kind: 'signedIn'; hasPasskey: boolean } | { kind: 'added'; email: string };
 
 function explain(cause: unknown): string {
@@ -90,8 +92,8 @@ class Account {
 	maybeSignedIn = $state(false);
 	busy = $state(false);
 	error = $state<string>();
-	/** The address a sign-in link was last sent to. */
-	linkSentTo = $state<string>();
+	/** The address a sign-in code was last sent to, until it is used or the person starts over. */
+	codeSentTo = $state<string>();
 
 	/** Asks the server who is signed in. Offline, or with no API, the status stays unknown. */
 	async refresh(): Promise<void> {
@@ -163,24 +165,33 @@ class Account {
 		});
 	}
 
-	/** Emails a sign-in link; signed in, the link adds the address to this account instead. */
-	requestLink(email: string): Promise<void> {
+	/** Emails a sign-in code; signed in, the code adds the address to this account instead. */
+	requestCode(email: string): Promise<void> {
 		return this.attempt(async () => {
-			await api('/api/auth/link/request', { email });
-			this.linkSentTo = email.trim();
+			await api('/api/auth/code/request', { email });
+			this.codeSentTo = email.trim();
 		});
 	}
 
-	/** Uses the token from an emailed link. Resolves to what it did, or undefined on failure. */
-	async completeLink(token: string): Promise<LinkResult | undefined> {
-		let result: LinkResult | undefined;
+	/** Forgets the address a code was sent to, to ask for one for another address. */
+	startOver(): void {
+		this.codeSentTo = undefined;
+		this.error = undefined;
+	}
+
+	/** Uses the code from the email. Resolves to what it did, or undefined on failure. */
+	async verifyCode(code: string): Promise<CodeResult | undefined> {
+		const email = this.codeSentTo;
+		if (!email) return undefined;
+		let result: CodeResult | undefined;
 		await this.attempt(async () => {
 			const reply = await api<{
 				user?: { id: string };
 				hasPasskey?: boolean;
 				added?: boolean;
 				email?: string;
-			}>('/api/auth/link/verify', { token });
+			}>('/api/auth/code/verify', { email, code });
+			this.codeSentTo = undefined;
 			if (reply.added) {
 				result = { kind: 'added', email: reply.email ?? '' };
 			} else {

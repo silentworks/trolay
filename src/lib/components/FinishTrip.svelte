@@ -55,10 +55,10 @@
 
 	async function finish(event: SubmitEvent) {
 		event.preventDefault();
-		if (invalid || busy) return;
+		if (entered == null || busy) return;
 		busy = true;
 		try {
-			await onreceipt(entered ?? undefined);
+			await onreceipt(entered);
 			await onfinish();
 		} finally {
 			busy = false;
@@ -87,7 +87,7 @@
 			aria-invalid={invalid}
 			aria-describedby="{uid}-difference"
 		/>
-		<span class="hint">The total on the till receipt. Optional.</span>
+		<span class="hint">The total on the till receipt. Needed to finish the trip.</span>
 		{#if read === 'reading'}
 			<p class="read" role="status">Reading the receipt…</p>
 		{:else if read === 'confirmed'}
@@ -108,7 +108,7 @@
 		{#if invalid}
 			Enter the total like 42.50.
 		{:else if difference === undefined}
-			Add the receipt total to check the till charged what Trolay added up.
+			Enter the receipt total to finish the trip. It checks the till charged what Trolay added up.
 		{:else if difference === 0}
 			✓ The receipt matches.
 		{:else if difference > 0}
@@ -132,7 +132,7 @@
 	<button
 		class="btn btn-primary btn-block"
 		type="submit"
-		disabled={invalid || busy || read === 'reading'}
+		disabled={entered === undefined || invalid || busy || read === 'reading'}
 	>
 		Finish trip
 	</button>

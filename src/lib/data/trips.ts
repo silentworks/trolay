@@ -108,7 +108,8 @@ export interface FinishResult {
 }
 
 /**
- * Closes the trip and moves it to history, with its totals as they stand now. The label photos
+ * Closes the trip and moves it to history, with its totals as they stand now. The receipt total
+ * must have been entered: it is what the trip is checked against. The label photos
  * are deleted unless the receipt total differs from the app's, when they are kept as evidence.
  */
 export async function finishTrip(tripId: string): Promise<FinishResult> {
@@ -117,6 +118,9 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
 		const items = await liveItems(tripId);
 		if (items.length === 0) throw new Error('Add an item before finishing the trip.');
+		if (trip.receiptTotalMinor === undefined) {
+			throw new Error('Enter the receipt total before finishing the trip.');
+		}
 		const store = await db.stores.get(trip.storeId);
 		const taxRateBps = store?.taxRateBps ?? DEFAULT_VAT_BPS;
 		const { inclMinor, exclMinor, itemCount } = tripTotals(items, taxRateBps);

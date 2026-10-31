@@ -64,7 +64,17 @@ describe('registering with a passkey', () => {
 		expect(done.status).toBe(400);
 	});
 
-	it('refuses a passkey made for another site', async () => {
+	it('accepts a passkey from an authenticator that never verifies the user, to make and to use', async () => {
+		const authenticator = new FakeAuthenticator(RP_ID, ORIGIN, false);
+		const made = await register(authenticator);
+		expect(made.done.status).toBe(201);
+		const again = await signIn(authenticator);
+		expect(again.done.status).toBe(200);
+		expect(again.done.body.user.id).toBe(made.done.body.user.id);
+		expect(again.done.cookie).toBeDefined();
+	});
+
+	it('still refuses a passkey made for another site', async () => {
 		const start = await call('/api/auth/register/options', { method: 'POST', body: {} });
 		const credential = await new FakeAuthenticator(RP_ID, ORIGIN).create(start.body.options, {
 			origin: 'https://evil.test'

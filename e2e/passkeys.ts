@@ -5,8 +5,15 @@ export interface VirtualPasskeys {
 	authenticatorId: string;
 }
 
-/** A virtual authenticator stands in for the phone's passkey store (Chromium only). */
-export async function withPasskeys(page: Page): Promise<VirtualPasskeys> {
+/**
+ * A virtual authenticator stands in for the phone's passkey store (Chromium only). By default it
+ * verifies the user, as a phone with a fingerprint or PIN does; `verifiesUser: false` is one that
+ * never does (some password managers and security keys).
+ */
+export async function withPasskeys(
+	page: Page,
+	{ verifiesUser = true }: { verifiesUser?: boolean } = {}
+): Promise<VirtualPasskeys> {
 	const client = await page.context().newCDPSession(page);
 	await client.send('WebAuthn.enable');
 	const { authenticatorId } = await client.send('WebAuthn.addVirtualAuthenticator', {
@@ -14,8 +21,8 @@ export async function withPasskeys(page: Page): Promise<VirtualPasskeys> {
 			protocol: 'ctap2',
 			transport: 'internal',
 			hasResidentKey: true,
-			hasUserVerification: true,
-			isUserVerified: true,
+			hasUserVerification: verifiesUser,
+			isUserVerified: verifiesUser,
 			automaticPresenceSimulation: true
 		}
 	});

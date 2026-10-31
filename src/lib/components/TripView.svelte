@@ -10,7 +10,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
 	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
-	import AppHeader from './AppHeader.svelte';
+	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
 	import PhotoImage from './PhotoImage.svelte';
 	import PhotoViewer from './PhotoViewer.svelte';
 	import Sheet from './Sheet.svelte';
@@ -40,6 +40,11 @@
 		trip && totals ? receiptDifference(trip.receiptTotalMinor, totals.inclMinor) : undefined
 	);
 	const photoCount = $derived(view.current?.items.filter((item) => item.photoId).length ?? 0);
+
+	const menu = $derived<MenuEntry[]>([
+		{ label: 'Export as CSV', onclick: exportCsv },
+		{ label: 'Delete this trip', onclick: () => (deleting = true), danger: true }
+	]);
 
 	async function exportCsv() {
 		problem = '';
@@ -80,6 +85,7 @@
 		title={trip && totals ? (view.current?.store?.name ?? 'Deleted store') : 'Trip'}
 		subtitle={trip && totals ? view.current?.store?.branch : undefined}
 		back={{ href: resolve('/history'), label: 'History' }}
+		menu={trip && totals ? menu : undefined}
 	/>
 
 	{#if view.loaded && (!trip || !totals)}
@@ -131,14 +137,6 @@
 			</div>
 		{/if}
 
-		<div class="exports">
-			<button class="btn" type="button" onclick={exportCsv}>Export as CSV</button>
-		</div>
-		<div class="exports">
-			<button class="btn btn-danger" type="button" onclick={() => (deleting = true)}>
-				Delete this trip
-			</button>
-		</div>
 		{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 
 		<h2>Items</h2>
@@ -270,10 +268,6 @@
 
 	.kept p {
 		margin: 0;
-	}
-
-	.exports {
-		margin-top: 12px;
 	}
 
 	.items {

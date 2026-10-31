@@ -240,9 +240,10 @@ test('exports one trip or all history as CSV for spreadsheets', async ({ page })
 	await finishTrip(page);
 
 	await page.goto('/history');
-	const all = await downloaded(page, () =>
-		page.getByRole('button', { name: 'Export all history as CSV' }).click()
-	);
+	const all = await downloaded(page, async () => {
+		await page.getByRole('button', { name: 'Menu' }).click();
+		await page.getByRole('navigation', { name: 'Menu' }).getByText('Export all as CSV').click();
+	});
 	expect(all.name).toMatch(/^trolay-history-\d{4}-\d{2}-\d{2}\.csv$/);
 	// UTF-8 with a byte order mark, so Excel shows "£" and "â" intact.
 	expect([...all.bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
@@ -258,9 +259,10 @@ test('exports one trip or all history as CSV for spreadsheets', async ({ page })
 	expect(rows).toHaveLength(4);
 
 	await page.getByRole('link', { name: /Tesco/ }).first().click();
-	const one = await downloaded(page, () =>
-		page.getByRole('button', { name: 'Export as CSV' }).click()
-	);
+	const one = await downloaded(page, async () => {
+		await page.getByRole('button', { name: 'Menu' }).click();
+		await page.getByRole('navigation', { name: 'Menu' }).getByText('Export as CSV').click();
+	});
 	expect(one.name).toMatch(/^trolay-tesco-\d{4}-\d{2}-\d{2}\.csv$/);
 	const lines = one.bytes.toString('utf8').split('\r\n');
 	expect(lines).toHaveLength(3);

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import AppHeader from '#lib/components/AppHeader.svelte';
+	import AppHeader, { type MenuEntry } from '#lib/components/AppHeader.svelte';
 	import BackupPanel from '#lib/components/BackupPanel.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
 	import { formatWhen } from '#lib/dates.ts';
@@ -14,6 +14,11 @@
 	let problem = $state('');
 	let clearing = $state(false);
 	let note = $state('');
+
+	const menu: MenuEntry[] = [
+		{ label: 'Export all as CSV', onclick: exportAll },
+		{ label: 'Delete all history', onclick: () => (clearing = true), danger: true }
+	];
 
 	async function exportAll() {
 		problem = '';
@@ -48,7 +53,11 @@
 </svelte:head>
 
 <div class="page">
-	<AppHeader title="History" back={{ href: resolve('/'), label: 'Trolley' }} />
+	<AppHeader
+		title="History"
+		back={{ href: resolve('/'), label: 'Trolley' }}
+		menu={history.current?.length ? menu : undefined}
+	/>
 
 	{#if history.loaded}
 		{#if history.current?.length}
@@ -86,22 +95,12 @@
 					</li>
 				{/each}
 			</ul>
-			<button class="btn btn-block export" type="button" onclick={exportAll}>
-				Export all history as CSV
-			</button>
-			<button
-				class="btn btn-danger btn-block export"
-				type="button"
-				onclick={() => (clearing = true)}
-			>
-				Delete all history
-			</button>
-			{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 		{:else}
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
 	{/if}
 
+	{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 	{#if note}<p class="hint" role="status">{note}</p>{/if}
 
 	<BackupPanel />
@@ -126,10 +125,6 @@
 
 	.hint {
 		color: var(--muted);
-	}
-
-	.export {
-		margin-top: 16px;
 	}
 
 	.trips {

@@ -5,6 +5,8 @@
 		onclick?: () => void;
 		/** Set apart at the bottom of the menu, in the accent colour. */
 		primary?: boolean;
+		/** Destroys something: in the danger colour. */
+		danger?: boolean;
 	}
 
 	interface Props {
@@ -93,7 +95,12 @@
 							{entry.label}
 						</a>
 					{:else}
-						<button class:primary={entry.primary} type="button" onclick={() => pick(entry)}>
+						<button
+							class:primary={entry.primary}
+							class:danger={entry.danger}
+							type="button"
+							onclick={() => pick(entry)}
+						>
 							{entry.label}
 						</button>
 					{/if}
@@ -218,6 +225,10 @@
 	.menu a:hover,
 	.menu button:hover {
 		background: var(--surface-2);
+	}
+
+	.menu .danger {
+		color: var(--danger);
 	}
 
 	.menu .primary {

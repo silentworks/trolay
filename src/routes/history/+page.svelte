@@ -2,14 +2,18 @@
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import BackupPanel from '#lib/components/BackupPanel.svelte';
+	import Sheet from '#lib/components/Sheet.svelte';
 	import { formatWhen } from '#lib/dates.ts';
-	import { listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
+	import { deleteTrip, listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { exportHistoryCsv } from '#lib/export/history.ts';
 	import { formatGBP } from '#lib/money.ts';
+	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
 
 	const history = new LiveQuery(() => listFinishedTrips());
 	let problem = $state('');
+	let clearing = $state(false);
+	let note = $state('');
 
 	async function exportAll() {
 		problem = '';
@@ -17,6 +21,24 @@
 			await exportHistoryCsv();
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
+		}
+	}
+
+	/** Clears the history of the trips that are this account's own; a partner's are left. */
+	async function clearAll() {
+		problem = '';
+		note = '';
+		try {
+			const ids = (history.current ?? []).map(({ trip }) => trip.id);
+			const theirs = await tripsSharedWithMe(ids);
+			for (const id of ids) if (!theirs.has(id)) await deleteTrip(id);
+			if (theirs.size) {
+				note = `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`;
+			}
+		} catch (error) {
+			problem = error instanceof Error ? error.message : String(error);
+		} finally {
+			clearing = false;
 		}
 	}
 </script>
@@ -67,14 +89,33 @@
 			<button class="btn btn-block export" type="button" onclick={exportAll}>
 				Export all history as CSV
 			</button>
+			<button
+				class="btn btn-danger btn-block export"
+				type="button"
+				onclick={() => (clearing = true)}
+			>
+				Delete all history
+			</button>
 			{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 		{:else}
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
 	{/if}
 
+	{#if note}<p class="hint" role="status">{note}</p>{/if}
+
 	<BackupPanel />
 </div>
+
+<Sheet open={clearing} title="Delete all history?" onclose={() => (clearing = false)}>
+	<p>
+		Every finished trip, with its items and photos, will be deleted. Your stores stay. This can't be
+		undone: export a CSV first if you want to keep a copy.
+	</p>
+	<button class="btn btn-danger btn-block" type="button" onclick={clearAll}>
+		Delete all history
+	</button>
+</Sheet>
 
 <style>
 	.page {

@@ -1,13 +1,15 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { formatWhen } from '#lib/dates.ts';
 	import type { Item } from '#lib/data/db.ts';
 	import { itemName, listTripItems } from '#lib/data/items.ts';
 	import { getStore } from '#lib/data/stores.ts';
-	import { deleteTripPhotos, getTrip, receiptDifference } from '#lib/data/trips.ts';
+	import { deleteTrip, deleteTripPhotos, getTrip, receiptDifference } from '#lib/data/trips.ts';
 	import { exportTripCsv } from '#lib/export/history.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { formatGBP, lineTotals } from '#lib/money.ts';
+	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
 	import AppHeader from './AppHeader.svelte';
 	import PhotoImage from './PhotoImage.svelte';
 	import PhotoViewer from './PhotoViewer.svelte';
@@ -29,6 +31,7 @@
 
 	let viewing = $state<Item>();
 	let confirming = $state(false);
+	let deleting = $state(false);
 	let problem = $state('');
 
 	const trip = $derived(view.current?.trip);
@@ -44,6 +47,21 @@
 			await exportTripCsv(tripId);
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
+		}
+	}
+
+	async function deleteThisTrip() {
+		problem = '';
+		try {
+			if ((await tripsSharedWithMe([tripId])).size) {
+				throw new Error('This trip belongs to whoever invited you, so only they can delete it.');
+			}
+			await deleteTrip(tripId);
+			await goto(resolve('/history'));
+		} catch (error) {
+			problem = error instanceof Error ? error.message : String(error);
+		} finally {
+			deleting = false;
 		}
 	}
 
@@ -116,6 +134,11 @@
 		<div class="exports">
 			<button class="btn" type="button" onclick={exportCsv}>Export as CSV</button>
 		</div>
+		<div class="exports">
+			<button class="btn btn-danger" type="button" onclick={() => (deleting = true)}>
+				Delete this trip
+			</button>
+		</div>
 		{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 
 		<h2>Items</h2>
@@ -163,6 +186,16 @@
 	</p>
 	<button class="btn btn-danger btn-block" type="button" onclick={deletePhotos}>
 		Delete photos
+	</button>
+</Sheet>
+
+<Sheet open={deleting} title="Delete this trip?" onclose={() => (deleting = false)}>
+	<p>
+		This trip and its {totals?.itemCount === 1 ? 'item' : `${totals?.itemCount ?? 0} items`}, with
+		any photos, will be deleted from your history. This can't be undone.
+	</p>
+	<button class="btn btn-danger btn-block" type="button" onclick={deleteThisTrip}>
+		Delete trip
 	</button>
 </Sheet>
 

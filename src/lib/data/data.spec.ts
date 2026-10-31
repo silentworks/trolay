@@ -13,9 +13,10 @@ import {
 	setQuantity,
 	updateItem
 } from './items';
-import { addStore, listStores, updateStore } from './stores';
+import { addStore, deleteStore, listStores, updateStore } from './stores';
 import {
 	changeTripStore,
+	deleteTrip,
 	deleteTripPhotos,
 	finishTrip,
 	leaveTrip,
@@ -427,5 +428,56 @@ describe('who added an item', () => {
 		expect((await db.items.get(gone.id))?.addedBy).toBeUndefined();
 		// And the change is on its way to the server.
 		expect((await db.items.get(nobody.id))?.pending).toHaveProperty('addedBy');
+	});
+});
+
+describe('deleting stores and history', () => {
+	async function aFinishedTrip(storeId: string) {
+		const trip = await startTrip(storeId);
+		await addItem(trip.id, milk);
+		await setReceiptTotal(trip.id, 145);
+		await finishTrip(trip.id);
+		return trip;
+	}
+
+	it('deletes a finished trip with its items', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await aFinishedTrip(store.id);
+		await deleteTrip(trip.id);
+		expect(await listFinishedTrips()).toEqual([]);
+		expect(await listTripItems(trip.id)).toEqual([]);
+		expect(await db.trips.get(trip.id)).toMatchObject({ deletedAt: expect.any(Number) });
+	});
+
+	it('refuses to delete an open trip', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		await expect(deleteTrip(trip.id)).rejects.toThrow('Finish or leave');
+	});
+
+	it('deletes a store but keeps its history', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		await aFinishedTrip(store.id);
+		await deleteStore(store.id);
+		expect(await listStores()).toEqual([]);
+		const history = await listFinishedTrips();
+		expect(history).toHaveLength(1);
+		expect(history[0].store).toBeUndefined();
+	});
+
+	it('deletes a store together with its history', async () => {
+		const tesco = await addStore({ name: 'Tesco' });
+		const aldi = await addStore({ name: 'Aldi' });
+		await aFinishedTrip(tesco.id);
+		await aFinishedTrip(aldi.id);
+		await deleteStore(tesco.id, true);
+		expect((await listFinishedTrips()).map((t) => t.store?.name)).toEqual(['Aldi']);
+	});
+
+	it('will not delete the store of the open trip', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		await startTrip(store.id);
+		await expect(deleteStore(store.id)).rejects.toThrow('Finish or leave');
+		expect(await listStores()).toHaveLength(1);
 	});
 });

@@ -1,5 +1,6 @@
 import { DEFAULT_VAT_BPS } from '#lib/money.ts';
 import { db, isLive, newId, type Store } from './db';
+import { deleteTrip } from './trips';
 
 export interface StoreInput {
 	name: string;
@@ -54,4 +55,22 @@ export async function listStores(): Promise<Store[]> {
 export async function getStore(id: string): Promise<Store | undefined> {
 	const store = await db.stores.get(id);
 	return isLive(store) ? store : undefined;
+}
+
+/**
+ * Deletes a store. Its past trips stay in history under "Deleted store", or go too when
+ * `withHistory` is set. A store being shopped at right now can't go.
+ */
+export async function deleteStore(id: string, withHistory = false): Promise<void> {
+	await db.transaction('rw', [db.stores, db.trips, db.items, db.photos], async () => {
+		const store = await db.stores.get(id);
+		if (!isLive(store)) return;
+		const trips = (await db.trips.where('storeId').equals(id).toArray()).filter(isLive);
+		if (trips.some((trip) => trip.status === 'open')) {
+			throw new Error('Finish or leave the current trip first.');
+		}
+		if (withHistory) for (const trip of trips) await deleteTrip(trip.id);
+		const now = Date.now();
+		await db.stores.update(id, { deletedAt: now, updatedAt: now });
+	});
 }

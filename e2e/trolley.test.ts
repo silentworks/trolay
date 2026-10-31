@@ -196,7 +196,9 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await expect(items).toHaveCount(2);
 	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('2 × £1.45 incl. VAT');
 	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('£2.90');
-	await expect(page.getByRole('button', { name: /Decrease|Delete/ })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /Decrease|Delete Milk|Delete Bread/ })).toHaveCount(
+		0
+	);
 
 	// A new trip starts empty.
 	await page.getByRole('link', { name: 'Back to History' }).click();

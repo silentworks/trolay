@@ -25,12 +25,14 @@
 		setReceiptTotal,
 		setTripBudget
 	} from '#lib/data/trips.ts';
+	import { account } from '#lib/auth/account.svelte.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { tripTotals } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
 	import FinishTrip from './FinishTrip.svelte';
+	import InvitePartner from './InvitePartner.svelte';
 	import ItemForm from './ItemForm.svelte';
 	import ItemRow from './ItemRow.svelte';
 	import PhotoViewer from './PhotoViewer.svelte';
@@ -64,6 +66,7 @@
 		| { kind: 'edit'; item: Item }
 		| { kind: 'budget' }
 		| { kind: 'store' }
+		| { kind: 'invite' }
 		| { kind: 'finish' };
 	let sheet = $state<SheetState | null>(null);
 	let camera = $state(false);
@@ -157,6 +160,13 @@
 		await run(() => changeTripStore(tripId, next.id));
 	}
 
+	async function tapInvite() {
+		// Right after the app opens, who is signed in may still be being asked.
+		if (account.status === 'unknown') await account.refresh();
+		if (account.status === 'signedIn') sheet = { kind: 'invite' };
+		else show('Sign in on the Account page to share this trip.');
+	}
+
 	function tapFinish() {
 		sheet = { kind: 'finish' };
 	}
@@ -190,6 +200,7 @@
 			menu={[
 				{ label: 'History', href: resolve('/history') },
 				{ label: 'Stores', href: resolve('/stores') },
+				{ label: 'Invite a partner', onclick: tapInvite },
 				items.length
 					? { label: 'Finish trip', onclick: tapFinish, primary: true }
 					: { label: 'Leave store', onclick: leave, primary: true }
@@ -299,6 +310,10 @@
 			onreceipt={(minor) => setReceiptTotal(tripId, minor)}
 			onfinish={() => run(finish)}
 		/>
+	</Sheet>
+
+	<Sheet open={sheet?.kind === 'invite'} title="Invite a partner" onclose={() => (sheet = null)}>
+		{#if sheet?.kind === 'invite'}<InvitePartner {tripId} />{/if}
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'store'} title="Change store" onclose={() => (sheet = null)}>

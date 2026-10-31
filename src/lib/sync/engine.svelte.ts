@@ -86,16 +86,26 @@ class SyncEngine {
 		this.timer = setTimeout(() => void this.syncNow(), delay);
 	}
 
-	/** One round now, or, if one is running, another straight after it. */
-	async syncNow(): Promise<void> {
+	/**
+	 * One round now, or, if one is running, another straight after it. Resolves when the round
+	 * (and the one after it, if asked for) has finished, however it ended.
+	 */
+	syncNow(): Promise<void> {
 		if (this.syncing) {
 			this.again = true;
-			return;
+			return this.running;
 		}
-		if (account.status !== 'signedIn' || !account.userId) return;
+		if (account.status !== 'signedIn' || !account.userId) return Promise.resolve();
 		this.syncing = true;
+		this.running = this.rounds(account.userId);
+		return this.running;
+	}
+
+	private running: Promise<void> = Promise.resolve();
+
+	private async rounds(userId: string): Promise<void> {
 		try {
-			await this.core.adopt(account.userId);
+			await this.core.adopt(userId);
 			do {
 				this.again = false;
 				this.started = await this.core.pendingCount();

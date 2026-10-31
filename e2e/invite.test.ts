@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addItem, inviteLink, newPhone, ownerWithTrip, signUp, synced } from './shared';
+import { addItem, inviteLink, menu, newPhone, ownerWithTrip, signUp, synced } from './shared';
 
 test('an owner invites a partner by link, who signs in and joins; a second partner is refused', async ({
 	browser
@@ -57,4 +57,31 @@ test('inviting needs an account', async ({ page }) => {
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText('Invite a partner').click();
 	await expect(page.getByRole('status')).toContainText('Sign in on the Account page');
+});
+
+test('a trip started under another account on this phone says why it cannot be shared', async ({
+	browser
+}) => {
+	// The first account makes the trip and syncs it.
+	const phone = await ownerWithTrip(browser);
+	await addItem(phone, 'Milk', '1.45');
+	await expect(async () => {
+		await phone.goto('/account');
+		await expect(synced(phone)).toBeVisible();
+	}).toPass();
+
+	// Then a different account signs in on the same phone. The first account's trip stays on the
+	// phone, but the server will not give it to someone else, so it can never be shared from here.
+	await phone.getByRole('button', { name: 'Sign out' }).click();
+	await phone.getByRole('button', { name: 'Create an account with a passkey' }).click();
+	await expect(phone.getByText("You're signed in on this device.")).toBeVisible();
+	await expect(synced(phone)).toBeVisible();
+	await phone.goto('/');
+	await expect(phone.getByText('Milk')).toBeVisible();
+
+	await menu(phone, 'Invite a partner');
+	await expect(
+		phone.getByRole('dialog', { name: 'Invite a partner' }).getByRole('alert')
+	).toContainText('different account on this phone', { timeout: 15_000 });
+	await expect(phone.getByRole('alert')).not.toContainText('connection');
 });

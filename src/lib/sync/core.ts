@@ -25,6 +25,8 @@ interface Sent {
 
 const BATCH = 50;
 const CURSOR = 'cursor';
+/** Records the server refused as another account's, as `table/id`. */
+const REFUSED = 'refused';
 
 /**
  * Syncing without a screen: send what changed here, fetch what changed elsewhere. Settling
@@ -74,7 +76,9 @@ export class SyncCore {
 		if (known === userId) return;
 		await this.db.syncState.bulkPut([
 			{ key: 'userId', value: userId },
-			{ key: CURSOR, value: 0 }
+			{ key: CURSOR, value: 0 },
+			// What the last account was refused says nothing about this one.
+			{ key: REFUSED, value: [] }
 		]);
 		if (known !== undefined) await this.markAllPending();
 	}
@@ -144,6 +148,7 @@ export class SyncCore {
 				changes: batch.map(({ change }) => change)
 			});
 			let settled = 0;
+			const refused = new Set(await this.refusedKeys());
 			await this.db.transaction('rw', this.db.stores, this.db.trips, this.db.items, async (tx) => {
 				markRemote(tx);
 				for (const [index, sent] of batch.entries()) {
@@ -154,12 +159,30 @@ export class SyncCore {
 						continue;
 					}
 					if (result?.status === 'rejected') console.warn('Sync refused a change', result);
+					// A record that belongs to another account is refused for good; remember it, so
+					// the app can say why it will never reach this account. One the server takes later
+					// (it was refused for another reason) is forgotten.
+					if (result?.status === 'rejected' && result.reason === 'forbidden') refused.add(key);
+					else if (result?.status === 'ok') refused.delete(key);
 					await this.clearSent(sent);
 					settled++;
 				}
 			});
+			await this.db.syncState.put({ key: REFUSED, value: [...refused] });
 			if (!settled) return;
 		}
+	}
+
+	private async refusedKeys(): Promise<string[]> {
+		return ((await this.db.syncState.get(REFUSED))?.value as string[] | undefined) ?? [];
+	}
+
+	/**
+	 * Whether the server refused this record because it belongs to another account: it is on this
+	 * phone (from before this account signed in) and can never reach this account.
+	 */
+	async wasRefused(table: SyncTable, id: string): Promise<boolean> {
+		return (await this.refusedKeys()).includes(`${table}/${id}`);
 	}
 
 	/** Takes the fields that were sent off the record's pending list, unless changed again since. */

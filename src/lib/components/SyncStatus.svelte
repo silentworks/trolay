@@ -15,6 +15,8 @@
 			you're back online.
 		{:else if syncEngine.status === 'error'}
 			Couldn't sync just now. It will try again.
+		{:else if syncEngine.status === 'pending' && syncEngine.stuck}
+			{plural(syncEngine.pending)} couldn't be sent yet. It will keep trying.
 		{:else if syncEngine.status === 'pending'}
 			{plural(syncEngine.pending)} waiting to sync.
 		{:else}

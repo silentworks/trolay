@@ -29,6 +29,8 @@ class SyncEngine {
 	syncing = $state(false);
 	online = $state(true);
 	failed = $state(false);
+	/** A round finished with changes still waiting: the server would not take them yet. */
+	stuck = $state(false);
 	lastSyncedAt = $state<number>();
 	/** How many records this round started with to send, to show progress through a big upload. */
 	started = $state(0);
@@ -139,6 +141,7 @@ class SyncEngine {
 				await this.sharePhotos();
 			} while (this.again);
 			this.failed = false;
+			this.stuck = (await this.core.pendingCount()) > 0;
 			this.online = true;
 			this.lastSyncedAt = Date.now();
 		} catch (error) {

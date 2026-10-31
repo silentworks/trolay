@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 import { FAKE_CAMERA_BARCODE as BARCODE } from './global-setup';
+import { inviteLink, joinedPartner, ownerWithTrip } from './shared';
 
 /** Picks an entry from the shopping screen's ⋮ menu. */
 async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
@@ -292,4 +293,20 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 	await expect(page.getByText('The label photos are kept')).toBeHidden();
 	await page.getByRole('link', { name: 'Back to History' }).click();
 	await expect(page.getByRole('link', { name: /Tesco/ })).not.toContainText('Photos kept');
+});
+
+test("a label photo taken on one phone shows on the partner's phone", async ({ browser }) => {
+	const phone = { ...devices['Pixel 7'], permissions: ['camera' as const] };
+	const owner = await ownerWithTrip(browser, 'Tesco', 'Watford', phone);
+	const partner = await joinedPartner(browser, await inviteLink(owner), phone);
+	await expect(partner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	await partner.waitForTimeout(1000);
+
+	const review = await snapLabel(owner);
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+
+	// The item arrives, then its photo: the owner uploads it and the partner is told.
+	const photo = partner.getByRole('button', { name: /^Photo of / });
+	await expect(photo.locator('img')).toBeVisible(READ_TIMEOUT);
 });

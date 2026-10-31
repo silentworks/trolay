@@ -2,6 +2,7 @@ import { liveQuery } from 'dexie';
 import { account } from '#lib/auth/account.svelte.ts';
 import { db } from '#lib/data/db.ts';
 import { SignedOutError, SyncCore } from './core.ts';
+import { PhotoSync } from './photos.ts';
 
 export type SyncStatus = 'off' | 'synced' | 'pending' | 'syncing' | 'offline' | 'error';
 
@@ -17,6 +18,7 @@ const RETRY_MS = 10_000;
 
 class SyncEngine {
 	private readonly core = new SyncCore(db);
+	private readonly photos = new PhotoSync(db);
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	private again = false;
 
@@ -106,6 +108,20 @@ class SyncEngine {
 
 	private running: Promise<void> = Promise.resolve();
 
+	/**
+	 * Photos on a shared trip, after the trip's records. Having no signal is passed on (the round
+	 * is retried when it returns); any other trouble with photos is not worth showing as a sync
+	 * failure, and they are tried again next round.
+	 */
+	private async sharePhotos(): Promise<void> {
+		try {
+			await this.photos.run();
+		} catch (error) {
+			if (error instanceof TypeError) throw error;
+			console.warn('Photos on the shared trip:', error);
+		}
+	}
+
 	private async rounds(userId: string): Promise<void> {
 		try {
 			await this.core.adopt(userId);
@@ -113,6 +129,7 @@ class SyncEngine {
 				this.again = false;
 				this.started = await this.core.pendingCount();
 				await this.core.run();
+				await this.sharePhotos();
 			} while (this.again);
 			this.failed = false;
 			this.online = true;

@@ -2,6 +2,7 @@ import { sessionUser } from '../auth/session.ts';
 import { randomToken, sha256 } from '../auth/tokens.ts';
 import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
+import { notifyTrips } from './live.ts';
 
 const HOUR = 60 * 60 * 1000;
 /** How long an invite link works. It is for someone beside you, so not long. */
@@ -150,5 +151,7 @@ export async function acceptInvite(request: Request, env: Env): Promise<Response
 		if (String(cause).includes('UNIQUE')) return error(409, 'trip_full');
 		throw cause;
 	}
+	// The owner's phone is told, so it starts sharing photos without waiting for its next round.
+	await notifyTrips(env, [tripId]);
 	return json({ tripId, store: { name: invite.name, branch: invite.branch } });
 }

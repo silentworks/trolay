@@ -1,5 +1,6 @@
-// What syncs, shared by the app and the Worker so they cannot disagree. Only plain data syncs:
-// label photos stay on the phone that took them (they are large, and are deleted on finish).
+// What syncs, shared by the app and the Worker so they cannot disagree. Only plain data syncs
+// here. A label photo's bytes do not: an item carries the photo's id (`photoId`), and on a trip
+// shared with a partner the photo itself goes by its own route (worker/trips/photos.ts).
 
 export type FieldKind = 'string' | 'int' | 'bool' | 'json';
 
@@ -51,6 +52,7 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 		unitPriceMinor: int(true),
 		priceIncludesTax: bool(true),
 		quantity: int(true),
+		photoId: string(),
 		extracted: json(),
 		edited: bool(true),
 		addedBy: string(),

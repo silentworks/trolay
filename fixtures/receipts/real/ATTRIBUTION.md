@@ -13,9 +13,14 @@ camera guide: the last lines, the total and the payment.
 
 Crops of CC BY-SA images are shared under the same licence.
 
-- `au-woolworths-subtotal.jpg` shows only a SUBTOTAL, so the right answer is to find no total.
+- `au-woolworths-subtotal.jpg` shows only a SUBTOTAL, in dollars. The reader would take a
+  subtotal as the total when a receipt has no total, but it reads pounds, so the right answer
+  here is still to find none.
 - The two Dutch receipts word their totals in Dutch ("Te betalen", "Bedrag"), which the reader
   does not look for: they show that unknown captions are left alone rather than misread.
 - `uk-korean-shop.png` is a photo of the shop's own receipt, taken for this project and added
   because the reader failed on it: the total reads "Total ( 7 items )", amounts end in "£" and
   the amount sits below its caption.
+- `uk-wholesale-incl-vat.png` is a photo of a wholesale receipt, taken for this project because
+  the reader failed on it: the total reads "**** TOTAL(INCL VAT)", its amount is printed white on
+  black, and the photo ends there with no payment lines.

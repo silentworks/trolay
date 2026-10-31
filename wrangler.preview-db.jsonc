@@ -1,0 +1,14 @@
+{
+	// Only for `pnpm db:migrate:preview`: wrangler's d1 commands do not read the `previews` block of
+	// wrangler.jsonc, so the preview database is named here, with the same migrations as production.
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "trolay-preview-db",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "trolay-preview",
+			"database_id": "20948ccc-e39e-4acc-82c5-bf78d69ea3ee",
+			"migrations_dir": "migrations"
+		}
+	]
+}

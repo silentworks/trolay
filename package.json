@@ -9,6 +9,7 @@
 		"dev:all": "node scripts/dev-all.js",
 		"db:migrate": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+		"db:migrate:preview": "wrangler d1 migrations apply trolay-preview --remote --config wrangler.preview-db.jsonc",
 		"build": "node scripts/copy-ocr-assets.js && vite build",
 		"preview": "vite preview",
 		"prepare": "node scripts/copy-ocr-assets.js && (svelte-kit sync || echo '')",

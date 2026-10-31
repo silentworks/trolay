@@ -121,6 +121,7 @@ describe('trips', () => {
 		await addItem(trip.id, milk);
 		await expect(leaveTrip(trip.id)).rejects.toThrow('Finish the trip instead');
 
+		await setReceiptTotal(trip.id, 145);
 		await finishTrip(trip.id);
 		await expect(leaveTrip(trip.id)).rejects.toThrow('not open');
 	});
@@ -275,6 +276,7 @@ describe('finishing a trip', () => {
 		expect((await db.trips.get(trip.id))?.receiptTotalMinor).toBe(389);
 		await setReceiptTotal(trip.id, undefined);
 		expect((await db.trips.get(trip.id))?.receiptTotalMinor).toBeUndefined();
+		await setReceiptTotal(trip.id, 389);
 		await finishTrip(trip.id);
 		await expect(setReceiptTotal(trip.id, 389)).rejects.toThrow('not open');
 	});
@@ -305,10 +307,20 @@ describe('finishing a trip', () => {
 		expect(items).toHaveLength(2);
 	});
 
-	it('deletes the photos when no receipt total was entered', async () => {
+	it('refuses to finish until the receipt total is entered, leaving the trip open', async () => {
 		const { trip } = await tripWithPhotos();
-		expect(await finishTrip(trip.id)).toEqual({ photosKept: false, difference: undefined });
-		expect(await db.photos.count()).toBe(0);
+		await expect(finishTrip(trip.id)).rejects.toThrow('Enter the receipt total');
+		await setReceiptTotal(trip.id, 389);
+		await setReceiptTotal(trip.id, undefined);
+		await expect(finishTrip(trip.id)).rejects.toThrow('Enter the receipt total');
+		expect((await db.trips.get(trip.id))?.status).toBe('open');
+		expect(await db.photos.count()).toBe(2);
+	});
+
+	it('accepts a receipt total of £0.00 as entered', async () => {
+		const { trip } = await tripWithPhotos();
+		await setReceiptTotal(trip.id, 0);
+		expect(await finishTrip(trip.id)).toMatchObject({ photosKept: true, difference: -389 });
 	});
 
 	it('keeps the photos as evidence when the receipt is out by even a penny', async () => {
@@ -325,6 +337,7 @@ describe('finishing a trip', () => {
 
 	it("keeps its totals when the store's VAT rate changes afterwards", async () => {
 		const { store, trip } = await tripWithPhotos();
+		await setReceiptTotal(trip.id, 389);
 		await finishTrip(trip.id);
 		await updateStore(store.id, { name: 'Tesco', taxRateBps: 0 });
 		expect((await db.trips.get(trip.id))?.totals).toMatchObject({
@@ -341,12 +354,14 @@ describe('finishing a trip', () => {
 		await expect(finishTrip(trip.id)).rejects.toThrow('Add an item');
 		await restoreItem(item.id);
 		await addItem(trip.id, { ...milk, description: 'Gone' }).then((i) => deleteItem(i.id));
+		await setReceiptTotal(trip.id, 145);
 		await finishTrip(trip.id);
 		expect((await db.trips.get(trip.id))?.totals?.inclMinor).toBe(145);
 	});
 
 	it('finishes only an open trip, so a new one can start', async () => {
 		const { store, trip } = await tripWithPhotos();
+		await setReceiptTotal(trip.id, 389);
 		await finishTrip(trip.id);
 		await expect(finishTrip(trip.id)).rejects.toThrow('not open');
 		expect((await startTrip(store.id)).status).toBe('open');
@@ -370,6 +385,7 @@ describe('history', () => {
 		const finish = async (storeId: string, at: number) => {
 			const trip = await startTrip(storeId);
 			await addItem(trip.id, milk);
+			await setReceiptTotal(trip.id, 145);
 			vi.setSystemTime(at);
 			await finishTrip(trip.id);
 			vi.useRealTimers();

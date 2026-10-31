@@ -151,7 +151,11 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	await expect(finish).toContainText('£3.89');
-	await expect(finish).toContainText('Add the receipt total');
+	await expect(finish).toContainText('Enter the receipt total to finish the trip');
+	// The trip cannot be finished until the receipt total is entered.
+	await expect(finish.getByRole('button', { name: 'Finish trip' })).toBeDisabled();
+	await finish.getByRole('button', { name: 'Finish trip' }).click({ force: true });
+	await expect(finish).toBeVisible();
 
 	const receipt = finish.getByLabel('Receipt total (£)');
 	await receipt.fill('3.90');
@@ -208,10 +212,11 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 	await expect(page.getByText("This trip isn't in your history.")).toBeVisible();
 });
 
-async function finishTrip(page: Page, receipt?: string) {
+/** Finishing needs the receipt total, so any total will do for tests that are not about it. */
+async function finishTrip(page: Page, receipt = '10.00') {
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	if (receipt) await finish.getByLabel('Receipt total (£)').fill(receipt);
+	await finish.getByLabel('Receipt total (£)').fill(receipt);
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 }

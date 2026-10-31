@@ -54,8 +54,11 @@ Work is tracked in the Linear project **Trolay**.
   an `HttpOnly`, `Secure`, `SameSite=Lax` cookie (`__Host-session` over HTTPS); only a hash of its
   token is stored, it lasts 30 days, and signing out ends it on that device only. Each ceremony's
   challenge is single-use and expires in 5 minutes. State-changing requests must be JSON and
-  must not come from another origin. Account screen: `/account`. The app is fully usable
-  without an account.
+  must not come from another origin. User verification is `preferred`, not required: a passkey
+  from an authenticator that cannot verify the user (some password managers and security keys, a
+  device with no screen lock) is accepted, as the options say it may be; the checks do not
+  demand it (`requireUserVerification: false`), and a refused passkey logs why. Account screen:
+  `/account`. The app is fully usable without an account.
 - **Sign-in by emailed link, for when a passkey isn't to hand** (`worker/auth/link.ts`,
   `worker/mail.ts`). A link works once and expires after 15 minutes. It points at
   `/account/link#token=…`: the token is in the fragment, which browsers never send to a server,

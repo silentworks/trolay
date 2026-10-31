@@ -63,7 +63,9 @@ export class FakeAuthenticator {
 
 	constructor(
 		private readonly rpID: string,
-		private readonly origin: string
+		private readonly origin: string,
+		/** False for an authenticator that never verifies the user (the UV flag stays clear). */
+		private readonly verifiesUser = true
 	) {}
 
 	get id(): string {
@@ -97,7 +99,7 @@ export class FakeAuthenticator {
 		);
 		const authData = concat(
 			await sha256(encoder.encode(this.rpID)),
-			new Uint8Array([0x45]), // user present, user verified, attested credential data
+			new Uint8Array([this.verifiesUser ? 0x45 : 0x41]), // present, (verified,) attested credential data
 			u32(this.counter),
 			new Uint8Array(16), // AAGUID
 			new Uint8Array([0, this.credentialId.length]),
@@ -132,7 +134,7 @@ export class FakeAuthenticator {
 		const clientData = await this.clientData('webauthn.get', options.challenge, lies);
 		const authData = concat(
 			await sha256(encoder.encode(this.rpID)),
-			new Uint8Array([0x05]), // user present, user verified
+			new Uint8Array([this.verifiesUser ? 0x05 : 0x01]), // user present, (user verified)
 			u32(this.counter)
 		);
 		const signed = concat(authData, await sha256(new Uint8Array(clientData)));

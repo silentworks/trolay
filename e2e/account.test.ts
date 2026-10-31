@@ -24,6 +24,19 @@ test('create an account with a passkey, stay signed in, sign out, sign in again'
 	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 });
 
+test('a passkey from an authenticator that never verifies the user can make an account', async ({
+	page
+}) => {
+	// Signing in again is covered by the Worker tests: Chromium's virtual authenticator will not
+	// answer a discoverable-credential request when it cannot verify the user.
+	await withPasskeys(page, { verifiesUser: false });
+	await page.goto('/account');
+	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
+	await page.reload();
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
+});
+
 test('the app keeps working without an account', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();

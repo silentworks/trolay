@@ -14,6 +14,17 @@ import { base64url, randomToken } from './tokens.ts';
 const CHALLENGE_LIFETIME = 5 * 60 * 1000;
 const RP_NAME = 'Trolay';
 
+// The options ask for user verification as `preferred`: use it when the authenticator can (a
+// fingerprint, a PIN), and carry on when it cannot. SimpleWebAuthn's checks default to requiring
+// it, which would turn away every authenticator that does not verify the user (some password
+// managers and security keys, a device with no screen lock) with no way to sign in at all.
+const VERIFICATION = { requireUserVerification: false } as const;
+
+/** Why a passkey was refused, for the logs; the person is only told it was not accepted. */
+function refused(step: string, cause: unknown): void {
+	console.warn(`Passkey ${step} refused:`, cause instanceof Error ? cause.message : cause);
+}
+
 // The app and the API share one origin, so the relying party is simply where the request was
 // made. A passkey made on one origin can never be used on another.
 function relyingParty(request: Request) {
@@ -125,9 +136,11 @@ export async function registrationVerify(request: Request, env: Env): Promise<Re
 			response: credentialResponse(body) as unknown as RegistrationResponseJSON,
 			expectedChallenge: challenge,
 			expectedOrigin: origin,
-			expectedRPID: rpID
+			expectedRPID: rpID,
+			...VERIFICATION
 		});
-	} catch {
+	} catch (cause) {
+		refused('registration', cause);
 		return error(400, 'verification_failed');
 	}
 	if (!verification.verified) return error(400, 'verification_failed');
@@ -211,6 +224,7 @@ export async function loginVerify(request: Request, env: Env): Promise<Response>
 			expectedChallenge: challenge,
 			expectedOrigin: origin,
 			expectedRPID: rpID,
+			...VERIFICATION,
 			credential: {
 				id: key.id,
 				publicKey: fromBase64url(key.public_key),
@@ -218,7 +232,8 @@ export async function loginVerify(request: Request, env: Env): Promise<Response>
 				transports: key.transports ? JSON.parse(key.transports) : undefined
 			}
 		});
-	} catch {
+	} catch (cause) {
+		refused('sign-in', cause);
 		return error(401, 'verification_failed');
 	}
 	if (!verification.verified) return error(401, 'verification_failed');

@@ -59,19 +59,21 @@ Work is tracked in the Linear project **Trolay**.
   device with no screen lock) is accepted, as the options say it may be; the checks do not
   demand it (`requireUserVerification: false`), and a refused passkey logs why. Account screen:
   `/account`. The app is fully usable without an account.
-- **Sign-in by emailed link, for when a passkey isn't to hand** (`worker/auth/link.ts`,
-  `worker/mail.ts`). A link works once and expires after 15 minutes. It points at
-  `/account/link#token=…`: the token is in the fragment, which browsers never send to a server,
-  so it stays out of logs, and a mail scanner that opens the link without running the app cannot
-  use it up. Only a hash of the token is stored. Asking for a link answers the same whether or
-  not the address has an account, and is rate-limited (one a minute and five an hour per
-  address, ten an hour per source). An address with no account gets one when its link is opened;
-  a signed-in user can add an address to their account, and that link signs nobody in. After
-  signing in by link, the app offers to add a passkey on that device. Email goes through
-  Cloudflare Email Service (`send_email` binding `EMAIL`); set `MAIL_FROM` in `wrangler.jsonc` to
-  an address on a domain you have set up there. In development, emails are captured and printed
-  by the API instead of sent (`MAIL_MODE=capture`, set by `pnpm dev:api`); never set it in
-  production, because it exposes the captured emails at `/api/dev/outbox`.
+- **Sign-in by emailed code, for when a passkey isn't to hand** (`worker/auth/code.ts`,
+  `worker/mail.ts`). The email holds six digits, typed into the Account page, so nothing has to
+  be opened from the mail app (the emailed link it replaced landed on a blank page from there).
+  A code works once and expires after 10 minutes, and a new one replaces the one before it.
+  Six digits are far easier to guess than a link's token, so each code survives five wrong
+  tries and is then locked (every guess is counted before it is looked at); only a hash of it is
+  stored, salted with its row's id. Asking for a code answers the same whether or not the
+  address has an account, and is rate-limited (one a minute and five an hour per address, ten an
+  hour per source). An address with no account gets one when its code is entered; a signed-in
+  user can add an address to their account, and that code signs nobody in. After signing in by
+  code, the app offers to add a passkey on that device. Email goes through Cloudflare Email
+  Service (`send_email` binding `EMAIL`); set `MAIL_FROM` in `wrangler.jsonc` to an address on a
+  domain you have set up there. In development, emails are captured and printed by the API
+  instead of sent (`MAIL_MODE=capture`, set by `pnpm dev:api`); never set it in production,
+  because it exposes the captured emails at `/api/dev/outbox`.
 - **Sync across your own devices** (`src/lib/sync/`, `worker/sync/`). Stores, trips and items
   sync; label photos stay on the phone that took them. The app works the same without it.
   - _Outbox:_ a hook on the local tables records, on each record itself, every field that changed
@@ -119,7 +121,7 @@ Work is tracked in the Linear project **Trolay**.
 - **Inviting a partner to a trip** (`worker/trips/invite.ts`, `src/lib/sharing/`, the shopping
   screen's ⋮ menu → "Invite a partner", and `/join`). The owner makes a link for an open trip;
   the trip is synced first so the server knows it. The link is `/join#token=…`, with the token in
-  the fragment like the sign-in link, and only its hash is stored. It works once, for one person,
+  the fragment, so it stays out of server logs, and only its hash is stored. It works once, for one person,
   for a day, and making another replaces it. Whoever opens it signs in (the invite waits in this
   tab's session storage meanwhile) and taps Join, which makes them the trip's `partner` in
   `trip_members`. A trip has at most one partner, enforced by a unique index, so two people

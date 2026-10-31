@@ -16,9 +16,9 @@ export interface Env {
 	TRIPS?: DurableObjectNamespace;
 	/** Label photos of shared open trips, under trips/<trip id>/<photo id>. */
 	PHOTOS?: R2Bucket;
-	/** Sends sign-in links. Needs the sending domain set up in Cloudflare Email Service. */
+	/** Sends sign-in codes. Needs the sending domain set up in Cloudflare Email Service. */
 	EMAIL?: EmailBinding;
-	/** Who sign-in links are sent from, e.g. "Trolay <signin@your-domain>". */
+	/** Who sign-in codes are sent from, e.g. "Trolay <signin@your-domain>". */
 	MAIL_FROM?: string;
 	/**
 	 * "capture" keeps emails in memory and prints them, instead of sending, and exposes them at

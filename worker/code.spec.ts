@@ -26,43 +26,63 @@ async function request(
 	email: string,
 	extra: { headers?: Record<string, string>; cookie?: string } = {}
 ) {
-	return call('/api/auth/link/request', { body: { email }, ...extra });
+	return call('/api/auth/code/request', { body: { email }, ...extra });
 }
 
-/** The token from the link in the latest email to this address. */
-function tokenFor(email: string): string {
+/** The six digits in the latest email to this address. */
+function codeFor(email: string): string {
 	const mail = capturedMail(email).at(-1)!;
-	return new URL(mail.text.match(/https?:\S+/)![0]).hash.replace('#token=', '');
+	return mail.text
+		.match(/\b(\d{3}) (\d{3})\b/)!
+		.slice(1, 3)
+		.join('');
 }
 
-const verify = (token: string, cookie?: string) =>
-	call('/api/auth/link/verify', { body: { token }, cookie });
+const verify = (email: string, code: string, cookie?: string) =>
+	call('/api/auth/code/verify', { body: { email, code }, cookie });
 
-describe('asking for a link', () => {
-	it('emails a link with the token in the fragment, and keeps only its hash', async () => {
+/** A wrong code that is not the right one. */
+const wrong = (code: string) => (code === '000000' ? '111111' : '000000');
+
+const ageCodes = () =>
+	env.DB.prepare('UPDATE login_codes SET created_at = created_at - 120000').run();
+
+describe('asking for a code', () => {
+	it('emails six digits, and keeps only a hash of them', async () => {
 		const { email, headers } = fresh();
 		const reply = await request(email, { headers });
 		expect(reply.status).toBe(202);
 		const mail = capturedMail(email).at(-1)!;
-		expect(mail.subject).toBe('Your Trolay sign-in link');
-		expect(mail.text).toMatch(
-			/^Open this link[\s\S]*https:\/\/trolay\.test\/account\/link#token=[\w-]{40,}/
-		);
-		expect(mail.text).toContain('15 minutes');
-		expect(mail.html).toContain('href="https://trolay.test/account/link#token=');
-		const rows = await env.DB.prepare('SELECT token_hash FROM login_tokens WHERE email = ?')
+		const code = codeFor(email);
+		expect(code).toMatch(/^\d{6}$/);
+		expect(mail.subject).toBe(`Your Trolay code is ${code.slice(0, 3)} ${code.slice(3)}`);
+		expect(mail.text).toContain('10 minutes');
+		expect(mail.text).not.toMatch(/https?:/);
+		expect(mail.html).toContain(`${code.slice(0, 3)} ${code.slice(3)}`);
+		const rows = await env.DB.prepare('SELECT * FROM login_codes WHERE email = ?')
 			.bind(email)
-			.all<{ token_hash: string }>();
+			.all();
 		expect(rows.results).toHaveLength(1);
-		expect(rows.results[0].token_hash).not.toBe(tokenFor(email));
+		expect(JSON.stringify(rows.results)).not.toContain(code);
+	});
+
+	it('makes codes that are spread over all six-digit numbers, leading zeros and all', async () => {
+		const seen = new Set<string>();
+		for (let i = 0; i < 60; i++) {
+			const { email, headers } = fresh();
+			await request(email, { headers });
+			seen.add(codeFor(email));
+		}
+		expect(seen.size).toBeGreaterThan(55);
+		for (const code of seen) expect(code).toMatch(/^\d{6}$/);
 	});
 
 	it('answers the same for an address with an account and one without', async () => {
 		const known = fresh();
 		await request(known.email, known);
-		await verify(tokenFor(known.email));
+		await verify(known.email, codeFor(known.email));
 		// Let the one-a-minute limit pass, so the two requests differ only in the address.
-		await env.DB.prepare('UPDATE login_tokens SET created_at = created_at - 120000').run();
+		await ageCodes();
 		const unknown = fresh();
 		const a = await request(known.email, known);
 		const b = await request(unknown.email, unknown);
@@ -72,26 +92,22 @@ describe('asking for a link', () => {
 
 	it('refuses an address that is not one', async () => {
 		for (const email of ['', 'nope', 'a@b', 'a b@c.com', 'x'.repeat(300) + '@example.com', 42]) {
-			const reply = await call('/api/auth/link/request', { body: { email } });
+			const reply = await call('/api/auth/code/request', { body: { email } });
 			expect(reply.status, String(email)).toBe(400);
 			expect(reply.body.error).toBe('invalid_email');
 		}
 	});
 
-	it('does not send a second link within a minute, nor more than five an hour', async () => {
+	it('does not send a second code within a minute, nor more than five an hour', async () => {
 		const { email, headers } = fresh();
-		const older = () =>
-			env.DB.prepare('UPDATE login_tokens SET created_at = created_at - 120000 WHERE email = ?')
-				.bind(email)
-				.run();
 		expect((await request(email, { headers })).status).toBe(202);
 		expect((await request(email, { headers })).status).toBe(429);
 		// Four more, a couple of minutes apart, make five in the hour; the sixth is refused.
 		for (let i = 0; i < 4; i++) {
-			await older();
+			await ageCodes();
 			expect((await request(email, { headers })).status).toBe(202);
 		}
-		await older();
+		await ageCodes();
 		expect((await request(email, { headers })).status).toBe(429);
 	});
 
@@ -103,28 +119,22 @@ describe('asking for a link', () => {
 	});
 
 	it('sends through the email binding, from the configured address', async () => {
-		const sent: unknown[] = [];
+		const sent: { from: string; to: string; subject: string; text: string; html: string }[] = [];
 		const live = testClient({
 			...test.env,
 			MAIL_FROM: 'Trolay <signin@trolay.test>',
 			EMAIL: { send: async (message) => (sent.push(message), { messageId: 'm1' }) }
 		});
 		const { email, headers } = fresh();
-		expect((await live.call('/api/auth/link/request', { body: { email }, headers })).status).toBe(
+		expect((await live.call('/api/auth/code/request', { body: { email }, headers })).status).toBe(
 			202
 		);
-		expect(sent).toEqual([
-			expect.objectContaining({
-				from: 'Trolay <signin@trolay.test>',
-				to: email,
-				subject: 'Your Trolay sign-in link',
-				text: expect.stringContaining('/account/link#token='),
-				html: expect.stringContaining('/account/link#token=')
-			})
-		]);
+		expect(sent).toHaveLength(1);
+		expect(sent[0]).toMatchObject({ from: 'Trolay <signin@trolay.test>', to: email });
+		expect(sent[0].text).toMatch(/\b\d{3} \d{3}\b/);
 	});
 
-	it('says so, and keeps no link, when the email cannot be sent', async () => {
+	it('says so, and keeps no code, when the email cannot be sent', async () => {
 		const broken = testClient({
 			...test.env,
 			MAIL_FROM: 'Trolay <signin@trolay.test>',
@@ -137,10 +147,10 @@ describe('asking for a link', () => {
 			}
 		});
 		const { email, headers } = fresh();
-		const reply = await broken.call('/api/auth/link/request', { body: { email }, headers });
+		const reply = await broken.call('/api/auth/code/request', { body: { email }, headers });
 		expect(reply.status).toBe(502);
 		expect(reply.body.error).toBe('email_failed');
-		const rows = await env.DB.prepare('SELECT 1 FROM login_tokens WHERE email = ?')
+		const rows = await env.DB.prepare('SELECT 1 FROM login_codes WHERE email = ?')
 			.bind(email)
 			.all();
 		expect(rows.results).toHaveLength(0);
@@ -149,19 +159,24 @@ describe('asking for a link', () => {
 	it('says so when sending is not set up at all', async () => {
 		const unset = testClient({ DB: test.env.DB });
 		const { email, headers } = fresh();
-		expect((await unset.call('/api/auth/link/request', { body: { email }, headers })).status).toBe(
+		expect((await unset.call('/api/auth/code/request', { body: { email }, headers })).status).toBe(
 			502
 		);
 	});
+
+	it('no longer has the emailed-link endpoints', async () => {
+		expect((await call('/api/auth/link/request', { body: { email: 'a@b.co' } })).status).toBe(404);
+		expect((await call('/api/auth/link/verify', { body: { token: 'x' } })).status).toBe(404);
+	});
 });
 
-describe('opening a link', () => {
+describe('entering a code', () => {
 	it('signs in, creating the account the first time, and works only once', async () => {
 		const { email, headers } = fresh();
 		await request(email, { headers });
-		const token = tokenFor(email);
+		const code = codeFor(email);
 
-		const first = await verify(token);
+		const first = await verify(email, code);
 		expect(first.status).toBe(200);
 		expect(first.body).toMatchObject({ created: true, hasPasskey: false });
 		expect(first.setCookie).toMatch(/^__Host-session=.*HttpOnly.*Secure.*SameSite=Lax/);
@@ -169,52 +184,101 @@ describe('opening a link', () => {
 			first.body.user.id
 		);
 
-		const again = await verify(token);
+		const again = await verify(email, code);
 		expect(again.status).toBe(400);
-		expect(again.body.error).toBe('link_invalid');
+		expect(again.body.error).toBe('code_invalid');
 		expect(again.setCookie).toBeUndefined();
 	});
 
 	it('signs in to the same account next time', async () => {
 		const { email, headers } = fresh();
 		await request(email, { headers });
-		const first = await verify(tokenFor(email));
-		await env.DB.prepare('UPDATE login_tokens SET created_at = created_at - 120000').run();
+		const first = await verify(email, codeFor(email));
+		await ageCodes();
 		await request(email, { headers });
-		const second = await verify(tokenFor(email));
+		const second = await verify(email, codeFor(email));
 		expect(second.body).toMatchObject({ created: false });
 		expect(second.body.user.id).toBe(first.body.user.id);
 	});
 
-	it('treats the address case-insensitively', async () => {
+	it('takes the address in any case, and the code with spaces, dashes or not', async () => {
 		const { email, headers } = fresh();
 		await request(email.toUpperCase(), { headers });
-		expect((await verify(tokenFor(email))).body.created).toBe(true);
+		const code = codeFor(email);
+		expect(
+			(await verify(email.toUpperCase(), `${code.slice(0, 3)} ${code.slice(3)}`)).body.created
+		).toBe(true);
+		await ageCodes();
+		await request(email, { headers });
+		const next = codeFor(email);
+		expect((await verify(email, `${next.slice(0, 3)}-${next.slice(3)}`)).status).toBe(200);
 	});
 
-	it('refuses an expired link, and one that was never made', async () => {
+	it('refuses a wrong code, an expired one, and an address that asked for none', async () => {
 		const { email, headers } = fresh();
 		await request(email, { headers });
-		const token = tokenFor(email);
-		await env.DB.prepare('UPDATE login_tokens SET expires_at = ? WHERE email = ?')
+		const code = codeFor(email);
+		expect(await verify(email, wrong(code))).toMatchObject({
+			status: 400,
+			body: { error: 'code_invalid' }
+		});
+		await env.DB.prepare('UPDATE login_codes SET expires_at = ? WHERE email = ?')
 			.bind(Date.now() - 1, email)
 			.run();
-		expect((await verify(token)).body.error).toBe('link_invalid');
-		expect((await verify('nonsense')).status).toBe(400);
-		expect((await call('/api/auth/link/verify', { body: {} })).body.error).toBe('invalid_token');
+		expect((await verify(email, code)).body.error).toBe('code_invalid');
+		expect((await verify(fresh().email, '123456')).body.error).toBe('code_invalid');
 	});
 
-	it('expires fifteen minutes after it was sent', async () => {
+	it('refuses what is not six digits', async () => {
 		const { email, headers } = fresh();
-		const before = Date.now();
+		await request(email, { headers });
+		for (const code of ['', '12345', '1234567', 'abcdef', '12 34', null, 123456]) {
+			const reply = await verify(email, code as string);
+			expect(reply.status, String(code)).toBe(400);
+			expect(reply.body.error).toBe('invalid_code');
+		}
+		expect((await call('/api/auth/code/verify', { body: { code: '123456' } })).status).toBe(400);
+	});
+
+	it('expires ten minutes after it was sent', async () => {
+		const { email, headers } = fresh();
 		await request(email, { headers });
 		const row = await env.DB.prepare(
-			'SELECT created_at, expires_at FROM login_tokens WHERE email = ?'
+			'SELECT created_at, expires_at FROM login_codes WHERE email = ?'
 		)
 			.bind(email)
 			.first<{ created_at: number; expires_at: number }>();
-		expect(row!.expires_at - row!.created_at).toBe(15 * 60 * 1000);
-		expect(row!.created_at).toBeGreaterThanOrEqual(before);
+		expect(row!.expires_at - row!.created_at).toBe(10 * 60 * 1000);
+	});
+
+	it('is locked after five wrong tries, even for the right code', async () => {
+		const { email, headers } = fresh();
+		await request(email, { headers });
+		const code = codeFor(email);
+		for (let i = 0; i < 4; i++) {
+			expect((await verify(email, wrong(code))).body.error).toBe('code_invalid');
+		}
+		// The fifth wrong try says the code is locked, and from then on nothing opens it.
+		expect((await verify(email, wrong(code))).body.error).toBe('code_locked');
+		const right = await verify(email, code);
+		expect(right.status).toBe(400);
+		expect(right.body.error).toBe('code_locked');
+		expect(right.setCookie).toBeUndefined();
+		// A new code starts afresh.
+		await ageCodes();
+		await request(email, { headers });
+		expect((await verify(email, codeFor(email))).status).toBe(200);
+	});
+
+	it('only the newest code for an address works', async () => {
+		const { email, headers } = fresh();
+		await request(email, { headers });
+		const first = codeFor(email);
+		await ageCodes();
+		await request(email, { headers });
+		const second = codeFor(email);
+		if (first !== second) expect((await verify(email, first)).body.error).toMatch(/^code_/);
+		expect((await verify(email, second)).status).toBe(200);
 	});
 
 	it('tells the app whether this account already has a passkey, to offer one if not', async () => {
@@ -222,22 +286,22 @@ describe('opening a link', () => {
 		const { email, headers } = fresh();
 		// Signed in with a passkey, add an email; then the email signs in to the same account.
 		await request(email, { headers, cookie: account.cookie });
-		const added = await verify(tokenFor(email));
+		const added = await verify(email, codeFor(email));
 		expect(added.body).toEqual({ added: true, email });
-		await env.DB.prepare('UPDATE login_tokens SET created_at = created_at - 120000').run();
+		await ageCodes();
 		await request(email, { headers });
-		const signedIn = await verify(tokenFor(email));
+		const signedIn = await verify(email, codeFor(email));
 		expect(signedIn.body).toMatchObject({ created: false, hasPasskey: true });
 		expect(signedIn.body.user.id).toBe(account.body.user.id);
 	});
 });
 
 describe('adding an email to an account', () => {
-	it('does not sign whoever opens the link in', async () => {
+	it('does not sign whoever has the code in', async () => {
 		const { done: account } = await register();
 		const { email, headers } = fresh();
 		await request(email, { headers, cookie: account.cookie });
-		const reply = await verify(tokenFor(email));
+		const reply = await verify(email, codeFor(email));
 		expect(reply.body.added).toBe(true);
 		expect(reply.setCookie).toBeUndefined();
 	});
@@ -245,11 +309,11 @@ describe('adding an email to an account', () => {
 	it('is refused when another account already has that address', async () => {
 		const owner = fresh();
 		await request(owner.email, owner);
-		await verify(tokenFor(owner.email));
+		await verify(owner.email, codeFor(owner.email));
 		const { done: other } = await register();
-		await env.DB.prepare('UPDATE login_tokens SET created_at = created_at - 120000').run();
+		await ageCodes();
 		await request(owner.email, { headers: owner.headers, cookie: other.cookie });
-		const reply = await verify(tokenFor(owner.email));
+		const reply = await verify(owner.email, codeFor(owner.email));
 		expect(reply.status).toBe(409);
 		expect(reply.body.error).toBe('email_in_use');
 	});

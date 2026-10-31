@@ -5,7 +5,9 @@ import type { TextLine } from '../ocr/engine.ts';
 // by its size or position: the row must be nothing but a total caption ("TOTAL", "BALANCE DUE",
 // "AMOUNT TO PAY"…) and an amount, so "SUBTOTAL", "TOTAL SAVINGS", "VAT TOTAL" and a product
 // named "FAGE TOTAL 0%" never qualify. The payment lines below it (card, cash less change) are
-// read the same way: when they add up to the total, two independent readings agree.
+// read the same way: when they add up to the total, two independent readings agree. A receipt
+// that prints no total and ends at a "SUBTOTAL" is read from that line instead, but only when
+// no total line is found, and by the same rules.
 
 export interface ReceiptReading {
 	/** Pence; set only when the reading is trustworthy, otherwise the shopper types it. */
@@ -31,6 +33,9 @@ const TOTAL_CAPTIONS = new Set([
 	'TOTAL PAYABLE',
 	'TOTAL AMOUNT',
 	'TOTAL GBP',
+	'TOTAL INCL VAT',
+	'TOTAL INC VAT',
+	'TOTAL INCLUDING VAT',
 	'GRAND TOTAL',
 	'ORDER TOTAL',
 	'BALANCE',
@@ -42,6 +47,12 @@ const TOTAL_CAPTIONS = new Set([
 	'AMOUNT PAYABLE',
 	'TO PAY'
 ]);
+
+/** What a till prints when there is no total, only the sum of the items so far. */
+const SUBTOTAL_CAPTIONS = new Set(['SUBTOTAL', 'SUB TOTAL']);
+
+/** Words that qualify a caption without being the caption: "TOTAL (INCL VAT)". */
+const QUALIFIERS = new Set(['INCL', 'INC', 'INCLUDING', 'VAT']);
 
 type Tender = 'paid' | 'change' | 'cashback';
 
@@ -120,7 +131,13 @@ function split(row: Row): Piece {
 		tokens.pop();
 	}
 	const words = tokens
-		.map((t) => t.text.toUpperCase().replace(/[£*:=#.\-_()[\]]+/g, ''))
+		.flatMap((t) =>
+			t.text
+				.toUpperCase()
+				.replace(/[()[\]]+/g, ' ')
+				.split(' ')
+		)
+		.map((w) => w.replace(/[£*:=#.\-_]+/g, ''))
 		.filter((w) => w !== '')
 		.map((w) => (/[A-Z]/.test(w) ? w.replace(/[0-9]/g, (d) => DIGIT_AS_LETTER[d] ?? d) : w));
 	// A count of items is often printed with the total: "4 BALANCE DUE", "TOTAL 12 ITEMS",
@@ -135,7 +152,19 @@ function split(row: Row): Piece {
 	if (/^(\d+|ITEMS?|ARTICLES?)( (\d+|ITEMS?|ARTICLES?))*$/.test(caption)) caption = '';
 	return {
 		caption,
-		captionTokens: tokens.filter((t) => /[a-z]/i.test(t.text)),
+		// A qualifier on its own ("VAT)") is not what makes the line a total, so it does not count
+		// against the caption's confidence; its brackets and stars drag it down.
+		captionTokens: tokens.filter(
+			(t) =>
+				/[a-z]/i.test(t.text) &&
+				!t.text
+					.toUpperCase()
+					.replace(/[()[\]]+/g, ' ')
+					.split(' ')
+					.map((w) => w.replace(/[£*:=#.\-_]+/g, ''))
+					.filter((w) => w !== '')
+					.every((w) => QUALIFIERS.has(w))
+		),
 		amount
 	};
 }
@@ -291,7 +320,8 @@ interface Judgement {
 
 /** What one pairing of the lines says the total is. */
 function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
-	const totals: Candidate[] = [];
+	let totals: Candidate[] = [];
+	const subtotals: Candidate[] = [];
 	const tenders: { kind: Tender; minor: number }[] = [];
 	rows.forEach((_, i) => {
 		const piece = pieces[i];
@@ -299,17 +329,28 @@ function judge(rows: Row[], pieces: Piece[], pairing: Pairing): Judgement {
 		const beside = pairing.get(i);
 		const amount = piece.amount ?? (beside === undefined ? undefined : pieces[beside].amount);
 		if (!amount) return;
-		if (TOTAL_CAPTIONS.has(piece.caption)) {
+		const isTotal = TOTAL_CAPTIONS.has(piece.caption);
+		if (isTotal || SUBTOTAL_CAPTIONS.has(piece.caption)) {
 			const confidence = Math.min(
 				amount.token.confidence,
 				...piece.captionTokens.map((t) => t.confidence)
 			);
-			totals.push({ minor: amount.minor, confidence, amountConfidence: amount.token.confidence });
+			(isTotal ? totals : subtotals).push({
+				minor: amount.minor,
+				confidence,
+				amountConfidence: amount.token.confidence
+			});
 			return;
 		}
 		const kind = tenderOf(piece.caption);
 		if (kind) tenders.push({ kind, minor: amount.minor });
 	});
+
+	// No total line at all: a receipt that ends at its subtotal is read from that, as if it were
+	// one. A total caption whose amount could not be paired is not "no total line": the amount
+	// is there, and a subtotal is not a stand-in for it.
+	const hasTotalCaption = pieces.some((p) => TOTAL_CAPTIONS.has(p.caption));
+	if (totals.length === 0 && !hasTotalCaption) totals = subtotals;
 
 	const values = new Set(totals.map((t) => t.minor));
 	const hasPaid = tenders.some((t) => t.kind === 'paid');

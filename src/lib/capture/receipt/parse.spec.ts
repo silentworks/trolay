@@ -104,12 +104,10 @@ describe('parseReceipt', () => {
 		expect(reading.totalMinor).toBeUndefined();
 	});
 
-	it('never takes a subtotal, savings, VAT or a product named "Total"', () => {
+	it('never takes savings, VAT or a product named "Total"', () => {
 		const reading = parseReceipt(
 			receipt([
 				['FAGE TOTAL 0% 500G', '£2.50'],
-				['SUBTOTAL', '£9.99'],
-				['SUB-TOTAL', '£9.99'],
 				['TOTAL SAVINGS', '£1.20'],
 				['VAT TOTAL', '£0.42'],
 				['TOTAL EXCL VAT', '£8.33']
@@ -378,5 +376,79 @@ describe('parseReceipt', () => {
 		it('is read from a photo taken at an angle', () => {
 			expect(parseReceipt(receipt(rows, { angle: 4 })).totalMinor).toBe(totalMinor);
 		});
+	});
+
+	describe('a receipt that ends at its subtotal', () => {
+		it('takes the subtotal as the total when there is no total', () => {
+			const reading = parseReceipt(receipt([...SHOP, ['SUBTOTAL', '£3.47']]));
+			expect(reading).toMatchObject({ totalMinor: 347, confirmedByPayment: false });
+			expect(parseReceipt(receipt([...SHOP, ['SUB-TOTAL', '3.47']])).totalMinor).toBe(347);
+			expect(parseReceipt(receipt([...SHOP, ['Sub Total', '3.47']])).totalMinor).toBe(347);
+		});
+
+		it('confirms it with the card payment', () => {
+			const reading = parseReceipt(receipt([...SHOP, ['SUBTOTAL', '3.47'], ['VISA', '3.47']]));
+			expect(reading).toMatchObject({ totalMinor: 347, confirmedByPayment: true });
+		});
+
+		it('prefers the total whenever the receipt has one', () => {
+			const reading = parseReceipt(
+				receipt([
+					['SUBTOTAL', '£9.99'],
+					['MULTIBUY SAVING', '-£1.00'],
+					['TOTAL', '£8.99'],
+					['VISA', '£8.99']
+				])
+			);
+			expect(reading).toMatchObject({ totalMinor: 899, confirmedByPayment: true });
+		});
+
+		it('does not stand a subtotal in for a total whose amount it cannot find', () => {
+			const reading = parseReceipt(receipt([['SUBTOTAL', '£9.99'], ['TOTAL']]));
+			expect(reading.totalMinor).toBeUndefined();
+		});
+
+		it('asks when the subtotals differ and nothing settles which', () => {
+			const reading = parseReceipt(
+				receipt([
+					['SUBTOTAL', '£5.00'],
+					['SUBTOTAL', '£9.99']
+				])
+			);
+			expect(reading.totalMinor).toBeUndefined();
+		});
+
+		it('leaves a subtotal read with doubt for the shopper', () => {
+			const reading = parseReceipt(receipt([['SUBTOTAL', '£3.47']], { confidence: 0.8 }));
+			expect(reading.totalMinor).toBeUndefined();
+		});
+
+		it('is not fooled by the subtotal line that counts the items', () => {
+			const reading = parseReceipt(
+				receipt([['Sub-Total no. of items = 16'], ['**** TOTAL ( INCL VAT )', '443.31']])
+			);
+			expect(reading.totalMinor).toBe(44331);
+		});
+	});
+
+	it('reads a total with "incl VAT" after the caption, and a stray bracket or star', () => {
+		for (const caption of [
+			'TOTAL (INCL VAT)',
+			'TOTAL( INCL VAT )',
+			'**** TOTAL(INCL VAT)',
+			'TOTAL INC VAT',
+			'Total incl. VAT',
+			'TOTAL INCLUDING VAT'
+		]) {
+			expect(parseReceipt(receipt([[caption, '443.31']])).totalMinor, caption).toBe(44331);
+		}
+	});
+
+	it('does not wait on the confidence of "VAT)" when the amount is read well', () => {
+		const lines = receipt([['**** TOTAL(INCL VAT)', '443.31']]);
+		// The bracket drags "VAT)" down, as in the photo of a wholesale receipt.
+		const vat = lines[0].words.find((w) => w.text === 'VAT)')!;
+		vat.confidence = 0.5;
+		expect(parseReceipt(lines)).toMatchObject({ totalMinor: 44331 });
 	});
 });

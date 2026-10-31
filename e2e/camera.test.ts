@@ -227,6 +227,25 @@ test('reads the total of a receipt photographed on a phone', async ({ page }) =>
 	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('7.84', READ_TIMEOUT);
 });
 
+test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) => {
+	await startTrip(page);
+	await snapLabel(page);
+	const review = page.getByRole('dialog', { name: 'Check the label' });
+	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+
+	await menu(page, 'Finish trip');
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	// A wholesale receipt (fixtures/receipts/real/uk-wholesale-incl-vat.png): the photo ends at
+	// "**** TOTAL(INCL VAT)  443.31".
+	await page
+		.getByRole('dialog', { name: 'Snap the receipt' })
+		.locator('input[type=file]')
+		.setInputFiles('fixtures/receipts/real/uk-wholesale-incl-vat.png');
+	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('443.31', READ_TIMEOUT);
+});
+
 test('reads the receipt total and keeps the photos when it does not match', async ({ page }) => {
 	await startTrip(page);
 	await snapLabel(page);

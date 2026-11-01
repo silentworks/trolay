@@ -24,7 +24,9 @@
 		finishTrip,
 		leaveTrip,
 		setReceiptTotal,
-		setTripBudget
+		setTripBudget,
+		setTripDiscount,
+		tripDiscount
 	} from '#lib/data/trips.ts';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
@@ -32,9 +34,10 @@
 	import { letGoOfTrip } from '#lib/sync/letgo.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import { tripTotals } from '#lib/money.ts';
+	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
 	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
 	import BudgetForm from './BudgetForm.svelte';
+	import DiscountForm from './DiscountForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
 	import FinishTrip from './FinishTrip.svelte';
 	import InvitePartner from './InvitePartner.svelte';
@@ -84,6 +87,7 @@
 		| { kind: 'add'; capture?: CaptureSession }
 		| { kind: 'edit'; item: Item }
 		| { kind: 'budget' }
+		| { kind: 'discount' }
 		| { kind: 'store' }
 		| { kind: 'invite' }
 		| { kind: 'leaveShared' }
@@ -98,7 +102,8 @@
 	const trip = $derived(cart.current?.trip);
 	const store = $derived(cart.current?.store);
 	const items = $derived(cart.current?.items ?? []);
-	const totals = $derived(tripTotals(items, store?.taxRateBps ?? 0));
+	const discount = $derived(tripDiscount(trip));
+	const totals = $derived(applyDiscount(tripTotals(items, store?.taxRateBps ?? 0), discount));
 	const photoCount = $derived(items.filter((item) => item.photoId).length);
 
 	// Load the label and barcode readers while the shopper picks up the first item, so the
@@ -195,6 +200,10 @@
 		} else {
 			entries.push({ label: 'Invite a partner', onclick: tapInvite });
 		}
+		entries.push({
+			label: discount ? 'Change discount' : 'Add discount',
+			onclick: () => (sheet = { kind: 'discount' })
+		});
 		if (items.length) entries.push({ label: 'Finish trip', onclick: tapFinish, primary: true });
 		// A partner cannot delete the owner's trip, so an empty cart is left by leaving the trip.
 		else if (role !== 'partner')
@@ -250,6 +259,11 @@
 		const { photosKept } = await finishTrip(tripId);
 		sheet = null;
 		onfinished?.(photosKept);
+	}
+
+	async function saveDiscount(next: Discount | undefined) {
+		await run(() => setTripDiscount(tripId, next));
+		sheet = null;
 	}
 
 	async function saveBudget(budgetMinor: number | undefined) {
@@ -310,6 +324,7 @@
 			</div>
 			<TotalsFooter
 				{totals}
+				{discount}
 				budgetMinor={trip.budgetMinor}
 				onbudget={() => (sheet = { kind: 'budget' })}
 			/>
@@ -362,6 +377,10 @@
 
 	<Sheet open={sheet?.kind === 'budget'} title="Trip budget" onclose={() => (sheet = null)}>
 		<BudgetForm budgetMinor={trip.budgetMinor} onsave={saveBudget} />
+	</Sheet>
+
+	<Sheet open={sheet?.kind === 'discount'} title="Discount" onclose={() => (sheet = null)}>
+		{#if sheet?.kind === 'discount'}<DiscountForm {discount} onsave={saveDiscount} />{/if}
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'finish'} title="Finish trip" onclose={() => (sheet = null)}>

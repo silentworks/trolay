@@ -39,6 +39,8 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 		status: string(true),
 		budgetMinor: int(),
 		receiptTotalMinor: int(),
+		discountKind: string(),
+		discountValue: int(),
 		photosKept: bool(true),
 		startedAt: int(true),
 		finishedAt: int(),

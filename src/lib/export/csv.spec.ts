@@ -39,6 +39,24 @@ const item = (fields: Partial<Item>): Item => ({
 });
 
 describe('tripsToCsv', () => {
+	it('adds a discount as a line of its own, so the lines add up to the total paid', () => {
+		// £6.00 incl. VAT less 10%: £5.40 paid, £4.50 excl. VAT.
+		const discounted: Trip = {
+			...trip,
+			discountKind: 'percent',
+			discountValue: 1000,
+			totals: { inclMinor: 540, exclMinor: 450, itemCount: 1, taxRateBps: 2000, discountMinor: 60 }
+		};
+		const csv = tripsToCsv([
+			{ trip: discounted, store, items: [item({ description: 'Wine', unitPriceMinor: 600 })] }
+		]);
+		expect(csv.slice(1).split('\r\n').slice(1)).toEqual([
+			'2026-10-28 17:46,Tesco · Leeds,Wine,,1,6.00,Yes,6.00,5.00,1.00',
+			'2026-10-28 17:46,Tesco · Leeds,Discount (10%),,1,-0.60,Yes,-0.60,-0.50,-0.10',
+			''
+		]);
+	});
+
 	it('writes a UTF-8 BOM, a header and one CRLF-ended row per item, oldest item first', () => {
 		const csv = tripsToCsv([
 			{

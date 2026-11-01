@@ -26,6 +26,8 @@ import {
 	receiptDifference,
 	setReceiptTotal,
 	setTripBudget,
+	setTripDiscount,
+	tripDiscount,
 	startTrip
 } from './trips';
 
@@ -479,5 +481,63 @@ describe('deleting stores and history', () => {
 		await startTrip(store.id);
 		await expect(deleteStore(store.id)).rejects.toThrow('Finish or leave');
 		expect(await listStores()).toHaveLength(1);
+	});
+});
+
+describe('a discount on the cart', () => {
+	async function aTripWithMilk() {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		await addItem(trip.id, { ...milk, unitPriceMinor: 600 });
+		return trip;
+	}
+
+	it('is set, changed and removed on an open trip', async () => {
+		const trip = await aTripWithMilk();
+		await setTripDiscount(trip.id, { kind: 'percent', value: 1000 });
+		expect(tripDiscount(await getTrip(trip.id))).toEqual({ kind: 'percent', value: 1000 });
+		await setTripDiscount(trip.id, { kind: 'amount', value: 150 });
+		expect(tripDiscount(await getTrip(trip.id))).toEqual({ kind: 'amount', value: 150 });
+		await setTripDiscount(trip.id, undefined);
+		expect(tripDiscount(await getTrip(trip.id))).toBeUndefined();
+	});
+
+	it('refuses a discount that is nothing, or over 100%', async () => {
+		const trip = await aTripWithMilk();
+		await expect(setTripDiscount(trip.id, { kind: 'amount', value: 0 })).rejects.toThrow('£0');
+		await expect(setTripDiscount(trip.id, { kind: 'percent', value: 10_001 })).rejects.toThrow(
+			'100%'
+		);
+	});
+
+	it('is saved with the totals when the trip is finished, and the receipt is checked against it', async () => {
+		const trip = await aTripWithMilk();
+		await setTripDiscount(trip.id, { kind: 'amount', value: 150 });
+		await setReceiptTotal(trip.id, 450);
+		const { difference } = await finishTrip(trip.id);
+		expect(difference).toBe(0);
+		expect((await getTrip(trip.id))?.totals).toEqual({
+			inclMinor: 450,
+			exclMinor: 375,
+			itemCount: 1,
+			taxRateBps: 2000,
+			discountMinor: 150
+		});
+	});
+
+	it('leaves a trip without one as before', async () => {
+		const trip = await aTripWithMilk();
+		await setReceiptTotal(trip.id, 600);
+		await finishTrip(trip.id);
+		expect((await getTrip(trip.id))?.totals).not.toHaveProperty('discountMinor');
+	});
+
+	it('cannot be changed once the trip is finished', async () => {
+		const trip = await aTripWithMilk();
+		await setReceiptTotal(trip.id, 600);
+		await finishTrip(trip.id);
+		await expect(setTripDiscount(trip.id, { kind: 'amount', value: 100 })).rejects.toThrow(
+			'not open'
+		);
 	});
 });

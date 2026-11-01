@@ -60,6 +60,47 @@ export function tripTotals(lines: PricedLine[], taxRateBps: number): TripTotals 
 	return { inclMinor, exclMinor, taxMinor: inclMinor - exclMinor, itemCount };
 }
 
+/** A discount off the whole trolley: pence off (`amount`) or basis points of the total (`percent`). */
+export interface Discount {
+	kind: 'amount' | 'percent';
+	value: number;
+}
+
+export interface DiscountedTotals extends TripTotals {
+	/** What was taken off the total incl. VAT. */
+	discountMinor: number;
+	/** The total incl. VAT before the discount. */
+	beforeMinor: number;
+}
+
+/**
+ * Takes a discount off a trolley's totals. It comes off what is paid (incl. VAT) and can never
+ * take it below £0. The VAT falls in proportion, so the total excl. VAT is the same share of the
+ * new total as it was of the old one.
+ */
+export function applyDiscount(
+	totals: TripTotals,
+	discount: Discount | undefined
+): DiscountedTotals {
+	const before = totals.inclMinor;
+	const wanted = !discount
+		? 0
+		: discount.kind === 'amount'
+			? discount.value
+			: divideRoundHalfUp(before * discount.value, BPS_SCALE);
+	const discountMinor = Math.min(wanted, before);
+	const inclMinor = before - discountMinor;
+	const exclMinor = before === 0 ? 0 : divideRoundHalfUp(totals.exclMinor * inclMinor, before);
+	return {
+		inclMinor,
+		exclMinor,
+		taxMinor: inclMinor - exclMinor,
+		itemCount: totals.itemCount,
+		discountMinor,
+		beforeMinor: before
+	};
+}
+
 export function headlineTotal(totals: LineTotals, mode: TotalMode): number {
 	return mode === 'incl' ? totals.inclMinor : totals.exclMinor;
 }

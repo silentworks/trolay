@@ -457,6 +457,26 @@ describe('signing in on a phone that already has data', () => {
 		expect(await ids_(b)).toEqual([ids.store]);
 	});
 
+	describe('a discount on the cart', () => {
+		it('reaches the other phone, and removing it does too', async () => {
+			await aTripOn(a);
+			await phoneA.run();
+			await edit(a, 'trips', ids.trip, { discountKind: 'percent', discountValue: 1000 });
+			await phoneA.run();
+			await phoneB.run();
+			expect(await b.trips.get(ids.trip)).toMatchObject({
+				discountKind: 'percent',
+				discountValue: 1000
+			});
+			await edit(a, 'trips', ids.trip, { discountKind: undefined, discountValue: undefined });
+			await phoneA.run();
+			await phoneB.run();
+			const trip = await b.trips.get(ids.trip);
+			expect(trip?.discountKind).toBeUndefined();
+			expect(trip?.discountValue).toBeUndefined();
+		});
+	});
+
 	describe('records from before a required field existed', () => {
 		it('sends a trip that lacks photosKept, and its items follow', async () => {
 			await a.stores.add(store());

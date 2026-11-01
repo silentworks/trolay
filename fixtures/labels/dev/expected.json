@@ -347,7 +347,8 @@
 	"070-offer.jpg": {
 		"description": ["Tomato Ketchup 910g"],
 		"unitPriceMinor": 350,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 2, "totalMinor": 650 }
 	},
 	"071-esl.jpg": {
 		"description": ["SHOWER GEL 250ML"],
@@ -387,7 +388,8 @@
 	"078-offer.jpg": {
 		"description": ["Orange Juice Smooth 1L"],
 		"unitPriceMinor": 210,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 2, "totalMinor": 370 }
 	},
 	"079-esl.jpg": {
 		"description": ["ORANGE JUICE SMOOTH 1L"],
@@ -427,7 +429,8 @@
 	"086-offer.jpg": {
 		"description": ["Spreadable Butter 500g"],
 		"unitPriceMinor": 399,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 2, "totalMinor": 748 }
 	},
 	"087-esl.jpg": {
 		"description": ["CHICKEN STOCK CUBES 12 PACK"],
@@ -467,7 +470,8 @@
 	"094-offer.jpg": {
 		"description": ["Beef Burgers 4 Pack"],
 		"unitPriceMinor": 299,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 2, "totalMinor": 548 }
 	},
 	"095-esl.jpg": {
 		"description": ["PARACETAMOL TABLETS 16 PACK"],
@@ -547,7 +551,8 @@
 	"110-offer.jpg": {
 		"description": ["Soy Sauce 150ml"],
 		"unitPriceMinor": 129,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 2, "totalMinor": 208 }
 	},
 	"111-esl.jpg": {
 		"description": ["TOMATO KETCHUP 910G"],
@@ -587,7 +592,8 @@
 	"118-offer.jpg": {
 		"description": ["Washing Up Liquid 900ml"],
 		"unitPriceMinor": 125,
-		"vat": null
+		"vat": null,
+		"offer": { "quantity": 3, "totalMinor": 200 }
 	},
 	"119-esl.jpg": {
 		"description": ["WHOLEMEAL WRAPS 8 PACK"],

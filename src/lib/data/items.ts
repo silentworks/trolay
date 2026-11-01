@@ -9,6 +9,9 @@ export interface ItemInput {
 	priceIncludesTax: boolean;
 	quantity: number;
 	barcode?: string;
+	/** A multi-buy offer: give both or neither. */
+	offerQuantity?: number;
+	offerPriceMinor?: number;
 }
 
 function validate(input: ItemInput): ItemInput {
@@ -18,6 +21,19 @@ function validate(input: ItemInput): ItemInput {
 	}
 	if (!Number.isInteger(input.quantity) || input.quantity < 1) {
 		throw new Error('Quantity must be at least 1.');
+	}
+	const { offerQuantity, offerPriceMinor } = input;
+	if ((offerQuantity === undefined) !== (offerPriceMinor === undefined)) {
+		throw new Error('Give both how many and what they cost together, or neither.');
+	}
+	if (
+		offerQuantity !== undefined &&
+		(!Number.isInteger(offerQuantity) ||
+			offerQuantity < 2 ||
+			!Number.isInteger(offerPriceMinor) ||
+			offerPriceMinor! <= 0)
+	) {
+		throw new Error('A multi-buy offer is for 2 or more items, at a price above £0.');
 	}
 	const barcode = input.barcode?.replace(/\s/g, '') || undefined;
 	if (barcode !== undefined && !isValidGtin(barcode)) {
@@ -35,7 +51,10 @@ function differsFromExtracted(item: ItemInput, extracted: ExtractedFields | unde
 		(extracted.description !== undefined && extracted.description !== item.description) ||
 		(extracted.unitPriceMinor !== undefined && extracted.unitPriceMinor !== item.unitPriceMinor) ||
 		(extracted.priceIncludesTax !== undefined &&
-			extracted.priceIncludesTax !== item.priceIncludesTax)
+			extracted.priceIncludesTax !== item.priceIncludesTax) ||
+		(extracted.offer !== undefined &&
+			(extracted.offer.quantity !== item.offerQuantity ||
+				extracted.offer.totalMinor !== item.offerPriceMinor))
 	);
 }
 
@@ -124,6 +143,9 @@ export async function updateItem(id: string, input: ItemInput): Promise<void> {
 		if (!isLive(item)) throw new Error('That item no longer exists.');
 		await db.items.update(id, {
 			...fields,
+			// Saved without an offer means the offer is gone, whether or not the keys were given.
+			offerQuantity: fields.offerQuantity,
+			offerPriceMinor: fields.offerPriceMinor,
 			edited: differsFromExtracted(fields, item.extracted),
 			updatedAt: Date.now()
 		});
@@ -140,11 +162,12 @@ export async function revertItem(id: string): Promise<void> {
 	await db.transaction('rw', db.items, async () => {
 		const item = await db.items.get(id);
 		if (!isLive(item) || !item.extracted) return;
-		const { description, unitPriceMinor, priceIncludesTax } = item.extracted;
+		const { description, unitPriceMinor, priceIncludesTax, offer } = item.extracted;
 		await db.items.update(id, {
 			...(description !== undefined && { description }),
 			...(unitPriceMinor !== undefined && { unitPriceMinor }),
 			...(priceIncludesTax !== undefined && { priceIncludesTax }),
+			...(offer && { offerQuantity: offer.quantity, offerPriceMinor: offer.totalMinor }),
 			edited: false,
 			updatedAt: Date.now()
 		});

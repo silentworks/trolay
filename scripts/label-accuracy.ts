@@ -21,10 +21,12 @@ interface Expected {
 	/** The VAT marker printed on the label, or null when there is none. */
 	vat: 'inc' | 'ex' | null;
 	barcode?: string;
+	/** A multi-buy offer printed on the label; absent when there is none. */
+	offer?: { quantity: number; totalMinor: number };
 }
 
 type Outcome = 'right' | 'empty' | 'wrong';
-const FIELDS = ['price', 'description', 'vat'] as const;
+const FIELDS = ['price', 'description', 'vat', 'offer'] as const;
 type Field = (typeof FIELDS)[number];
 
 const args = process.argv.slice(2);
@@ -54,7 +56,18 @@ function score(reading: LabelReading, want: Expected): Record<Field, Outcome> {
 					? 'right'
 					: 'wrong',
 		// No marker on the label: the right answer is to say nothing (the store's setting applies).
-		vat: vat === wantVat ? 'right' : vat === undefined ? 'empty' : 'wrong'
+		vat: vat === wantVat ? 'right' : vat === undefined ? 'empty' : 'wrong',
+		// No offer on the label: the right answer is to find none.
+		offer: !want.offer
+			? filled.multiBuy
+				? 'wrong'
+				: 'right'
+			: !filled.multiBuy
+				? 'empty'
+				: filled.multiBuy.quantity === want.offer.quantity &&
+					  filled.multiBuy.totalMinor === want.offer.totalMinor
+					? 'right'
+					: 'wrong'
 	};
 }
 
@@ -102,9 +115,15 @@ for (const set of names) {
 			const got = {
 				price: reading.unitPriceMinor,
 				description: reading.description,
-				vat: reading.priceIncludesTax
+				vat: reading.priceIncludesTax,
+				offer: reading.multiBuy
 			};
-			const wanted = { price: want.unitPriceMinor, description: want.description, vat: want.vat };
+			const wanted = {
+				price: want.unitPriceMinor,
+				description: want.description,
+				vat: want.vat,
+				offer: want.offer
+			};
 			const report = FIELDS.map(
 				(f) =>
 					`  ${outcome[f].padEnd(5)} ${f.padEnd(11)} read ${JSON.stringify(got[f])}  expected ${JSON.stringify(wanted[f])}`

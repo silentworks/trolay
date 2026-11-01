@@ -130,7 +130,7 @@ describe('JSON backup', () => {
 		});
 
 		it('from a newer version', () =>
-			refused((b) => void (b.format = 3), 'newer version of Trolay'));
+			refused((b) => void (b.format = 4), 'newer version of Trolay'));
 
 		it('a table missing', () => refused((b) => void delete b.items, 'has no items'));
 

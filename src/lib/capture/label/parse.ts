@@ -17,6 +17,10 @@ export interface LabelReading {
 	/** Absent when the label says nothing about VAT; the store's setting applies. */
 	priceIncludesTax?: ReadField<boolean>;
 	barcode?: ReadField<string>;
+	/** "2 for £3.00": buy `quantity`, pay `totalMinor` for them (at the same VAT basis as the price). */
+	multiBuy?: ReadField<{ quantity: number; totalMinor: number }>;
+	/** The printed unit price, as text for showing: "£2.50 per kg", "49.8p per 100g". */
+	perUnit?: ReadField<string>;
 	/** How the price was confirmed by other numbers on the label, for display and debugging. */
 	checks: string[];
 }
@@ -51,7 +55,13 @@ export function filledFields(reading: LabelReading | undefined) {
 			confident(reading?.unitPriceMinor, MIN_CONFIDENCE.price) === undefined
 				? undefined
 				: confident(reading?.priceIncludesTax, MIN_CONFIDENCE.vat),
-		barcode: confident(reading?.barcode, MIN_CONFIDENCE.price)
+		barcode: confident(reading?.barcode, MIN_CONFIDENCE.price),
+		// An offer is only worth applying when the price it is measured against is sure too.
+		multiBuy:
+			confident(reading?.unitPriceMinor, MIN_CONFIDENCE.price) === undefined
+				? undefined
+				: confident(reading?.multiBuy, MIN_CONFIDENCE.price),
+		perUnit: confident(reading?.perUnit, MIN_CONFIDENCE.price)
 	};
 }
 
@@ -120,6 +130,8 @@ interface Money {
 	 * raised pence merged in; only the printed unit price can settle it.
 	 */
 	alternatives?: number[];
+	/** For a multi-buy price: how many it is for ("2" in "2 for £3"). */
+	offerQuantity?: number;
 }
 
 interface PlainNumber {
@@ -214,6 +226,20 @@ function suffixesFor(box: Box, height: number, rows: Row[], self: Row): Row[] {
 	});
 }
 
+/** How many items a multi-buy price is for: "2 for", "any 3 for", "buy 2", "for 2". */
+function offerQuantityIn(before: string[], after: string): number | undefined {
+	for (const text of before) {
+		const m =
+			/\b(\d{1,2})\s*(?:for|x)\s*$/i.exec(text) ??
+			/\b(\d{1,2})\s*items?\s*for\s*$/i.exec(text) ??
+			/\bany\s*(\d{1,2})\b/i.exec(text) ??
+			/\bbuy\s*(\d{1,2})\b/i.exec(text);
+		if (m) return Number(m[1]);
+	}
+	const m = /^\s*(?:for|when\s*you\s*buy)\s*(\d{1,2})\b/i.exec(after);
+	return m ? Number(m[1]) : undefined;
+}
+
 function classify(
 	money: Omit<Money, 'kind' | 'captioned'>,
 	rows: Row[],
@@ -225,10 +251,12 @@ function classify(
 	const suffixes = suffixesFor(money.box, money.height, rows, money.row).map((r) => r.text);
 	const nearby = [...captions, before];
 	let kind: Kind = 'price';
+	let offerQuantity: number | undefined;
 	if (OLD_CONTEXT.test(before) || captions.some((c) => OLD_CONTEXT.test(c))) kind = 'old';
-	else if (MULTI_BUY_BEFORE.test(before) || /^\s*(?:for\s*\d|when you buy)/i.test(after))
+	else if (MULTI_BUY_BEFORE.test(before) || /^\s*(?:for\s*\d|when you buy)/i.test(after)) {
 		kind = 'multibuy';
-	else if (SAVING_CONTEXT.test(before) || /^\s*off\b/i.test(after)) kind = 'saving';
+		offerQuantity = offerQuantityIn(nearby, after);
+	} else if (SAVING_CONTEXT.test(before) || /^\s*off\b/i.test(after)) kind = 'saving';
 	else if (
 		UNIT_SUFFIX.test(after) ||
 		suffixes.some((s) => UNIT_SUFFIX.test(' ' + s) || /^\s*per\b/i.test(s))
@@ -238,7 +266,7 @@ function classify(
 	else if (nearby.some((c) => LOYALTY_CONTEXT.test(c))) kind = 'loyalty';
 	else if (EACH_SUFFIX.test(after) || suffixes.some((s) => EACH_SUFFIX.test(s))) kind = 'each';
 	const captioned = nearby.some((c) => POSITIVE_CAPTION.test(c) && !UNIT_CAPTION.test(c));
-	return { kind, captioned };
+	return { kind, captioned, offerQuantity };
 }
 
 const CURRENCY_SIGN = /^[£€$]$/;
@@ -506,6 +534,10 @@ interface UnitPrice {
 	tolerance: number;
 	per: PackSize;
 	confidence: number;
+	/** The unit as printed, for showing: "kg", "100g", "each". */
+	unit: string;
+	/** The printed price in pence with the digits it was printed to, for showing. */
+	display: string;
 }
 
 /** Unit prices printed on the label: "64p per litre", "£9.96 per kg", "PRICE PER LITER 9.995". */
@@ -535,7 +567,11 @@ function findUnitPrices(rows: Row[]): UnitPrice[] {
 				value: n.value,
 				tolerance: step / 2 + 1e-9,
 				per,
-				confidence: token.confidence
+				confidence: token.confidence,
+				unit: unitText!.replace(/\s+/g, '').toLowerCase(),
+				display: n.pence
+					? `${Number((n.value * 100).toFixed(2))}p`
+					: `£${n.value.toFixed(Math.max(2, n.decimals))}`
 			});
 		});
 	}
@@ -619,6 +655,46 @@ function pickPrice(
 		checks.push('price does not match the unit price and pack size');
 	}
 	return { field: { value, confidence }, money: chosen };
+}
+
+/**
+ * "2 for £3.00": the offer total for a number of items. It has to be a real saving against the
+ * single price (less than buying that many singly, more than buying one), and every offer on the
+ * label has to say the same, or it is left for the shopper.
+ */
+function pickMultiBuy(
+	money: Money[],
+	price: ReadField<number> | undefined
+): LabelReading['multiBuy'] {
+	if (!price) return undefined;
+	const offers = money.filter(
+		(m) =>
+			m.kind === 'multibuy' &&
+			m.offerQuantity !== undefined &&
+			m.offerQuantity >= 2 &&
+			m.offerQuantity <= 24 &&
+			m.minor > price.value &&
+			m.minor < m.offerQuantity * price.value
+	);
+	if (!offers.length) return undefined;
+	const same = (a: Money, b: Money) => a.offerQuantity === b.offerQuantity && a.minor === b.minor;
+	if (offers.some((o) => !same(o, offers[0]))) return undefined;
+	const best = offers.reduce((a, b) => (b.confidence > a.confidence ? b : a));
+	return {
+		value: { quantity: best.offerQuantity!, totalMinor: best.minor },
+		confidence: Math.min(best.confidence, price.confidence)
+	};
+}
+
+/** The unit price printed on the label other than the one the price was read from. */
+function pickPerUnit(unitPrices: UnitPrice[], price: Money | undefined): LabelReading['perUnit'] {
+	const best = unitPrices
+		.filter((u) => !price?.tokens.includes(u.token))
+		.sort((a, b) => b.confidence - a.confidence)[0];
+	if (!best) return undefined;
+	const unit =
+		best.unit === 'each' || best.unit === 'ea' ? 'each' : `per ${best.unit.replace(/^\//, '')}`;
+	return { value: `${best.display} ${unit}`, confidence: best.confidence };
 }
 
 function vatMarkerFor(money: Money, rows: Row[]): 'inc' | 'ex' | undefined {
@@ -840,6 +916,8 @@ export function parseLabel(lines: TextLine[]): LabelReading {
 		unitPriceMinor: price?.field,
 		priceIncludesTax: pickVat(price?.money, money, rows, checks),
 		barcode: pickBarcode(rows),
+		multiBuy: pickMultiBuy(money, price?.field),
+		perUnit: pickPerUnit(unitPrices, price?.money),
 		checks
 	};
 }

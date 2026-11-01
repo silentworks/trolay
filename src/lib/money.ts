@@ -11,6 +11,9 @@ export interface PricedLine {
 	unitPriceMinor: number;
 	quantity: number;
 	priceIncludesTax: boolean;
+	/** A multi-buy offer: every `offerQuantity` items cost `offerPriceMinor` together. */
+	offerQuantity?: number;
+	offerPriceMinor?: number;
 }
 
 export interface LineTotals {
@@ -29,11 +32,23 @@ function divideRoundHalfUp(n: number, d: number): number {
 }
 
 /**
+ * What the line costs at the price as entered: the multi-buy offer for each full set of items,
+ * the single price for the rest ("2 for £3.00" at quantity 5 is two offers and one single).
+ */
+export function enteredTotal(line: PricedLine): number {
+	const { offerQuantity: n, offerPriceMinor: offer } = line;
+	if (!n || n < 2 || offer === undefined || offer <= 0) return line.unitPriceMinor * line.quantity;
+	// Never dearer than buying them singly, whatever was typed.
+	const set = Math.min(offer, n * line.unitPriceMinor);
+	return Math.floor(line.quantity / n) * set + (line.quantity % n) * line.unitPriceMinor;
+}
+
+/**
  * Line totals with and without VAT. The entered figure is exact; the other one is derived
  * from it and rounded to the nearest penny, half up.
  */
 export function lineTotals(line: PricedLine, taxRateBps: number): LineTotals {
-	const entered = line.unitPriceMinor * line.quantity;
+	const entered = enteredTotal(line);
 	if (line.priceIncludesTax) {
 		return {
 			inclMinor: entered,

@@ -54,6 +54,8 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 		unitPriceMinor: int(true),
 		priceIncludesTax: bool(true),
 		quantity: int(true),
+		offerQuantity: int(),
+		offerPriceMinor: int(),
 		photoId: string(),
 		extracted: json(),
 		edited: bool(true),

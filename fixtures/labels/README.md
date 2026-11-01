@@ -48,6 +48,9 @@ Generated labels are a stand-in for scale; real photos are the proof. Add your o
    }
    ```
 
+   A label with a multi-buy offer ("2 for £3.00") also gets `"offer": { "quantity": 2, "totalMinor": 300 }`.
+   Labels without one are scored on finding none: an offer read from a label that has none counts as wrong.
+
    - `description`: every acceptable wording, as printed (a brand line may be in or out).
    - `unitPriceMinor`: the price you pay, in pence (the regular price on loyalty-card labels).
    - `vat`: `"inc"` or `"ex"` if the label prints a VAT marker by the price, otherwise `null`.

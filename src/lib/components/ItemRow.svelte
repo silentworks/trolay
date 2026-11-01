@@ -81,6 +81,11 @@
 			<span class="meta">
 				{formatGBP(item.unitPriceMinor)} each
 				<span class="badge">{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}</span>
+				{#if item.offerQuantity && item.offerPriceMinor}
+					<span class="badge" class:applied={item.quantity >= item.offerQuantity}>
+						{item.offerQuantity} for {formatGBP(item.offerPriceMinor)}
+					</span>
+				{/if}
 				{#if item.edited}<span class="badge edited">edited</span>{/if}
 			</span>
 			{#if addedBy}<span class="meta by">Added by {addedBy}</span>{/if}
@@ -205,6 +210,11 @@
 		border-radius: 999px;
 		background: var(--surface-2);
 		font-size: 0.8rem;
+	}
+
+	.badge.applied {
+		background: var(--accent);
+		color: var(--on-accent, #fff);
 	}
 
 	.badge.edited {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	applyDiscount,
+	enteredTotal,
 	budgetStatus,
 	formatGBP,
 	formatPercent,
@@ -217,5 +218,48 @@ describe('applyDiscount', () => {
 			discountMinor: 0,
 			inclMinor: 0
 		});
+	});
+});
+
+describe('multi-buy offers', () => {
+	const bread = { unitPriceMinor: 189, priceIncludesTax: true, quantity: 1 };
+	const twoForThree = { offerQuantity: 2, offerPriceMinor: 300 };
+
+	it('charges the single price until there are enough for the offer', () => {
+		expect(enteredTotal({ ...bread, ...twoForThree, quantity: 1 })).toBe(189);
+		expect(enteredTotal({ ...bread, ...twoForThree, quantity: 2 })).toBe(300);
+	});
+
+	it('applies the offer to each full set and the single price to the rest', () => {
+		expect(enteredTotal({ ...bread, ...twoForThree, quantity: 3 })).toBe(489);
+		expect(enteredTotal({ ...bread, ...twoForThree, quantity: 5 })).toBe(789);
+		expect(enteredTotal({ ...bread, offerQuantity: 3, offerPriceMinor: 500, quantity: 7 })).toBe(
+			1189
+		);
+	});
+
+	it('is never dearer than buying singly', () => {
+		expect(enteredTotal({ ...bread, offerQuantity: 2, offerPriceMinor: 500, quantity: 2 })).toBe(
+			378
+		);
+	});
+
+	it('ignores a half-given or nonsense offer', () => {
+		expect(enteredTotal({ ...bread, quantity: 2 })).toBe(378);
+		expect(enteredTotal({ ...bread, offerQuantity: 1, offerPriceMinor: 100, quantity: 2 })).toBe(
+			378
+		);
+		expect(enteredTotal({ ...bread, offerQuantity: 2, offerPriceMinor: 0, quantity: 2 })).toBe(378);
+	});
+
+	it('works out VAT from the offer total, for prices incl. or excl. VAT', () => {
+		expect(lineTotals({ ...bread, ...twoForThree, quantity: 2 }, 2000)).toEqual({
+			inclMinor: 300,
+			exclMinor: 250
+		});
+		expect(
+			lineTotals({ ...bread, priceIncludesTax: false, ...twoForThree, quantity: 2 }, 2000)
+		).toEqual({ inclMinor: 360, exclMinor: 300 });
+		expect(tripTotals([{ ...bread, ...twoForThree, quantity: 2 }], 2000).inclMinor).toBe(300);
 	});
 });

@@ -457,6 +457,23 @@ describe('signing in on a phone that already has data', () => {
 		expect(await ids_(b)).toEqual([ids.store]);
 	});
 
+	describe('a multi-buy offer on an item', () => {
+		it('reaches the other phone, and removing it does too', async () => {
+			await aTripOn(a);
+			await phoneA.run();
+			await edit(a, 'items', ids.item, { offerQuantity: 2, offerPriceMinor: 200 });
+			await phoneA.run();
+			await phoneB.run();
+			expect(await b.items.get(ids.item)).toMatchObject({ offerQuantity: 2, offerPriceMinor: 200 });
+			await edit(a, 'items', ids.item, { offerQuantity: undefined, offerPriceMinor: undefined });
+			await phoneA.run();
+			await phoneB.run();
+			const synced = await b.items.get(ids.item);
+			expect(synced?.offerQuantity).toBeUndefined();
+			expect(synced?.offerPriceMinor).toBeUndefined();
+		});
+	});
+
 	describe('a discount on the cart', () => {
 		it('reaches the other phone, and removing it does too', async () => {
 			await aTripOn(a);

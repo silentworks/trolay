@@ -73,6 +73,17 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 	await expect(page.getByRole('button', { name: /^Cully & Sully.*£1\.99 each/ })).toBeVisible();
 });
 
+test('Choose photo opens the gallery or file picker, not the camera app', async ({ page }) => {
+	await startTrip(page);
+	await page.getByRole('button', { name: 'Snap label' }).click();
+	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
+	// `capture` on a file input sends a phone straight to its camera, with no way to pick a file.
+	const input = camera.locator('input[type=file]');
+	await expect(input).toHaveCount(1);
+	await expect(input).not.toHaveAttribute('capture');
+	await expect(input).toHaveAttribute('accept', 'image/*');
+});
+
 test('fields the reader could not read are left empty and highlighted', async ({ page }) => {
 	await startTrip(page);
 	await page.getByRole('button', { name: 'Snap label' }).click();

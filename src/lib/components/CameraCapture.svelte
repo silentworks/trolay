@@ -34,7 +34,10 @@
 
 	let dialog: HTMLDialogElement;
 	let video = $state<HTMLVideoElement>();
+	// Two inputs: `capture` makes a phone open its camera app and skip the gallery, so choosing an
+	// existing photo needs one without it.
 	let fileInput = $state<HTMLInputElement>();
+	let cameraInput = $state<HTMLInputElement>();
 	let guide = $state<HTMLElement>();
 	let status = $state<'starting' | 'live' | 'unavailable'>('starting');
 	let problem = $state('');
@@ -174,8 +177,8 @@
 		{#if status === 'unavailable'}
 			<div class="fallback">
 				<p>You can take the photo with your camera app instead.</p>
-				<button class="btn btn-primary" type="button" onclick={() => fileInput?.click()}>
-					{mode === 'barcode' ? 'Photograph the barcode' : 'Take or choose a photo'}
+				<button class="btn btn-primary" type="button" onclick={() => cameraInput?.click()}>
+					{mode === 'barcode' ? 'Photograph the barcode' : 'Take a photo'}
 				</button>
 			</div>
 		{/if}
@@ -209,11 +212,22 @@
 			class="visually-hidden"
 			type="file"
 			accept="image/*"
-			capture="environment"
 			tabindex="-1"
 			aria-hidden="true"
 			onchange={picked}
 		/>
+		{#if status === 'unavailable'}
+			<input
+				bind:this={cameraInput}
+				class="visually-hidden"
+				type="file"
+				accept="image/*"
+				capture="environment"
+				tabindex="-1"
+				aria-hidden="true"
+				onchange={picked}
+			/>
+		{/if}
 	{/if}
 </dialog>
 

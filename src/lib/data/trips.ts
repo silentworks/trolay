@@ -1,4 +1,4 @@
-import { DEFAULT_VAT_BPS, tripTotals } from '#lib/money.ts';
+import { applyDiscount, DEFAULT_VAT_BPS, tripTotals, type Discount } from '#lib/money.ts';
 import { db, isLive, newId, type Item, type Store, type Trip } from './db';
 
 export async function getOpenTrip(): Promise<Trip | undefined> {
@@ -54,6 +54,41 @@ export async function setTripBudget(
 		throw new Error('The budget must be more than £0.');
 	}
 	await db.trips.update(tripId, { budgetMinor, updatedAt: Date.now() });
+}
+
+/** The trip's discount, if it has a usable one. */
+export function tripDiscount(
+	trip: Pick<Trip, 'discountKind' | 'discountValue'> | undefined
+): Discount | undefined {
+	const { discountKind: kind, discountValue: value } = trip ?? {};
+	if ((kind !== 'amount' && kind !== 'percent') || !Number.isInteger(value) || value! <= 0) return;
+	return { kind, value: value! };
+}
+
+/** Pass undefined to remove the discount. */
+export async function setTripDiscount(
+	tripId: string,
+	discount: Discount | undefined
+): Promise<void> {
+	if (discount) {
+		const max = discount.kind === 'percent' ? 10_000 : Number.MAX_SAFE_INTEGER;
+		if (!Number.isInteger(discount.value) || discount.value <= 0 || discount.value > max) {
+			throw new Error(
+				discount.kind === 'percent'
+					? 'The discount must be between 0% and 100%.'
+					: 'The discount must be more than £0.'
+			);
+		}
+	}
+	await db.transaction('rw', db.trips, async () => {
+		const trip = await db.trips.get(tripId);
+		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
+		await db.trips.update(tripId, {
+			discountKind: discount?.kind,
+			discountValue: discount?.value,
+			updatedAt: Date.now()
+		});
+	});
 }
 
 /** Pass undefined to clear it. The receipt total is what was paid, so always incl. VAT. */
@@ -123,7 +158,10 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 		}
 		const store = await db.stores.get(trip.storeId);
 		const taxRateBps = store?.taxRateBps ?? DEFAULT_VAT_BPS;
-		const { inclMinor, exclMinor, itemCount } = tripTotals(items, taxRateBps);
+		const { inclMinor, exclMinor, itemCount, discountMinor } = applyDiscount(
+			tripTotals(items, taxRateBps),
+			tripDiscount(trip)
+		);
 
 		const difference = receiptDifference(trip.receiptTotalMinor, inclMinor);
 		const photosKept = isMismatch(difference) && items.some((item) => item.photoId);
@@ -133,7 +171,13 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 			status: 'finished',
 			finishedAt: now,
 			photosKept,
-			totals: { inclMinor, exclMinor, itemCount, taxRateBps },
+			totals: {
+				inclMinor,
+				exclMinor,
+				itemCount,
+				taxRateBps,
+				...(discountMinor ? { discountMinor } : {})
+			},
 			updatedAt: now
 		});
 		return { photosKept, difference };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	applyDiscount,
 	budgetStatus,
 	formatGBP,
 	formatPercent,
@@ -163,5 +164,58 @@ describe('parsePercent and formatPercent', () => {
 		expect(parsePercent('101')).toBeNull();
 		expect(parsePercent('-5')).toBeNull();
 		expect(parsePercent('')).toBeNull();
+	});
+});
+
+describe('applyDiscount', () => {
+	// £6.00 incl. VAT at 20%: £5.00 excl. VAT.
+	const basket = tripTotals([{ unitPriceMinor: 600, quantity: 1, priceIncludesTax: true }], 2000);
+
+	it('changes nothing without a discount', () => {
+		expect(applyDiscount(basket, undefined)).toEqual({
+			...basket,
+			discountMinor: 0,
+			beforeMinor: 600
+		});
+	});
+
+	it('takes an amount off what is paid, and the VAT falls in proportion', () => {
+		expect(applyDiscount(basket, { kind: 'amount', value: 150 })).toMatchObject({
+			discountMinor: 150,
+			beforeMinor: 600,
+			inclMinor: 450,
+			exclMinor: 375,
+			taxMinor: 75
+		});
+	});
+
+	it('takes a percentage off, rounding the discount to the nearest penny', () => {
+		expect(applyDiscount(basket, { kind: 'percent', value: 1000 })).toMatchObject({
+			discountMinor: 60,
+			inclMinor: 540,
+			exclMinor: 450,
+			taxMinor: 90
+		});
+		// 12.5% of £6.00 is 75p exactly; 33.33% is 199.98p, so 200p.
+		expect(applyDiscount(basket, { kind: 'percent', value: 1250 }).discountMinor).toBe(75);
+		expect(applyDiscount(basket, { kind: 'percent', value: 3333 }).discountMinor).toBe(200);
+	});
+
+	it('never takes the total below £0', () => {
+		expect(applyDiscount(basket, { kind: 'amount', value: 5000 })).toMatchObject({
+			discountMinor: 600,
+			inclMinor: 0,
+			exclMinor: 0,
+			taxMinor: 0
+		});
+		expect(applyDiscount(basket, { kind: 'percent', value: 10_000 }).inclMinor).toBe(0);
+	});
+
+	it('handles an empty trolley', () => {
+		const empty = tripTotals([], 2000);
+		expect(applyDiscount(empty, { kind: 'amount', value: 100 })).toMatchObject({
+			discountMinor: 0,
+			inclMinor: 0
+		});
 	});
 });

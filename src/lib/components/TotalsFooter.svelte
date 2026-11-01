@@ -1,14 +1,22 @@
 <script lang="ts">
-	import { budgetStatus, formatGBP, headlineTotal, type TripTotals } from '#lib/money.ts';
+	import {
+		budgetStatus,
+		formatGBP,
+		formatPercent,
+		headlineTotal,
+		type Discount,
+		type DiscountedTotals
+	} from '#lib/money.ts';
 	import { settings } from '#lib/settings.svelte.ts';
 
 	interface Props {
-		totals: TripTotals;
+		totals: DiscountedTotals;
+		discount?: Discount;
 		budgetMinor?: number;
 		onbudget: () => void;
 	}
 
-	let { totals, budgetMinor, onbudget }: Props = $props();
+	let { totals, discount, budgetMinor, onbudget }: Props = $props();
 
 	const mode = $derived(settings.totalMode);
 	const headline = $derived(headlineTotal(totals, mode));
@@ -31,6 +39,14 @@
 	</button>
 
 	<dl class="breakdown">
+		{#if totals.discountMinor > 0}
+			<div>
+				<dt>
+					Discount{discount?.kind === 'percent' ? ` (${formatPercent(discount.value)}%)` : ''}
+				</dt>
+				<dd>−{formatGBP(totals.discountMinor)}</dd>
+			</div>
+		{/if}
 		<div>
 			<dt>Incl. VAT</dt>
 			<dd>{formatGBP(totals.inclMinor)}</dd>

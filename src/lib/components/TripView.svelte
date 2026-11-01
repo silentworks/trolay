@@ -98,6 +98,12 @@
 				<dt>Total incl. VAT</dt>
 				<dd>{formatGBP(totals.inclMinor)}</dd>
 			</div>
+			{#if totals.discountMinor}
+				<div>
+					<dt>Discount taken off</dt>
+					<dd>−{formatGBP(totals.discountMinor)}</dd>
+				</div>
+			{/if}
 			<div>
 				<dt>Excl. VAT</dt>
 				<dd>{formatGBP(totals.exclMinor)}</dd>

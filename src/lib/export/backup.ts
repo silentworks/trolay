@@ -5,7 +5,7 @@ import type { Pending } from '#lib/sync/pending.ts';
 // JSON file. Records are written exactly as stored, tombstones included, so restoring gives back
 // the same data. The product-name cache is left out; it refills itself.
 
-export const BACKUP_FORMAT = 1;
+export const BACKUP_FORMAT = 2;
 
 interface PhotoRecord extends Omit<Photo, 'blob' | 'thumbBlob'> {
 	blob: EncodedBlob;
@@ -134,6 +134,8 @@ const SHAPES: Record<'stores' | 'trips' | 'items' | 'photos', Record<string, Che
 		status: (v) => v === 'open' || v === 'finished',
 		budgetMinor: optional(isInteger),
 		receiptTotalMinor: optional(isInteger),
+		discountKind: optional((v) => v === 'amount' || v === 'percent'),
+		discountValue: optional(isInteger),
 		photosKept: isBoolean,
 		startedAt: isNumber,
 		finishedAt: optional(isNumber),

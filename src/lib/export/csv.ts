@@ -1,5 +1,5 @@
 import type { Item, Store, Trip } from '#lib/data/db.ts';
-import { lineTotals } from '#lib/money.ts';
+import { formatPercent, lineTotals, tripTotals } from '#lib/money.ts';
 
 // CSV for spreadsheets. Excel only reads UTF-8 (and so "£") when the file starts with a byte
 // order mark, and expects CRLF line ends; Google Sheets accepts both.
@@ -68,6 +68,29 @@ export function tripsToCsv(trips: TripForExport[]): string {
 					pounds(line.inclMinor),
 					pounds(line.exclMinor),
 					pounds(line.inclMinor - line.exclMinor)
+				].join(',')
+			);
+		}
+		// A discount off the whole trolley is a line of its own, so the lines add up to the total paid.
+		const discountMinor = trip.totals?.discountMinor;
+		if (trip.totals && discountMinor) {
+			const exclMinor = tripTotals(items, taxRateBps).exclMinor - trip.totals.exclMinor;
+			const label =
+				trip.discountKind === 'percent' && trip.discountValue
+					? `Discount (${formatPercent(trip.discountValue)}%)`
+					: 'Discount';
+			rows.push(
+				[
+					dateTime(trip.finishedAt ?? trip.startedAt),
+					text(storeName),
+					text(label),
+					'',
+					'1',
+					pounds(-discountMinor),
+					'Yes',
+					pounds(-discountMinor),
+					pounds(-exclMinor),
+					pounds(-(discountMinor - exclMinor))
 				].join(',')
 			);
 		}

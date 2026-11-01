@@ -95,7 +95,11 @@
 			"Rich Tea Biscuits 300g"
 		],
 		"unitPriceMinor": 85,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 120
+		}
 	},
 	"015-esl.jpg": {
 		"description": [
@@ -207,7 +211,11 @@
 			"Red Onions 1kg"
 		],
 		"unitPriceMinor": 89,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 128
+		}
 	},
 	"031-esl.jpg": {
 		"description": [
@@ -319,7 +327,11 @@
 			"Mixed Herbs 14g"
 		],
 		"unitPriceMinor": 95,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 2,
+			"totalMinor": 140
+		}
 	},
 	"047-esl.jpg": {
 		"description": [
@@ -543,7 +555,11 @@
 			"Fabric Conditioner 1.19L"
 		],
 		"unitPriceMinor": 350,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 2,
+			"totalMinor": 650
+		}
 	},
 	"079-esl.jpg": {
 		"description": [
@@ -655,7 +671,11 @@
 			"Plain Bagels 5 Pack"
 		],
 		"unitPriceMinor": 125,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 200
+		}
 	},
 	"095-esl.jpg": {
 		"description": [
@@ -991,7 +1011,11 @@
 			"Extra Virgin Olive Oil 500ml"
 		],
 		"unitPriceMinor": 525,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 1000
+		}
 	},
 	"143-esl.jpg": {
 		"description": [
@@ -1047,7 +1071,11 @@
 			"Sweet Potatoes 1kg"
 		],
 		"unitPriceMinor": 125,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 2,
+			"totalMinor": 200
+		}
 	},
 	"151-esl.jpg": {
 		"description": [
@@ -1271,7 +1299,11 @@
 			"Rice Cakes 130g"
 		],
 		"unitPriceMinor": 89,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 2,
+			"totalMinor": 128
+		}
 	},
 	"183-esl.jpg": {
 		"description": [
@@ -1383,7 +1415,11 @@
 			"Red Onions 1kg"
 		],
 		"unitPriceMinor": 89,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 128
+		}
 	},
 	"199-esl.jpg": {
 		"description": [
@@ -1551,7 +1587,11 @@
 			"Mushrooms 400g"
 		],
 		"unitPriceMinor": 109,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 168
+		}
 	},
 	"223-esl.jpg": {
 		"description": [
@@ -1607,7 +1647,11 @@
 			"Couscous 500g"
 		],
 		"unitPriceMinor": 99,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 148
+		}
 	},
 	"231-esl.jpg": {
 		"description": [
@@ -1775,7 +1819,11 @@
 			"Chocolate Digestives 400g"
 		],
 		"unitPriceMinor": 150,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 250
+		}
 	},
 	"255-esl.jpg": {
 		"description": [
@@ -1831,7 +1879,11 @@
 			"Baby Potatoes 1kg"
 		],
 		"unitPriceMinor": 115,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 3,
+			"totalMinor": 180
+		}
 	},
 	"263-esl.jpg": {
 		"description": [
@@ -2055,7 +2107,11 @@
 			"Halloumi 250g"
 		],
 		"unitPriceMinor": 299,
-		"vat": null
+		"vat": null,
+		"offer": {
+			"quantity": 2,
+			"totalMinor": 548
+		}
 	},
 	"295-esl.jpg": {
 		"description": [

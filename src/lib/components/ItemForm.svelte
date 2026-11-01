@@ -45,13 +45,21 @@
 	let price = $state(initial.item ? minorToInput(initial.item.unitPriceMinor) : '');
 	let quantity = $state(initial.item?.quantity ?? 1);
 	let priceIncludesTax = $state(initial.item?.priceIncludesTax ?? initial.defaultIncludesTax);
+	// A multi-buy offer ("2 for £3.00"): both boxes empty means none.
+	let offerQuantity = $state(initial.item?.offerQuantity ? String(initial.item.offerQuantity) : '');
+	let offerPrice = $state(
+		initial.item?.offerPriceMinor ? minorToInput(initial.item.offerPriceMinor) : ''
+	);
+	// What the label printed per kg, per 100g and so on: shown, never used in the total.
+	let perUnit = $state(initial.item?.extracted?.perUnit);
+	let offerRead = $state(false);
 	let barcode = $state(initial.item?.barcode ?? initial.barcode ?? '');
 	let camera = $state<'barcode' | 'label'>();
 	let error = $state('');
 	let saving = $state(false);
 
 	// Readings never overwrite what the shopper has typed, even if they arrive later.
-	const touched = { description: false, price: false, vat: false, barcode: false };
+	const touched = { description: false, price: false, vat: false, barcode: false, offer: false };
 	// Fields the label reader tried but could not read with confidence: highlighted, left empty.
 	let unread = $state({ description: false, price: false });
 	// The read price agreed with the unit price printed on the label (price ÷ pack size).
@@ -71,9 +79,17 @@
 			const {
 				description: readDescription,
 				unitPriceMinor,
-				priceIncludesTax: vat
+				priceIncludesTax: vat,
+				multiBuy,
+				perUnit: readPerUnit
 			} = filledFields(reading);
 			const read = { description: readDescription, unitPriceMinor, priceIncludesTax: vat };
+			if (multiBuy && !touched.offer) {
+				offerQuantity = String(multiBuy.quantity);
+				offerPrice = minorToInput(multiBuy.totalMinor);
+				offerRead = true;
+			}
+			if (readPerUnit) perUnit = readPerUnit;
 			if (descriptionFromLookup) read.description = description;
 			else if (read.description !== undefined && !touched.description) {
 				description = read.description;
@@ -97,7 +113,14 @@
 			]
 				.filter((field) => field)
 				.map((field) => (field as { confidence: number }).confidence);
-			if (used.length) extracted = { ...read, confidence: Math.min(...used) };
+			if (used.length) {
+				extracted = {
+					...read,
+					...(multiBuy && { offer: multiBuy }),
+					...(readPerUnit && { perUnit: readPerUnit }),
+					confidence: Math.min(...used)
+				};
+			}
 		});
 	});
 
@@ -135,10 +158,26 @@
 	}
 
 	const unitPriceMinor = $derived(parsePounds(price));
+	// null: boxes filled in but not usable; undefined: no offer.
+	const offer = $derived.by(() => {
+		if (offerQuantity.trim() === '' && offerPrice.trim() === '') return undefined;
+		const count = /^\d{1,2}$/.test(offerQuantity.trim()) ? Number(offerQuantity.trim()) : NaN;
+		const total = parsePounds(offerPrice);
+		return count >= 2 && total ? { quantity: count, totalMinor: total } : null;
+	});
 	const preview = $derived(
-		unitPriceMinor === null
+		unitPriceMinor === null || offer === null
 			? null
-			: lineTotals({ unitPriceMinor, quantity, priceIncludesTax }, taxRateBps)
+			: lineTotals(
+					{
+						unitPriceMinor,
+						quantity,
+						priceIncludesTax,
+						offerQuantity: offer?.quantity,
+						offerPriceMinor: offer?.totalMinor
+					},
+					taxRateBps
+				)
 	);
 
 	async function submit(event: SubmitEvent) {
@@ -147,10 +186,25 @@
 			error = 'Enter a price like 1.45.';
 			return;
 		}
+		if (offer === null) {
+			error = 'A multi-buy offer needs 2 or more items and a price, like 2 for 3.00.';
+			return;
+		}
 		saving = true;
 		error = '';
 		try {
-			await onsave({ description, unitPriceMinor, priceIncludesTax, quantity, barcode }, extracted);
+			await onsave(
+				{
+					description,
+					unitPriceMinor,
+					priceIncludesTax,
+					quantity,
+					barcode,
+					offerQuantity: offer?.quantity,
+					offerPriceMinor: offer?.totalMinor
+				},
+				extracted
+			);
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -268,6 +322,38 @@
 		</div>
 	</div>
 
+	{#if perUnit}
+		<p class="checked-hint">Label unit price: {perUnit}</p>
+	{/if}
+
+	<div class="field">
+		<span class="label" id="{uid}-offer-label"
+			>Multi-buy offer <span class="hint">(optional)</span></span
+		>
+		<div class="offer" role="group" aria-labelledby="{uid}-offer-label">
+			<input
+				class="input"
+				aria-label="Offer: number of items"
+				bind:value={offerQuantity}
+				oninput={() => (touched.offer = true)}
+				inputmode="numeric"
+				placeholder="2"
+			/>
+			<span>for £</span>
+			<input
+				class="input"
+				aria-label="Offer: price for the items"
+				bind:value={offerPrice}
+				oninput={() => (touched.offer = true)}
+				inputmode="decimal"
+				placeholder="3.00"
+			/>
+		</div>
+		{#if offerRead && !touched.offer}
+			<p class="checked-hint">✓ Read from the label. Applies to each set of {offerQuantity}.</p>
+		{/if}
+	</div>
+
 	<label class="check">
 		<input type="checkbox" bind:checked={priceIncludesTax} onchange={() => (touched.vat = true)} />
 		Price includes VAT
@@ -330,6 +416,13 @@
 />
 
 <style>
+	.offer {
+		display: grid;
+		grid-template-columns: 5rem auto 1fr;
+		align-items: center;
+		gap: 8px;
+	}
+
 	.photo {
 		margin: 0 0 12px;
 	}

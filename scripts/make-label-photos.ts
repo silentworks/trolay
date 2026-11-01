@@ -296,6 +296,8 @@ interface Label {
 	description: string[];
 	price: number;
 	vat: 'inc' | 'ex' | null;
+	/** A multi-buy offer printed on the label ("Any 2 for £2.50"). */
+	offer?: { quantity: number; totalMinor: number };
 }
 
 const SANS = ['Liberation Sans', 'Nimbus Sans', 'Noto Sans', 'Adwaita Sans'];
@@ -488,8 +490,11 @@ const layouts: Record<string, (p: Product, r: Rng) => Label> = {
 		);
 		const mid = 145 + lines.length * 50 + 30;
 		if (kind === 'was') svg += text(40, mid, 40, `Was ${pounds(Math.round(p.price * 1.3))}`, font);
-		if (kind === 'multibuy')
-			svg += text(40, mid, 40, `Any ${r.int(2, 3)} for ${pounds(p.price * 2 - 50)}`, font);
+		let offer: Label['offer'];
+		if (kind === 'multibuy') {
+			offer = { quantity: r.int(2, 3), totalMinor: p.price * 2 - 50 };
+			svg += text(40, mid, 40, `Any ${offer.quantity} for ${pounds(offer.totalMinor)}`, font);
+		}
 		if (kind === 'save') svg += text(40, mid, 40, `Save ${r.int(20, 90)}p`, font);
 		if (kind === 'loyalty') {
 			// The loyalty price is the big one; the shelf price for everyone is printed smaller.
@@ -524,7 +529,7 @@ const layouts: Record<string, (p: Product, r: Rng) => Label> = {
 			);
 		}
 		svg += text(40, H - 30, 30, unitPrice(p, r), font);
-		return { svg, width: W, height: H, description: [desc], price: p.price, vat: null };
+		return { svg, width: W, height: H, description: [desc], price: p.price, vat: null, offer };
 	},
 	esl(p, r) {
 		// Electronic shelf label: grey e-paper, caps name on top, big price with raised pence.
@@ -770,7 +775,8 @@ function generate(
 		expected[name] = {
 			description: label.description,
 			unitPriceMinor: label.price,
-			vat: label.vat
+			vat: label.vat,
+			...(label.offer && { offer: label.offer })
 		};
 	}
 	rmSync(tmp, { recursive: true, force: true });

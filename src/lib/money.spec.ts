@@ -122,33 +122,75 @@ describe('budgetStatus', () => {
 describe('formatGBP', () => {
 	it('formats pence as pounds', () => {
 		expect(formatGBP(123)).toBe('£1.23');
-		expect(formatGBP(0)).toBe('£0.00');
-		expect(formatGBP(123_456)).toBe('£1,234.56');
+		expect(formatGBP(0, 'en-GB')).toBe('£0.00');
+		expect(formatGBP(123_456, 'en-GB')).toBe('£1,234.56');
+		expect(formatGBP(123_456, 'de-DE')).toBe('1.234,56\u00a0£');
 	});
 });
 
 describe('parsePounds', () => {
 	it('accepts common ways of typing a price', () => {
-		expect(parsePounds('1.23')).toBe(123);
-		expect(parsePounds('£1.5')).toBe(150);
-		expect(parsePounds(' 2 ')).toBe(200);
-		expect(parsePounds('.99')).toBe(99);
-		expect(parsePounds('1,234.50')).toBe(123_450);
+		expect(parsePounds('1.23', 'en-GB')).toBe(123);
+		expect(parsePounds('£1.5', 'en-GB')).toBe(150);
+		expect(parsePounds(' 2 ', 'en-GB')).toBe(200);
+		expect(parsePounds('.99', 'en-GB')).toBe(99);
+		expect(parsePounds('1,234.50', 'en-GB')).toBe(123_450);
+		expect(parsePounds('€ 3,20', 'en-GB')).toBe(320);
+		expect(parsePounds('4,50 €', 'de-DE')).toBe(450);
+	});
+
+	it('takes a comma or a full stop before one or two final digits as the decimal mark anywhere', () => {
+		for (const locale of ['en-GB', 'en-US', 'de-DE', 'fr-FR', 'hi-IN']) {
+			expect(parsePounds('4,50', locale)).toBe(450);
+			expect(parsePounds('4.50', locale)).toBe(450);
+			expect(parsePounds('4,5', locale)).toBe(450);
+		}
+	});
+
+	it('reads digit grouping the way each locale writes it', () => {
+		expect(parsePounds('1.234,56', 'de-DE')).toBe(123_456);
+		expect(parsePounds('1.234', 'de-DE')).toBe(123_400);
+		expect(parsePounds('1,234', 'en-US')).toBe(123_400);
+		expect(parsePounds('1,234,567.89', 'en-US')).toBe(123_456_789);
+		// fr-FR groups with a narrow no-break space; a plain space or no-break space works too.
+		expect(parsePounds('1\u202f234,56', 'fr-FR')).toBe(123_456);
+		expect(parsePounds('1 234,56', 'fr-FR')).toBe(123_456);
+		expect(parsePounds('1\u00a0234', 'fr-FR')).toBe(123_400);
+		// India groups in twos above the thousands.
+		expect(parsePounds('1,23,456.50', 'hi-IN')).toBe(12_345_650);
+		expect(parsePounds("1'234.50", 'de-CH')).toBe(123_450);
+	});
+
+	it('refuses a single mark before three digits where it could be the decimal mark', () => {
+		expect(parsePounds('1,234', 'de-DE')).toBeNull();
+		expect(parsePounds('1,234', 'fr-FR')).toBeNull();
+		expect(parsePounds('1.234', 'en-GB')).toBeNull();
 	});
 
 	it('rejects anything that is not an amount', () => {
-		expect(parsePounds('')).toBeNull();
-		expect(parsePounds('.')).toBeNull();
-		expect(parsePounds('1.234')).toBeNull();
-		expect(parsePounds('-1')).toBeNull();
-		expect(parsePounds('abc')).toBeNull();
+		for (const input of [
+			'',
+			'.',
+			',',
+			'1.',
+			'1.234.5',
+			'12,34,5',
+			'1,2345',
+			'-1',
+			'abc',
+			'1.2.3,45'
+		]) {
+			expect(parsePounds(input, 'en-GB'), input).toBeNull();
+		}
 	});
 });
 
 describe('minorToInput', () => {
-	it('formats pence for an input field', () => {
-		expect(minorToInput(150)).toBe('1.50');
-		expect(minorToInput(5)).toBe('0.05');
+	it("formats minor units for an input field in the locale's form", () => {
+		expect(minorToInput(150, 'en-GB')).toBe('1.50');
+		expect(minorToInput(5, 'en-GB')).toBe('0.05');
+		expect(minorToInput(123_456, 'de-DE')).toBe('1234,56');
+		expect(parsePounds(minorToInput(123_456, 'de-DE'), 'de-DE')).toBe(123_456);
 	});
 });
 
@@ -156,9 +198,11 @@ describe('parsePercent and formatPercent', () => {
 	it('round-trips rates', () => {
 		expect(parsePercent('20')).toBe(2000);
 		expect(parsePercent('17.5%')).toBe(1750);
+		expect(parsePercent('7,5 %')).toBe(750);
 		expect(parsePercent('0')).toBe(0);
-		expect(formatPercent(2000)).toBe('20');
-		expect(formatPercent(1750)).toBe('17.5');
+		expect(formatPercent(2000, 'en-GB')).toBe('20');
+		expect(formatPercent(1750, 'en-GB')).toBe('17.5');
+		expect(formatPercent(750, 'de-DE')).toBe('7,5');
 	});
 
 	it('rejects rates outside 0–100%', () => {

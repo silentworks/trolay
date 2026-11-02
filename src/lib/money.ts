@@ -1,3 +1,5 @@
+import { appLocale, numberSeparators } from './locale.ts';
+
 // All amounts are integer pence ("minor units") and tax rates are integer basis points
 // (2000 = 20%), so every calculation stays in exact integer arithmetic.
 
@@ -127,36 +129,89 @@ export function budgetStatus(spentMinor: number, budgetMinor: number): BudgetSta
 	return 'ok';
 }
 
-const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
+const gbp = new Map<string, Intl.NumberFormat>();
 
-export function formatGBP(minor: number): string {
-	return gbp.format(minor / 100);
+/** e.g. "£1,234.56" in en-GB, "1.234,56 £" in de-DE. */
+export function formatGBP(minor: number, locale = appLocale()): string {
+	let format = gbp.get(locale);
+	if (!format) {
+		format = new Intl.NumberFormat(locale, { style: 'currency', currency: 'GBP' });
+		gbp.set(locale, format);
+	}
+	return format.format(minor / 100);
 }
 
-/** Parses "1.5", "£1.50" or "1,234.50" into pence; null when it is not a valid amount. */
-export function parsePounds(input: string): number | null {
-	const cleaned = input.trim().replace(/^£/, '').replace(/,/g, '');
-	const match = /^(\d*)(?:\.(\d{1,2}))?$/.exec(cleaned);
-	if (!match || (match[1] === '' && match[2] === undefined)) return null;
-	const pounds = Number(match[1] || '0');
-	const pence = Number((match[2] ?? '').padEnd(2, '0'));
-	return pounds * 100 + pence;
+/** Spaces and apostrophes between digits group them ("1 234,50", "1'234.50") in any locale. */
+const SPACE_GROUP = /(\d)[\s\u00a0\u202f'’](?=\d)/g;
+
+/**
+ * Digits grouped with `mark`: the first group 1–3 digits, the last 3, any between 2 or 3 (as in
+ * India's 1,23,456). The digits alone, or null when the groups are not laid out like that.
+ */
+function ungroup(text: string, mark: string): string | null {
+	const groups = text.split(mark);
+	const [first, ...rest] = groups;
+	if (!/^\d{1,3}$/.test(first)) return null;
+	const last = rest.pop();
+	if (last !== undefined && !/^\d{3}$/.test(last)) return null;
+	if (rest.some((group) => !/^\d{2,3}$/.test(group))) return null;
+	return groups.join('');
 }
 
-/** Pence as an editable input value, e.g. 150 → "1.50". */
-export function minorToInput(minor: number): string {
-	return (minor / 100).toFixed(2);
+/**
+ * Parses an amount as typed into minor units, or null when it is not one.
+ *
+ * A "." or "," followed by one or two digits at the end is the decimal mark in every locale, so
+ * "4,50" and "4.50" are both 450. With both marks, the last is the decimal mark ("1.234,50",
+ * "1,234.50"). One mark followed by three digits ("1,234") is a thousands mark only where the
+ * locale groups with it; elsewhere it could be either, so it is refused rather than guessed.
+ */
+export function parsePounds(input: string, locale = appLocale()): number | null {
+	const cleaned = input
+		.trim()
+		.replace(/^[£€$]\s*|\s*[£€$]$/g, '')
+		.replace(SPACE_GROUP, '$1');
+	const marks = cleaned.match(/[.,]/g) ?? [];
+	let whole: string | null = cleaned;
+	let fraction = '';
+	if (marks.length) {
+		const at = Math.max(cleaned.lastIndexOf('.'), cleaned.lastIndexOf(','));
+		const mark = cleaned[at];
+		const after = cleaned.slice(at + 1);
+		const before = cleaned.slice(0, at);
+		const other = marks.find((m) => m !== mark);
+		const repeated = marks.filter((m) => m === mark).length > 1;
+		if (other !== undefined || (!repeated && after.length <= 2)) {
+			if (repeated || !/^\d{1,2}$/.test(after)) return null;
+			whole = other === undefined || before === '' ? before : ungroup(before, other);
+			fraction = after;
+		} else if (repeated || mark === numberSeparators(locale).group) {
+			whole = ungroup(cleaned, mark);
+		} else {
+			return null;
+		}
+	}
+	if (whole === null || !/^\d*$/.test(whole) || (whole === '' && fraction === '')) return null;
+	return Number(whole || '0') * 100 + Number(fraction.padEnd(2, '0'));
 }
 
-/** Parses a percentage such as "20" or "17.5" into basis points; null outside 0–100%. */
+/** Minor units as an editable input value in the locale's form, e.g. 150 → "1.50" or "1,50". */
+export function minorToInput(minor: number, locale = appLocale()): string {
+	return (minor / 100).toFixed(2).replace('.', numberSeparators(locale).decimal);
+}
+
+/** Parses a percentage such as "20", "17.5" or "17,5" into basis points; null outside 0–100%. */
 export function parsePercent(input: string): number | null {
-	const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(input.trim().replace(/%$/, ''));
+	const match = /^(\d{1,3})(?:[.,](\d{1,2}))?$/.exec(input.trim().replace(/\s*%$/, ''));
 	if (!match) return null;
 	const bps = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
 	return bps <= BPS_SCALE ? bps : null;
 }
 
-/** Basis points as a percentage string without trailing zeros, e.g. 2000 → "20", 1750 → "17.5". */
-export function formatPercent(bps: number): string {
-	return String(bps / 100);
+/**
+ * Basis points as a percentage without trailing zeros in the locale's form, e.g. 2000 → "20",
+ * 1750 → "17.5" or "17,5".
+ */
+export function formatPercent(bps: number, locale = appLocale()): string {
+	return String(bps / 100).replace('.', numberSeparators(locale).decimal);
 }

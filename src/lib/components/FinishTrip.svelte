@@ -106,7 +106,7 @@
 
 	<p class="difference" id="{uid}-difference" aria-live="polite" data-match={difference === 0}>
 		{#if invalid}
-			Enter the total like 42.50.
+			Enter the total like {minorToInput(4250)}.
 		{:else if difference === undefined}
 			Enter the receipt total to finish the trip. It checks the till charged what Trolay added up.
 		{:else if difference === 0}

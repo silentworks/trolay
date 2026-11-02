@@ -4,7 +4,13 @@
 	import { db } from '#lib/data/db.ts';
 	import { addStore } from '#lib/data/stores.ts';
 	import { startTrip } from '#lib/data/trips.ts';
-	import { DEFAULT_VAT_BPS, formatPercent, parsePercent, parsePounds } from '#lib/money.ts';
+	import {
+		DEFAULT_VAT_BPS,
+		formatPercent,
+		minorToInput,
+		parsePercent,
+		parsePounds
+	} from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
 
 	interface Props {
@@ -64,7 +70,7 @@
 			return;
 		}
 		if (step === 'budget' && readBudget() === null) {
-			error = 'Enter a budget like 50 or 42.50, or leave it empty.';
+			error = `Enter a budget like 50 or ${minorToInput(4250)}, or leave it empty.`;
 			return;
 		}
 		if (step === 'ready') {

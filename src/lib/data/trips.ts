@@ -120,6 +120,25 @@ export function receiptDifference(
 	return receiptTotalMinor === undefined ? undefined : receiptTotalMinor - appTotalInclMinor;
 }
 
+/**
+ * The receipt came to about one lot of sales tax more than the app's total, which had none added
+ * on top: likely the shelf prices left tax out and the till added it. At the store's rate when it
+ * has one (within rounding), otherwise at a typical sales tax of 4–11%.
+ */
+export function looksLikeTaxAddedAtTill(
+	difference: number | undefined,
+	appTotalInclMinor: number,
+	taxRateBps: number
+): boolean {
+	if (difference === undefined || difference <= 0 || appTotalInclMinor <= 0) return false;
+	if (taxRateBps === 0) {
+		const share = difference / appTotalInclMinor;
+		return share >= 0.04 && share <= 0.11;
+	}
+	const expected = (appTotalInclMinor * taxRateBps) / 10_000;
+	return Math.abs(difference - expected) <= Math.max(2, expected * 0.03);
+}
+
 /** Any difference of a penny or more is a mismatch, and keeps the photos as evidence. */
 export const isMismatch = (difference: number | undefined) =>
 	difference !== undefined && difference !== 0;

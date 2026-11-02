@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { BASE } from './global-setup';
 import { copyPasskeys, withPasskeys } from './passkeys';
 
 const synced = (page: Page) => page.getByRole('status').filter({ hasText: '✓ Synced' });
@@ -55,7 +56,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 }) => {
 	// Record ids are global on the server, so each run needs its own.
 	const run = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-	const a = await (await browser.newContext({ baseURL: 'http://localhost:4173' })).newPage();
+	const a = await (await browser.newContext({ baseURL: BASE })).newPage();
 	const passkeysA = await withPasskeys(a);
 
 	// Phone A has months of history, made before it ever signed in.
@@ -80,7 +81,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 	await expect(synced(a)).toBeVisible({ timeout: 20_000 });
 
 	// Phone B has a trip of its own, started before it signed in.
-	const b = await (await browser.newContext({ baseURL: 'http://localhost:4173' })).newPage();
+	const b = await (await browser.newContext({ baseURL: BASE })).newPage();
 	await copyPasskeys(passkeysA, await withPasskeys(b));
 	await b.goto('/');
 	await b.getByRole('button', { name: 'Add a new store' }).click();

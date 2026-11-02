@@ -1,7 +1,8 @@
 import { expect, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
+import { BASE } from './global-setup';
 import { withPasskeys } from './passkeys';
 
-export const BASE = 'http://localhost:4173';
+export { BASE };
 export const synced = (page: Page) => page.getByRole('status').filter({ hasText: '✓ Synced' });
 
 /** A phone with its own passkey store and nothing on it. */

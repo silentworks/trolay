@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { readText } from '#lib/capture/ocr/browser.ts';
 	import { parseReceipt } from '#lib/capture/receipt/parse.ts';
-	import { isMismatch, receiptDifference } from '#lib/data/trips.ts';
+	import { isMismatch, looksLikeTaxAddedAtTill, receiptDifference } from '#lib/data/trips.ts';
 	import { amountLabel, formatMoney, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
 
@@ -16,10 +16,22 @@
 		onfinish: () => Promise<void>;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
+		/** The store's sales tax rate, for spotting a till that added tax the app didn't. */
+		taxRateBps: number;
+		/** The app already added tax on top of some prices, so the till adding it is no surprise. */
+		taxAdded: boolean;
 	}
 
-	let { appTotalMinor, receiptTotalMinor, photoCount, onreceipt, onfinish, currency }: Props =
-		$props();
+	let {
+		appTotalMinor,
+		receiptTotalMinor,
+		photoCount,
+		onreceipt,
+		onfinish,
+		currency,
+		taxRateBps,
+		taxAdded
+	}: Props = $props();
 	const uid = $props.id();
 
 	const initial = untrack(() => receiptTotalMinor);
@@ -32,6 +44,9 @@
 	const entered = $derived(value.trim() === '' ? undefined : parsePounds(value));
 	const invalid = $derived(entered === null);
 	const difference = $derived(receiptDifference(entered ?? undefined, appTotalMinor));
+	const tillAddedTax = $derived(
+		!taxAdded && looksLikeTaxAddedAtTill(difference, appTotalMinor, taxRateBps)
+	);
 	const keepPhotos = $derived(isMismatch(difference) && photoCount > 0);
 	const photos = $derived(photoCount === 1 ? '1 label photo' : `${photoCount} label photos`);
 
@@ -116,6 +131,10 @@
 			✓ The receipt matches.
 		{:else if difference > 0}
 			The till charged {formatMoney(difference, currency)} more than Trolay added up.
+			{#if tillAddedTax}
+				Did the till add sales tax? If prices at this store don't include it, change the store's
+				sales tax in Stores, and Trolay will add it on your next trip.
+			{/if}
 		{:else}
 			The till charged {formatMoney(-difference, currency)} less than Trolay added up.
 		{/if}

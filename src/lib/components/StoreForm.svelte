@@ -3,7 +3,7 @@
 	import type { Store } from '#lib/data/db.ts';
 	import type { StoreInput } from '#lib/data/stores.ts';
 	import { formatPercent, parsePercent } from '#lib/money.ts';
-	import { regionTax } from '#lib/taxes.ts';
+	import { rateHint, regionTax } from '#lib/taxes.ts';
 	import CurrencySelect from './CurrencySelect.svelte';
 
 	interface Props {
@@ -21,7 +21,7 @@
 	let branch = $state(initial?.branch ?? '');
 	// A new store's rate is guessed from the phone's region; with no good guess it starts at 0%.
 	const guess = initial ? undefined : regionTax();
-	const askForRate = !initial && (!guess || guess.varies);
+	const hint = initial ? undefined : rateHint(guess);
 	let rate = $state(formatPercent(initial?.taxRateBps ?? guess?.rateBps ?? 0));
 	let pricesIncludeTax = $state(initial?.pricesIncludeTax ?? true);
 	let currency = $state(initial?.currency ?? '');
@@ -81,11 +81,7 @@
 	<div class="field">
 		<label for="{uid}-rate">Sales tax rate (%)</label>
 		<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
-		{#if askForRate}
-			<span class="hint"
-				>Enter the sales tax rate where you shop. A recent receipt usually shows it.</span
-			>
-		{/if}
+		{#if hint}<span class="hint">{hint}</span>{/if}
 	</div>
 
 	<label class="check">
@@ -93,8 +89,9 @@
 		Shelf prices include sales tax
 	</label>
 	<p class="hint">
-		Leave this on if the price on the shelf is what you pay. Turn it off if the store adds tax on
-		top, at the till or on the receipt.
+		{pricesIncludeTax
+			? 'Prices on the shelf already include sales tax.'
+			: 'Sales tax is added at the till. Trolay adds it to your total so it matches the receipt.'}
 	</p>
 
 	<button class="btn btn-primary btn-block" type="submit" disabled={saving}>{submitLabel}</button>

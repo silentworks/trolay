@@ -16,9 +16,11 @@
 		onbudget: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
+		/** The store's shelf prices leave tax out and the till adds it. */
+		taxAddedAtTill?: boolean;
 	}
 
-	let { totals, discount, budgetMinor, onbudget, currency }: Props = $props();
+	let { totals, discount, budgetMinor, onbudget, currency, taxAddedAtTill }: Props = $props();
 
 	const mode = $derived(settings.totalMode);
 	const headline = $derived(headlineTotal(totals, mode));
@@ -59,7 +61,7 @@
 			<dd>{formatMoney(totals.exclMinor, currency)}</dd>
 		</div>
 		<div>
-			<dt>Tax</dt>
+			<dt>{taxAddedAtTill ? 'Tax (added at till)' : 'Tax'}</dt>
 			<dd>{formatMoney(totals.taxMinor, currency)}</dd>
 		</div>
 		<div>

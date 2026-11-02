@@ -22,7 +22,7 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 
 	await expect(page.getByRole('heading', { name: 'Sales tax at Lidl' })).toBeFocused();
 	await expect(page.getByLabel('Sales tax rate (%)')).toHaveValue('20');
-	await expect(page.getByLabel('Shelf prices include sales tax')).toBeChecked();
+	await expect(page.getByLabel('Yes, the price on the shelf is what I pay')).toBeChecked();
 	await page.getByRole('button', { name: 'Back' }).click();
 	await expect(page.getByLabel('Store name')).toHaveValue('Lidl');
 	await page.getByRole('button', { name: 'Next' }).click();

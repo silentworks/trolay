@@ -4,7 +4,7 @@
 	import { addStore, listStores, type StoreInput } from '#lib/data/stores.ts';
 	import { startTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
-	import { parsePounds } from '#lib/money.ts';
+	import { minorToInput, parsePounds } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
 	import SyncStatus from './SyncStatus.svelte';
 	import Sheet from './Sheet.svelte';
@@ -32,7 +32,7 @@
 	async function begin(storeId: string) {
 		const budgetMinor = readBudget();
 		if (budgetMinor === null) {
-			error = 'Enter a budget like 50 or 42.50, or leave it empty.';
+			error = `Enter a budget like 50 or ${minorToInput(4250)}, or leave it empty.`;
 			return;
 		}
 		error = '';

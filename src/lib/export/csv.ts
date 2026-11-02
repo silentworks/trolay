@@ -23,6 +23,7 @@ const HEADER = [
 	'VAT (£)'
 ];
 
+// Amounts and dates in fixed forms, whatever the phone's locale, so the file reads the same anywhere.
 const pounds = (minor: number) => (minor / 100).toFixed(2);
 
 /** "2026-10-28 17:46" in the device's time zone: sorts as text and spreadsheets read it as a date. */
@@ -77,7 +78,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 			const exclMinor = tripTotals(items, taxRateBps).exclMinor - trip.totals.exclMinor;
 			const label =
 				trip.discountKind === 'percent' && trip.discountValue
-					? `Discount (${formatPercent(trip.discountValue)}%)`
+					? `Discount (${formatPercent(trip.discountValue, 'en')}%)`
 					: 'Discount';
 			rows.push(
 				[

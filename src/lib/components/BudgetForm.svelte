@@ -18,7 +18,7 @@
 		event.preventDefault();
 		const minor = parsePounds(value);
 		if (!minor) {
-			error = 'Enter a budget like 50 or 42.50.';
+			error = `Enter a budget like 50 or ${minorToInput(4250)}.`;
 			return;
 		}
 		await onsave(minor);

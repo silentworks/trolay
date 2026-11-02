@@ -183,11 +183,11 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (unitPriceMinor === null) {
-			error = 'Enter a price like 1.45.';
+			error = `Enter a price like ${minorToInput(145)}.`;
 			return;
 		}
 		if (offer === null) {
-			error = 'A multi-buy offer needs 2 or more items and a price, like 2 for 3.00.';
+			error = `A multi-buy offer needs 2 or more items and a price, like 2 for ${minorToInput(300)}.`;
 			return;
 		}
 		saving = true;

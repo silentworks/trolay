@@ -33,7 +33,7 @@
 		if (!parsed) {
 			error =
 				kind === 'amount'
-					? 'Enter the discount like 5 or 2.50.'
+					? `Enter the discount like 5 or ${minorToInput(250)}.`
 					: 'Enter a percentage between 0 and 100, like 10.';
 			return;
 		}

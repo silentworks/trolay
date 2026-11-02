@@ -10,6 +10,9 @@ test('a multi-buy offer sets the line total once there are enough items', async 
 	const add = page.getByRole('dialog', { name: 'Add item' });
 	await add.getByLabel('Description').fill('Bread');
 	await add.getByLabel('Unit price').fill('1.89');
+	// The offer boxes are hidden until the toggle is on.
+	await expect(add.getByLabel('Offer: number of items')).toBeHidden();
+	await add.getByLabel('Multi-buy offer').check();
 	await add.getByLabel('Offer: number of items').fill('2');
 	await add.getByLabel('Offer: price for the items').fill('3');
 	await add.getByRole('button', { name: 'Increase quantity' }).click();
@@ -35,4 +38,11 @@ test('a multi-buy offer sets the line total once there are enough items', async 
 	await edit.getByLabel('Offer: price for the items').fill('');
 	await edit.getByRole('button', { name: 'Save changes' }).click();
 	await expect(edit.getByRole('alert')).toContainText('multi-buy offer');
+
+	// Turning the toggle off saves no offer, whatever the boxes held.
+	await edit.getByLabel('Multi-buy offer').uncheck();
+	await expect(edit.getByLabel('Offer: price for the items')).toBeHidden();
+	await edit.getByRole('button', { name: 'Save changes' }).click();
+	await expect(edit).toBeHidden();
+	await expect(row).not.toContainText('2 for');
 });

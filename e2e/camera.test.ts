@@ -189,15 +189,18 @@ test('a barcode scanned with no signal is named once the signal returns', async 
 	).toBeVisible();
 });
 
-test('cart rows show the photo; tap for the full photo, retake from the edit sheet', async ({
-	page
-}) => {
+test('the edit sheet shows the photo; tap for the full photo, and retake it', async ({ page }) => {
 	await startTrip(page);
 	const review = await snapLabel(page);
 	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
-	const thumb = page.getByRole('button', { name: /^Photo of Cully & Sully/ });
+	// Rows have no thumbnail; the photo is in the item's edit sheet.
+	const row = page.getByRole('list', { name: 'Items in your trolley' }).getByRole('listitem');
+	await expect(row.getByRole('img')).toHaveCount(0);
+	await page.getByRole('button', { name: /^Cully & Sully/ }).click();
+	const edit = page.getByRole('dialog', { name: 'Edit item' });
+	const thumb = edit.getByRole('button', { name: 'Photo of the label' });
 	await expect(thumb.locator('img')).toBeVisible();
 	const firstThumb = await thumb.locator('img').getAttribute('src');
 	await thumb.click();
@@ -209,14 +212,11 @@ test('cart rows show the photo; tap for the full photo, retake from the edit she
 	await viewer.getByRole('button', { name: 'Close photo' }).click();
 	await expect(viewer).toBeHidden();
 
-	await page.getByRole('button', { name: /^Cully & Sully/ }).click();
-	const edit = page.getByRole('dialog', { name: 'Edit item' });
 	await edit.getByRole('button', { name: 'Retake photo' }).click();
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	await expect(camera.getByRole('button', { name: 'Take photo' })).toBeEnabled();
 	await camera.getByRole('button', { name: 'Take photo' }).click();
 	await expect(page.getByText('Photo updated')).toBeVisible();
-	await edit.getByRole('button', { name: 'Close' }).click();
 	await expect(thumb.locator('img')).not.toHaveAttribute('src', firstThumb!);
 });
 
@@ -318,6 +318,9 @@ test("a label photo taken on one phone shows on the partner's phone", async ({ b
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	// The item arrives, then its photo: the owner uploads it and the partner is told.
-	const photo = partner.getByRole('button', { name: /^Photo of / });
+	await partner.getByRole('button', { name: /^Cully & Sully/ }).click(READ_TIMEOUT);
+	const photo = partner
+		.getByRole('dialog', { name: 'Edit item' })
+		.getByRole('button', { name: 'Photo of the label' });
 	await expect(photo.locator('img')).toBeVisible(READ_TIMEOUT);
 });

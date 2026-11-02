@@ -31,6 +31,8 @@
 		onrevert?: () => Promise<void>;
 		/** Editing: replaces the item's photo with a new one. */
 		onretake?: (photo: Blob) => Promise<void>;
+		/** Editing: shows the item's photo full size. */
+		onphoto?: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
@@ -45,6 +47,7 @@
 		ondelete,
 		onrevert,
 		onretake,
+		onphoto,
 		currency
 	}: Props = $props();
 	const uid = $props.id();
@@ -60,6 +63,8 @@
 	let offerPrice = $state(
 		initial.item?.offerPriceMinor ? minorToInput(initial.item.offerPriceMinor) : ''
 	);
+	// The offer boxes stay hidden until wanted. Off means no offer, whatever the boxes hold.
+	let offerOn = $state(Boolean(initial.item?.offerQuantity));
 	// What the label printed per kg, per 100g and so on: shown, never used in the total.
 	let perUnit = $state(initial.item?.extracted?.perUnit);
 	let offerRead = $state(false);
@@ -98,6 +103,7 @@
 				offerQuantity = String(multiBuy.quantity);
 				offerPrice = minorToInput(multiBuy.totalMinor);
 				offerRead = true;
+				offerOn = true;
 			}
 			if (readPerUnit) perUnit = readPerUnit;
 			if (descriptionFromLookup) read.description = description;
@@ -170,7 +176,7 @@
 	const unitPriceMinor = $derived(parsePounds(price));
 	// null: boxes filled in but not usable; undefined: no offer.
 	const offer = $derived.by(() => {
-		if (offerQuantity.trim() === '' && offerPrice.trim() === '') return undefined;
+		if (!offerOn || (offerQuantity.trim() === '' && offerPrice.trim() === '')) return undefined;
 		const count = /^\d{1,2}$/.test(offerQuantity.trim()) ? Number(offerQuantity.trim()) : NaN;
 		const total = parsePounds(offerPrice);
 		return count >= 2 && total ? { quantity: count, totalMinor: total } : null;
@@ -249,9 +255,16 @@
 	{#if item && onretake}
 		<div class="current-photo">
 			{#if item.photoId}
-				{#key item.photoId}
-					<PhotoImage photoId={item.photoId} size="thumb" alt="Photo of the label" />
-				{/key}
+				<button
+					class="photo-button"
+					type="button"
+					aria-label="Photo of the label"
+					onclick={onphoto}
+				>
+					{#key item.photoId}
+						<PhotoImage photoId={item.photoId} size="thumb" alt="" />
+					{/key}
+				</button>
 			{/if}
 			<button class="btn" type="button" onclick={() => (camera = 'label')}>
 				{item.photoId ? 'Retake photo' : 'Add a photo'}
@@ -336,33 +349,41 @@
 		<p class="checked-hint">Label unit price: {perUnit}</p>
 	{/if}
 
-	<div class="field">
-		<span class="label" id="{uid}-offer-label"
-			>Multi-buy offer <span class="hint">(optional)</span></span
-		>
-		<div class="offer" role="group" aria-labelledby="{uid}-offer-label">
-			<input
-				class="input"
-				aria-label="Offer: number of items"
-				bind:value={offerQuantity}
-				oninput={() => (touched.offer = true)}
-				inputmode="numeric"
-				placeholder="2"
-			/>
-			<span>for {currencySymbol(currency)}</span>
-			<input
-				class="input"
-				aria-label="Offer: price for the items"
-				bind:value={offerPrice}
-				oninput={() => (touched.offer = true)}
-				inputmode="decimal"
-				placeholder="3.00"
-			/>
+	<label class="check">
+		<input
+			type="checkbox"
+			bind:checked={offerOn}
+			onchange={() => (touched.offer = true)}
+			aria-controls="{uid}-offer"
+		/>
+		Multi-buy offer
+	</label>
+	{#if offerOn}
+		<div class="field" id="{uid}-offer">
+			<div class="offer" role="group" aria-label="Offer: items and price">
+				<input
+					class="input"
+					aria-label="Offer: number of items"
+					bind:value={offerQuantity}
+					oninput={() => (touched.offer = true)}
+					inputmode="numeric"
+					placeholder="2"
+				/>
+				<span>for {currencySymbol(currency)}</span>
+				<input
+					class="input"
+					aria-label="Offer: price for the items"
+					bind:value={offerPrice}
+					oninput={() => (touched.offer = true)}
+					inputmode="decimal"
+					placeholder="3.00"
+				/>
+			</div>
+			{#if offerRead && !touched.offer}
+				<p class="checked-hint">✓ Read from the label. Applies to each set of {offerQuantity}.</p>
+			{/if}
 		</div>
-		{#if offerRead && !touched.offer}
-			<p class="checked-hint">✓ Read from the label. Applies to each set of {offerQuantity}.</p>
-		{/if}
-	</div>
+	{/if}
 
 	<label class="check">
 		<input type="checkbox" bind:checked={priceIncludesTax} onchange={() => (touched.vat = true)} />
@@ -446,6 +467,12 @@
 		align-items: center;
 		gap: 12px;
 		margin-bottom: 16px;
+	}
+
+	.photo-button {
+		padding: 0;
+		border: none;
+		background: transparent;
 	}
 
 	.current-photo :global(img) {

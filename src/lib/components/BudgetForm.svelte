@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { currencySymbol, minorToInput, parsePounds } from '#lib/money.ts';
+	import { amountLabel, minorToInput, parsePounds } from '#lib/money.ts';
 
 	interface Props {
 		budgetMinor?: number;
 		onsave: (budgetMinor: number | undefined) => Promise<void>;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -30,10 +30,10 @@
 <form onsubmit={submit} novalidate>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 	<div class="field">
-		<label for="{uid}-budget">Budget ({currencySymbol(currency)})</label>
+		<label for="{uid}-budget">{amountLabel('Budget', currency)}</label>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input id="{uid}-budget" class="input" bind:value inputmode="decimal" autofocus />
-		<span class="hint">Compared with the headline total, incl. or excl. VAT as shown.</span>
+		<span class="hint">Compared with the headline total, incl. or excl. tax as shown.</span>
 	</div>
 	<button class="btn btn-primary btn-block" type="submit">Save budget</button>
 	{#if budgetMinor !== undefined}

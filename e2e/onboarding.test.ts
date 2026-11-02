@@ -20,9 +20,9 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await page.getByLabel(/Branch or location/).fill('Hackney');
 	await page.getByRole('button', { name: 'Next' }).click();
 
-	await expect(page.getByRole('heading', { name: 'VAT at Lidl' })).toBeFocused();
-	await expect(page.getByLabel('VAT rate (%)')).toHaveValue('20');
-	await expect(page.getByLabel('Shelf labels include VAT')).toBeChecked();
+	await expect(page.getByRole('heading', { name: 'Sales tax at Lidl' })).toBeFocused();
+	await expect(page.getByLabel('Sales tax rate (%)')).toHaveValue('20');
+	await expect(page.getByLabel('Shelf prices include sales tax')).toBeChecked();
 	await page.getByRole('button', { name: 'Back' }).click();
 	await expect(page.getByLabel('Store name')).toHaveValue('Lidl');
 	await page.getByRole('button', { name: 'Next' }).click();
@@ -37,7 +37,7 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await page.getByRole('button', { name: 'Start shopping' }).click();
 
 	await expect(page.getByRole('button', { name: 'Store: Lidl' })).toBeVisible();
-	await expect(page.getByRole('region', { name: 'Trolley total' })).toContainText('£40.00');
+	await expect(page.getByRole('region', { name: 'Trolley total' })).toContainText('40.00');
 
 	// Done: a reload stays on the trolley, and the store was made once.
 	await page.reload();

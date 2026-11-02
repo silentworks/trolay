@@ -3,6 +3,7 @@ import {
 	applyDiscount,
 	enteredTotal,
 	budgetStatus,
+	amountLabel,
 	currencySymbol,
 	formatMoney,
 	formatPercent,
@@ -121,12 +122,17 @@ describe('budgetStatus', () => {
 });
 
 describe('formatMoney and currencySymbol', () => {
-	it('shows pounds when no currency is set', () => {
-		expect(formatMoney(123, undefined, 'en-GB')).toBe('£1.23');
-		expect(formatMoney(0, undefined, 'en-GB')).toBe('£0.00');
-		expect(formatMoney(123_456, undefined, 'en-GB')).toBe('£1,234.56');
-		expect(formatMoney(123_456, undefined, 'de-DE')).toBe('1.234,56\u00a0£');
-		expect(currencySymbol(undefined, 'en-GB')).toBe('£');
+	it('shows plain two-decimal numbers when no currency is set', () => {
+		expect(formatMoney(123, undefined, 'en-GB')).toBe('1.23');
+		expect(formatMoney(0, undefined, 'en-GB')).toBe('0.00');
+		expect(formatMoney(123_456, undefined, 'en-GB')).toBe('1,234.56');
+		expect(formatMoney(123_456, undefined, 'de-DE')).toBe('1.234,56');
+		expect(currencySymbol(undefined, 'en-GB')).toBe('');
+	});
+
+	it('adds the symbol to a field label only when there is one', () => {
+		expect(amountLabel('Unit price', undefined, 'en-GB')).toBe('Unit price');
+		expect(amountLabel('Unit price', 'EUR', 'en-GB')).toBe('Unit price (€)');
 	});
 
 	it("shows a store's currency the locale's way, with its everyday symbol", () => {

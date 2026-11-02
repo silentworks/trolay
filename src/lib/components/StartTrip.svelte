@@ -76,7 +76,6 @@
 			class="input"
 			bind:value={budget}
 			inputmode="decimal"
-			placeholder="£"
 			aria-invalid={readBudget() === null}
 		/>
 	</div>

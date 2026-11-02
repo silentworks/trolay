@@ -24,11 +24,11 @@ async function startShop(page: Page) {
 	await page.getByRole('button', { name: 'Add store and start trip' }).click();
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	await page.getByLabel('Description').fill('Milk');
-	await page.getByLabel('Unit price (£)').fill('1.45');
+	await page.getByLabel('Unit price').fill('1.45');
 	await page.getByRole('button', { name: 'Add to cart' }).click();
 	await page.evaluate(() => navigator.serviceWorker.ready);
 	await page.reload(); // now controlled by the service worker
-	await expect(page.getByRole('button', { name: /^Milk £/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Milk / })).toBeVisible();
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -52,7 +52,7 @@ test('a new version waits for "Refresh to update" and never reloads mid-shop', a
 
 		await prompt(page).getByRole('button', { name: 'Refresh to update' }).click();
 		await page.waitForFunction(() => !(window as unknown as { mark?: number }).mark);
-		await expect(page.getByRole('button', { name: /^Milk £/ })).toBeVisible();
+		await expect(page.getByRole('button', { name: /^Milk / })).toBeVisible();
 		await expect(prompt(page)).toBeHidden();
 		// The new version took over: it replaced the old version's cache with its own.
 		const after = await cacheNames(page);
@@ -79,7 +79,7 @@ test('dismissed, the update applies the next time the app is opened', async ({ c
 		await page.close();
 		const next = await context.newPage();
 		await next.goto('/');
-		await expect(next.getByRole('button', { name: /^Milk £/ })).toBeVisible();
+		await expect(next.getByRole('button', { name: /^Milk / })).toBeVisible();
 		await expect.poll(() => cacheNames(next)).not.toContain(oldCache);
 		await expect(prompt(next)).toBeHidden();
 	} finally {

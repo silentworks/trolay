@@ -14,7 +14,7 @@
 		discount?: Discount;
 		budgetMinor?: number;
 		onbudget: () => void;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -24,7 +24,7 @@
 	const headline = $derived(headlineTotal(totals, mode));
 	const status = $derived(budgetMinor === undefined ? 'ok' : budgetStatus(headline, budgetMinor));
 	const left = $derived(budgetMinor === undefined ? 0 : budgetMinor - headline);
-	const modeLabel = $derived(mode === 'incl' ? 'incl. VAT' : 'excl. VAT');
+	const modeLabel = $derived(mode === 'incl' ? 'incl. tax' : 'excl. tax');
 </script>
 
 <section class="totals" data-status={status} aria-label="Trolley total">
@@ -35,7 +35,7 @@
 		aria-label="Total {formatMoney(headline, currency)} {modeLabel}. Tap to show the total {mode ===
 		'incl'
 			? 'excluding'
-			: 'including'} VAT."
+			: 'including'} tax."
 	>
 		<span class="amount">{formatMoney(headline, currency)}</span>
 		<span class="mode">{modeLabel} · tap to switch</span>
@@ -51,15 +51,15 @@
 			</div>
 		{/if}
 		<div>
-			<dt>Incl. VAT</dt>
+			<dt>Incl. tax</dt>
 			<dd>{formatMoney(totals.inclMinor, currency)}</dd>
 		</div>
 		<div>
-			<dt>Excl. VAT</dt>
+			<dt>Excl. tax</dt>
 			<dd>{formatMoney(totals.exclMinor, currency)}</dd>
 		</div>
 		<div>
-			<dt>VAT</dt>
+			<dt>Tax</dt>
 			<dd>{formatMoney(totals.taxMinor, currency)}</dd>
 		</div>
 		<div>

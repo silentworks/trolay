@@ -13,7 +13,7 @@
 		onphoto: () => void;
 		/** Who added it, on a shared trip: "you", a name. Nothing on a trip that is not shared. */
 		addedBy?: string;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -83,7 +83,7 @@
 			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
 				{formatMoney(item.unitPriceMinor, currency)} each
-				<span class="badge">{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}</span>
+				<span class="badge">{item.priceIncludesTax ? 'incl. tax' : 'excl. tax'}</span>
 				{#if item.offerQuantity && item.offerPriceMinor}
 					<span class="badge" class:applied={item.quantity >= item.offerQuantity}>
 						{item.offerQuantity} for {formatMoney(item.offerPriceMinor, currency)}

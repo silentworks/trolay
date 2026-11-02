@@ -5,7 +5,7 @@ async function addItem(page: Page, description: string, price: string) {
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill(description);
-	await sheet.getByLabel('Unit price (£)').fill(price);
+	await sheet.getByLabel('Unit price').fill(price);
 	await sheet.getByRole('button', { name: 'Add to cart' }).click();
 	await expect(sheet).toBeHidden();
 }

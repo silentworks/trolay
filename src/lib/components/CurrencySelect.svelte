@@ -14,7 +14,7 @@
 
 <!-- A native select: on a phone it opens the system picker, which can be scrolled by name. -->
 <select {id} class="input" bind:value>
-	<option value="">Not set (shows £)</option>
+	<option value="">None</option>
 	{#each options as { code, name } (code)}
 		<option value={code}>{name} ({code})</option>
 	{/each}

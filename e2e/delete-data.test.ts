@@ -8,7 +8,7 @@ async function finishedTripAt(page: Page, store: string) {
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill('Milk');
-	await sheet.getByLabel('Unit price (£)').fill('1.45');
+	await sheet.getByLabel('Unit price').fill('1.45');
 	await sheet.getByRole('button', { name: 'Add to cart' }).click();
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page
@@ -16,7 +16,7 @@ async function finishedTripAt(page: Page, store: string) {
 		.getByText('Finish trip', { exact: true })
 		.click();
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total (£)').fill('1.45');
+	await finish.getByLabel('Receipt total').fill('1.45');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 }

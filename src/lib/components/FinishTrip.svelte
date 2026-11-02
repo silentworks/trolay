@@ -3,18 +3,18 @@
 	import { readText } from '#lib/capture/ocr/browser.ts';
 	import { parseReceipt } from '#lib/capture/receipt/parse.ts';
 	import { isMismatch, receiptDifference } from '#lib/data/trips.ts';
-	import { currencySymbol, formatMoney, minorToInput, parsePounds } from '#lib/money.ts';
+	import { amountLabel, formatMoney, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
 
 	interface Props {
-		/** The app's total incl. VAT: a till receipt always shows what was paid, VAT included. */
+		/** The app's total incl. tax: a till receipt always shows what was paid, tax included. */
 		appTotalMinor: number;
 		receiptTotalMinor?: number;
 		photoCount: number;
 		/** Saves the receipt total as it is typed, so it survives closing the sheet. */
 		onreceipt: (receiptTotalMinor: number | undefined) => Promise<void>;
 		onfinish: () => Promise<void>;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -72,13 +72,13 @@
 <form onsubmit={finish} novalidate>
 	<dl class="sums">
 		<div>
-			<dt>Trolay total, incl. VAT</dt>
+			<dt>Trolay total, incl. tax</dt>
 			<dd>{formatMoney(appTotalMinor, currency)}</dd>
 		</div>
 	</dl>
 
 	<div class="field">
-		<label for="{uid}-receipt">Receipt total ({currencySymbol(currency)})</label>
+		<label for="{uid}-receipt">{amountLabel('Receipt total', currency)}</label>
 		<input
 			id="{uid}-receipt"
 			class="input"

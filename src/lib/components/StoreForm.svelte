@@ -2,7 +2,8 @@
 	import { untrack } from 'svelte';
 	import type { Store } from '#lib/data/db.ts';
 	import type { StoreInput } from '#lib/data/stores.ts';
-	import { DEFAULT_VAT_BPS, formatPercent, parsePercent } from '#lib/money.ts';
+	import { formatPercent, parsePercent } from '#lib/money.ts';
+	import { regionTax } from '#lib/taxes.ts';
 	import CurrencySelect from './CurrencySelect.svelte';
 
 	interface Props {
@@ -18,7 +19,10 @@
 	const initial = untrack(() => store);
 	let name = $state(initial?.name ?? '');
 	let branch = $state(initial?.branch ?? '');
-	let vat = $state(formatPercent(initial?.taxRateBps ?? DEFAULT_VAT_BPS));
+	// A new store's rate is guessed from the phone's region; with no good guess it starts at 0%.
+	const guess = initial ? undefined : regionTax();
+	const askForRate = !initial && (!guess || guess.varies);
+	let rate = $state(formatPercent(initial?.taxRateBps ?? guess?.rateBps ?? 0));
 	let pricesIncludeTax = $state(initial?.pricesIncludeTax ?? true);
 	let currency = $state(initial?.currency ?? '');
 	let error = $state('');
@@ -26,9 +30,9 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		const taxRateBps = parsePercent(vat);
+		const taxRateBps = parsePercent(rate);
 		if (taxRateBps === null) {
-			error = 'Enter a VAT rate between 0 and 100.';
+			error = 'Enter a sales tax rate between 0 and 100.';
 			return;
 		}
 		saving = true;
@@ -75,16 +79,22 @@
 	</div>
 
 	<div class="field">
-		<label for="{uid}-vat">VAT rate (%)</label>
-		<input id="{uid}-vat" class="input" bind:value={vat} inputmode="decimal" />
+		<label for="{uid}-rate">Sales tax rate (%)</label>
+		<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
+		{#if askForRate}
+			<span class="hint"
+				>Enter the sales tax rate where you shop. A recent receipt usually shows it.</span
+			>
+		{/if}
 	</div>
 
 	<label class="check">
 		<input type="checkbox" bind:checked={pricesIncludeTax} />
-		Shelf labels include VAT
+		Shelf prices include sales tax
 	</label>
 	<p class="hint">
-		UK labels usually include VAT, so leave this on unless the store shows ex-VAT prices.
+		Leave this on if the price on the shelf is what you pay. Turn it off if the store adds tax on
+		top, at the till or on the receipt.
 	</p>
 
 	<button class="btn btn-primary btn-block" type="submit" disabled={saving}>{submitLabel}</button>

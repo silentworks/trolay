@@ -53,10 +53,10 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 		READ_TIMEOUT
 	);
 	await expect(review.getByLabel('Description')).toHaveValue(DESCRIPTION);
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99');
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99');
 	// £1.99 for 400 g is the 49.8p per 100 g printed on the label.
 	await expect(review.getByText('✓ Matches the unit price on the label')).toBeVisible();
-	await expect(review.getByLabel('Price includes VAT')).toBeChecked();
+	await expect(review.getByLabel('Price includes tax')).toBeChecked();
 	await expect(review.getByLabel('Barcode (optional)')).toHaveValue(BARCODE);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 	await expect(review).toBeHidden();
@@ -64,13 +64,13 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 	// Changing a value read from the label marks the item as edited; revert puts it back.
 	await page.getByRole('button', { name: /^Cully & Sully/ }).click();
 	const edit = page.getByRole('dialog', { name: 'Edit item' });
-	await edit.getByLabel('Unit price (£)').fill('2.05');
+	await edit.getByLabel('Unit price').fill('2.05');
 	await edit.getByRole('button', { name: 'Save changes' }).click();
 	await expect(page.getByText('edited')).toBeVisible();
 	await page.getByRole('button', { name: /^Cully & Sully/ }).click();
 	await edit.getByRole('button', { name: 'Revert to label reading' }).click();
 	await expect(page.getByText('edited')).toBeHidden();
-	await expect(page.getByRole('button', { name: /^Cully & Sully.*£1\.99 each/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Cully & Sully.*1\.99 each/ })).toBeVisible();
 });
 
 test('Choose photo opens the gallery or file picker, not the camera app', async ({ page }) => {
@@ -98,12 +98,12 @@ test('fields the reader could not read are left empty and highlighted', async ({
 	await expect(review.getByText("Couldn't read the price. Please type it.")).toBeVisible(
 		READ_TIMEOUT
 	);
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('');
+	await expect(review.getByLabel('Unit price')).toHaveValue('');
 	await expect(review.getByLabel('Description')).toHaveValue('Chipotle Chil');
-	await review.getByLabel('Unit price (£)').fill('1.69');
+	await review.getByLabel('Unit price').fill('1.69');
 	await expect(review.getByText("Couldn't read the price. Please type it.")).toBeHidden();
 	await review.getByRole('button', { name: 'Add to cart' }).click();
-	await expect(page.getByRole('button', { name: /^Chipotle Chil £1\.69/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Chipotle Chil 1\.69/ })).toBeVisible();
 });
 
 test('labels are read with no signal once the app has loaded', async ({ page, context }) => {
@@ -120,7 +120,7 @@ test('labels are read with no signal once the app has loaded', async ({ page, co
 	await page.reload();
 
 	const review = await snapLabel(page);
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await expect(review.getByLabel('Description')).toHaveValue(DESCRIPTION);
 });
 
@@ -148,7 +148,7 @@ test('a name you gave the barcode before beats the label reading', async ({ page
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill('Chowder for Friday');
-	await sheet.getByLabel('Unit price (£)').fill('1.99');
+	await sheet.getByLabel('Unit price').fill('1.99');
 	await sheet.getByLabel('Barcode (optional)').fill(BARCODE);
 	await sheet.getByRole('button', { name: 'Add to cart' }).click();
 	await expect(sheet).toBeHidden();
@@ -159,7 +159,7 @@ test('a name you gave the barcode before beats the label reading', async ({ page
 	);
 	await expect(review.getByLabel('Description')).toHaveValue('Chowder for Friday');
 	await expect(review.getByText('Name from your earlier shopping.')).toBeVisible();
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99');
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99');
 });
 
 test('a barcode scanned with no signal is named once the signal returns', async ({
@@ -176,16 +176,16 @@ test('a barcode scanned with no signal is named once the signal returns', async 
 	await sheet.getByRole('button', { name: 'Scan' }).click();
 	await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue(BARCODE, READ_TIMEOUT);
 	await expect(sheet.getByText(/No signal\. Leave it blank/)).toBeVisible();
-	await sheet.getByLabel('Unit price (£)').fill('1.45');
+	await sheet.getByLabel('Unit price').fill('1.45');
 	await sheet.getByRole('button', { name: 'Add to cart' }).click();
 	await expect(
-		page.getByRole('button', { name: `Unnamed item ${BARCODE} £1.45 each incl. VAT` })
+		page.getByRole('button', { name: `Unnamed item ${BARCODE} 1.45 each incl. tax` })
 	).toBeVisible();
 
 	await listOnOpenFoodFacts(page, { brands: 'Dairy Co', product_name: 'Semi Skimmed Milk' });
 	await context.setOffline(false);
 	await expect(
-		page.getByRole('button', { name: /^Dairy Co Semi Skimmed Milk £1\.45/ })
+		page.getByRole('button', { name: /^Dairy Co Semi Skimmed Milk 1\.45/ })
 	).toBeVisible();
 });
 
@@ -194,7 +194,7 @@ test('cart rows show the photo; tap for the full photo, retake from the edit she
 }) => {
 	await startTrip(page);
 	const review = await snapLabel(page);
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	const thumb = page.getByRole('button', { name: /^Photo of Cully & Sully/ });
@@ -224,7 +224,7 @@ test('reads the total of a receipt photographed on a phone', async ({ page }) =>
 	await startTrip(page);
 	await snapLabel(page);
 	const review = page.getByRole('dialog', { name: 'Check the label' });
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	await menu(page, 'Finish trip');
@@ -236,14 +236,14 @@ test('reads the total of a receipt photographed on a phone', async ({ page }) =>
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-korean-shop.png');
-	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('7.84', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total')).toHaveValue('7.84', READ_TIMEOUT);
 });
 
 test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) => {
 	await startTrip(page);
 	await snapLabel(page);
 	const review = page.getByRole('dialog', { name: 'Check the label' });
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	await menu(page, 'Finish trip');
@@ -255,14 +255,14 @@ test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) =>
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-wholesale-incl-vat.png');
-	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('443.31', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total')).toHaveValue('443.31', READ_TIMEOUT);
 });
 
 test('reads the receipt total and keeps the photos when it does not match', async ({ page }) => {
 	await startTrip(page);
 	await snapLabel(page);
 	const review = page.getByRole('dialog', { name: 'Check the label' });
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	await menu(page, 'Finish trip');
@@ -274,9 +274,9 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-tesco-1994.jpg');
-	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('6.71', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total')).toHaveValue('6.71', READ_TIMEOUT);
 	await expect(finish.getByText('the card and cash lines add up to it')).toBeVisible();
-	await expect(finish.getByText('The till charged £4.72 more than Trolay added up.')).toBeVisible();
+	await expect(finish.getByText('The till charged 4.72 more than Trolay added up.')).toBeVisible();
 	await expect(finish.getByText('The 1 label photo will be kept as evidence')).toBeVisible();
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
@@ -286,10 +286,10 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 
 	// The kept photo shows in History until it is deleted.
 	await page.getByRole('link', { name: 'See it in History' }).click();
-	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Receipt +£4.72');
+	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Receipt +4.72');
 	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Photos kept');
 	await page.getByRole('link', { name: /Tesco/ }).click();
-	await expect(page.getByText('The till charged £4.72 more than Trolay added up.')).toBeVisible();
+	await expect(page.getByText('The till charged 4.72 more than Trolay added up.')).toBeVisible();
 	await page.getByRole('button', { name: `Photo of ${DESCRIPTION}` }).click();
 	await expect(
 		page.getByRole('dialog', { name: `Photo of ${DESCRIPTION}` }).getByRole('img')
@@ -314,7 +314,7 @@ test("a label photo taken on one phone shows on the partner's phone", async ({ b
 	await partner.waitForTimeout(1000);
 
 	const review = await snapLabel(owner);
-	await expect(review.getByLabel('Unit price (£)')).toHaveValue('1.99', READ_TIMEOUT);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
 	await review.getByRole('button', { name: 'Add to cart' }).click();
 
 	// The item arrives, then its photo: the owner uploads it and the partner is told.

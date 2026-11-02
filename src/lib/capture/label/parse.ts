@@ -95,9 +95,16 @@ const LABEL_FURNITURE =
 	/\b(?:[nm]u[tl]r?[ia]{1,2}[-\s]?score|score|srp|rrp|traffic\s*light|vegan|vegetarian|gluten\s*free|organic)\b/i;
 // Currency words printed beside prices ("kr", "AED").
 const CURRENCY_WORD = /^(?:kr|sek|nok|dkk|eur|euro|usd|aed|dhs?|gbp|chf)$/i;
-const INC_VAT = /\b(?:inc|incl|including|inclusive)\b\.?\s*(?:of\s*)?vat\b/i;
-const EX_VAT =
-	/(?:\b(?:ex|exc|excl|excluding|exclusive)\b\.?\s*(?:of\s*)?vat\b|\+\s*vat\b|\bplus\s*vat\b)/i;
+// Sales tax by its names: VAT (UK), GST (Australia, NZ, India…), IVA, TVA, MwSt, or just tax.
+const TAX_WORD = '(?:vat|tax|gst|iva|tva|mwst)';
+const INC_TAX = new RegExp(
+	`\\b(?:inc|incl|inkl|including|inclusive)\\b\\.?\\s*(?:of\\s*)?${TAX_WORD}\\b|\\b(?:iva|tva|mwst)\\.?\\s*(?:incl|inkl|incluse?|incluid[oa])\\b`,
+	'i'
+);
+const EX_TAX = new RegExp(
+	`\\b(?:ex|exc|excl|excluding|exclusive|plus|zzgl)\\b\\.?\\s*(?:of\\s*)?${TAX_WORD}\\b|\\+\\s*${TAX_WORD}\\b`,
+	'i'
+);
 const DATE = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/;
 const PACK_SIZE = new RegExp(
 	`^\\s*(?:\\d+\\s*[x×]\\s*)?\\d+(?:[.,]\\d+)?\\s*(?:${QUANTITY_UNIT}|m|cm|mm|metres?|meters?|pack|pk|rolls?|sheets?|pieces?|pcs|eggs|bags|capsules|tablets|pods|washes)\\b`,
@@ -709,8 +716,8 @@ function vatMarkerFor(money: Money, rows: Row[]): 'inc' | 'ex' | undefined {
 		.map((t) => t.text)
 		.join(' ');
 	const text = own + ' ' + near.replace(money.row.text, '');
-	if (EX_VAT.test(text)) return 'ex';
-	if (INC_VAT.test(text)) return 'inc';
+	if (EX_TAX.test(text)) return 'ex';
+	if (INC_TAX.test(text)) return 'inc';
 	return undefined;
 }
 
@@ -743,8 +750,8 @@ function pickVat(
 			return { value: partnerMarker !== 'inc', confidence: 0.95 };
 		}
 	}
-	if (rows.some((r) => EX_VAT.test(r.text))) return { value: false, confidence: 0.7 };
-	if (rows.some((r) => INC_VAT.test(r.text))) return { value: true, confidence: 0.7 };
+	if (rows.some((r) => EX_TAX.test(r.text))) return { value: false, confidence: 0.7 };
+	if (rows.some((r) => INC_TAX.test(r.text))) return { value: true, confidence: 0.7 };
 	return undefined;
 }
 
@@ -766,7 +773,7 @@ function isDescriptionRow(row: Row, excluded: Set<Row>): boolean {
 	// Stray glyphs ("D" for a currency sign, "BC" from a logo) are not words.
 	if (!meaningfulWords(text).length) return false;
 	if (letters < compact.length * 0.5) return false;
-	if (UNIT_CAPTION.test(text) || OLD_CONTEXT.test(text) || INC_VAT.test(text) || EX_VAT.test(text))
+	if (UNIT_CAPTION.test(text) || OLD_CONTEXT.test(text) || INC_TAX.test(text) || EX_TAX.test(text))
 		return false;
 	if (LOYALTY_CONTEXT.test(text) || RETAILER.test(text) || LABEL_FURNITURE.test(text)) return false;
 	// A Nutri-Score badge reads as a run of the letters A–E.

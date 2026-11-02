@@ -96,7 +96,7 @@
 
 		<dl class="sums" aria-label="Trip totals">
 			<div class="headline">
-				<dt>Total incl. VAT</dt>
+				<dt>Total incl. tax</dt>
 				<dd>{formatMoney(totals.inclMinor, currency)}</dd>
 			</div>
 			{#if totals.discountMinor}
@@ -106,11 +106,11 @@
 				</div>
 			{/if}
 			<div>
-				<dt>Excl. VAT</dt>
+				<dt>Excl. tax</dt>
 				<dd>{formatMoney(totals.exclMinor, currency)}</dd>
 			</div>
 			<div>
-				<dt>VAT</dt>
+				<dt>Tax</dt>
 				<dd>{formatMoney(totals.inclMinor - totals.exclMinor, currency)}</dd>
 			</div>
 			<div>
@@ -172,7 +172,7 @@
 					>
 					<span class="meta">
 						{item.quantity} × {formatMoney(item.unitPriceMinor, currency)}
-						{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}{item.offerQuantity &&
+						{item.priceIncludesTax ? 'incl. tax' : 'excl. tax'}{item.offerQuantity &&
 						item.offerPriceMinor
 							? ` · ${item.offerQuantity} for ${formatMoney(item.offerPriceMinor, currency)}`
 							: ''}{item.barcode ? ` · ${item.barcode}` : ''}

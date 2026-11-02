@@ -21,11 +21,11 @@
 			>
 				<span class="name">{store.name}</span>
 				{#if store.branch}<span class="branch">{store.branch}</span>{/if}
-				<span class="vat">
-					{formatPercent(store.taxRateBps)}% VAT · labels {store.pricesIncludeTax
+				<span class="tax">
+					{formatPercent(store.taxRateBps)}% sales tax · shelf prices {store.pricesIncludeTax
 						? 'incl.'
 						: 'excl.'}
-					VAT
+					tax
 				</span>
 			</button>
 		</li>
@@ -63,7 +63,7 @@
 	}
 
 	.branch,
-	.vat {
+	.tax {
 		color: var(--muted);
 		font-size: 0.9rem;
 	}

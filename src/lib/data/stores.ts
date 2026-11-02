@@ -1,5 +1,5 @@
 import { isSupportedCurrency } from '#lib/currencies.ts';
-import { DEFAULT_VAT_BPS } from '#lib/money.ts';
+import { DEFAULT_TAX_BPS } from '#lib/money.ts';
 import { db, isLive, newId, type Store } from './db';
 import { deleteTrip } from './trips';
 
@@ -36,7 +36,7 @@ export async function addStore(input: StoreInput): Promise<Store> {
 		id: newId(),
 		name: cleanName(input.name),
 		branch: cleanBranch(input.branch),
-		taxRateBps: input.taxRateBps ?? DEFAULT_VAT_BPS,
+		taxRateBps: input.taxRateBps ?? DEFAULT_TAX_BPS,
 		pricesIncludeTax: input.pricesIncludeTax ?? true,
 		currency: cleanCurrency(input.currency),
 		createdAt: now,

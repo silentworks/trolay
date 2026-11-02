@@ -29,3 +29,12 @@ export function numberSeparators(locale = appLocale()): { decimal: string; group
 	}
 	return found;
 }
+
+/** The phone's region, e.g. "DE" for de-DE, or the likeliest one for a bare language ("de"). */
+export function phoneRegion(locale = appLocale()): string | undefined {
+	try {
+		return new Intl.Locale(locale).maximize().region;
+	} catch {
+		return undefined;
+	}
+}

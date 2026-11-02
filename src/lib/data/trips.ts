@@ -1,4 +1,4 @@
-import { applyDiscount, DEFAULT_VAT_BPS, tripTotals, type Discount } from '#lib/money.ts';
+import { applyDiscount, DEFAULT_TAX_BPS, tripTotals, type Discount } from '#lib/money.ts';
 import { db, isLive, newId, type Item, type Store, type Trip } from './db';
 
 export async function getOpenTrip(): Promise<Trip | undefined> {
@@ -51,7 +51,7 @@ export async function setTripBudget(
 	budgetMinor: number | undefined
 ): Promise<void> {
 	if (budgetMinor !== undefined && (!Number.isInteger(budgetMinor) || budgetMinor <= 0)) {
-		throw new Error('The budget must be more than £0.');
+		throw new Error('The budget must be more than 0.');
 	}
 	await db.trips.update(tripId, { budgetMinor, updatedAt: Date.now() });
 }
@@ -76,7 +76,7 @@ export async function setTripDiscount(
 			throw new Error(
 				discount.kind === 'percent'
 					? 'The discount must be between 0% and 100%.'
-					: 'The discount must be more than £0.'
+					: 'The discount must be more than 0.'
 			);
 		}
 	}
@@ -157,7 +157,7 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 			throw new Error('Enter the receipt total before finishing the trip.');
 		}
 		const store = await db.stores.get(trip.storeId);
-		const taxRateBps = store?.taxRateBps ?? DEFAULT_VAT_BPS;
+		const taxRateBps = store?.taxRateBps ?? DEFAULT_TAX_BPS;
 		const { inclMinor, exclMinor, itemCount, discountMinor } = applyDiscount(
 			tripTotals(items, taxRateBps),
 			tripDiscount(trip)

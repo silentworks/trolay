@@ -7,6 +7,7 @@
 	import type { ItemInput } from '#lib/data/items.ts';
 	import { isLookupPending, lookupProductName } from '#lib/data/products.ts';
 	import {
+		amountLabel,
 		currencySymbol,
 		formatMoney,
 		lineTotals,
@@ -30,7 +31,7 @@
 		onrevert?: () => Promise<void>;
 		/** Editing: replaces the item's photo with a new one. */
 		onretake?: (photo: Blob) => Promise<void>;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -290,7 +291,7 @@
 
 	<div class="row">
 		<div class="field" class:needs-check={unread.price && !price}>
-			<label for="{uid}-price">Unit price ({currencySymbol(currency)})</label>
+			<label for="{uid}-price">{amountLabel('Unit price', currency)}</label>
 			<input
 				id="{uid}-price"
 				class="input"
@@ -365,7 +366,7 @@
 
 	<label class="check">
 		<input type="checkbox" bind:checked={priceIncludesTax} onchange={() => (touched.vat = true)} />
-		Price includes VAT
+		Price includes tax
 	</label>
 
 	<div class="field">
@@ -385,7 +386,7 @@
 
 	{#if preview}
 		<p class="preview">
-			Line total {formatMoney(preview.inclMinor, currency)} incl. VAT · {formatMoney(
+			Line total {formatMoney(preview.inclMinor, currency)} incl. tax · {formatMoney(
 				preview.exclMinor,
 				currency
 			)} excl.

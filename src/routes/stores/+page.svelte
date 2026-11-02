@@ -58,7 +58,7 @@
 
 	{#if stores.loaded}
 		{#if stores.current?.length}
-			<p class="hint">Tap a store to edit its name, branch or VAT settings.</p>
+			<p class="hint">Tap a store to edit its name, branch, currency or sales tax.</p>
 			<StoreList stores={stores.current} onpick={(store) => (editing = store)} />
 		{:else}
 			<p class="hint">No stores yet.</p>

@@ -21,7 +21,7 @@ async function addItem(page: Page, description: string, price: string, quantity 
 	await page.getByRole('button', { name: 'Add by hand' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add item' });
 	await sheet.getByLabel('Description').fill(description);
-	await sheet.getByLabel('Unit price (£)').fill(price);
+	await sheet.getByLabel('Unit price').fill(price);
 	for (let i = 1; i < quantity; i++) {
 		await sheet.getByRole('button', { name: 'Increase quantity' }).click();
 	}
@@ -37,58 +37,58 @@ test('a full trip: add, edit, switch totals, budget, delete with undo, reload', 
 
 	// 2 × £1.45 incl. VAT = £2.90; excl. = £2.90 / 1.2 = £2.4167 → £2.42
 	await addItem(page, 'Milk 2L', '1.45', 2);
-	await expect(footer(page).getByRole('button', { name: /Total £2\.90 incl\. VAT/ })).toBeVisible();
-	await expect(footer(page)).toContainText('£2.42');
-	await expect(footer(page)).toContainText('£0.48');
+	await expect(footer(page).getByRole('button', { name: /Total 2\.90 incl\. tax/ })).toBeVisible();
+	await expect(footer(page)).toContainText('2.42');
+	await expect(footer(page)).toContainText('0.48');
 
 	// The headline switches to excl. VAT and stays that way after a reload.
 	await footer(page)
 		.getByRole('button', { name: /Tap to show/ })
 		.click();
-	await expect(footer(page).getByRole('button', { name: /Total £2\.42 excl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 2\.42 excl\. tax/ })).toBeVisible();
 	await page.reload();
-	await expect(footer(page).getByRole('button', { name: /Total £2\.42 excl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 2\.42 excl\. tax/ })).toBeVisible();
 	await footer(page)
 		.getByRole('button', { name: /Tap to show/ })
 		.click();
 
 	// Editing recomputes the totals immediately.
-	await page.getByRole('button', { name: /^Milk 2L £/ }).click();
+	await page.getByRole('button', { name: /^Milk 2L / }).click();
 	const edit = page.getByRole('dialog', { name: 'Edit item' });
-	await edit.getByLabel('Unit price (£)').fill('1.50');
+	await edit.getByLabel('Unit price').fill('1.50');
 	await edit.getByRole('button', { name: 'Save changes' }).click();
-	await expect(footer(page).getByRole('button', { name: /Total £3\.00 incl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 3\.00 incl\. tax/ })).toBeVisible();
 
 	// Quantity controls on the row.
 	await page
 		.getByRole('group', { name: 'Quantity of Milk 2L' })
 		.getByRole('button', { name: 'Decrease quantity' })
 		.click();
-	await expect(footer(page).getByRole('button', { name: /Total £1\.50 incl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 1\.50 incl\. tax/ })).toBeVisible();
 
 	// Budget: £1.60 → £1.50 is 94% → amber.
 	await footer(page).getByRole('button', { name: 'Set a budget' }).click();
-	await page.getByRole('dialog', { name: 'Trip budget' }).getByLabel('Budget (£)').fill('1.60');
+	await page.getByRole('dialog', { name: 'Trip budget' }).getByLabel('Budget').fill('1.60');
 	await page.getByRole('button', { name: 'Save budget' }).click();
 	await expect(footer(page)).toHaveAttribute('data-status', 'warning');
-	await expect(footer(page)).toContainText('£0.10 left of £1.60');
+	await expect(footer(page)).toContainText('0.10 left of 1.60');
 
 	// Over budget → red.
 	await addItem(page, 'Bread', '1.10');
 	await expect(footer(page)).toHaveAttribute('data-status', 'over');
-	await expect(footer(page)).toContainText('£1.00 over budget');
+	await expect(footer(page)).toContainText('1.00 over budget');
 
 	// Delete with undo.
 	await page.getByRole('button', { name: 'Delete Bread' }).click();
 	await expect(page.getByRole('status')).toContainText('Deleted Bread');
 	await page.getByRole('button', { name: 'Undo' }).click();
-	await expect(page.getByRole('button', { name: /^Bread £/ })).toBeVisible();
-	await expect(footer(page).getByRole('button', { name: /Total £2\.60 incl\. VAT/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Bread / })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 2\.60 incl\. tax/ })).toBeVisible();
 
 	// Everything survives a reload.
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
-	await expect(footer(page).getByRole('button', { name: /Total £2\.60 incl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 2\.60 incl\. tax/ })).toBeVisible();
 });
 
 test('the store can only change while the cart is empty', async ({ page }) => {
@@ -121,7 +121,7 @@ test('works offline after the first visit', async ({ page, context }) => {
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Store: Co-op' })).toBeVisible();
 	await addItem(page, 'Pears', '1.00');
-	await expect(footer(page).getByRole('button', { name: /Total £3\.00 incl\. VAT/ })).toBeVisible();
+	await expect(footer(page).getByRole('button', { name: /Total 3\.00 incl\. tax/ })).toBeVisible();
 
 	// Deep links work offline too: the shell routes in the browser.
 	await page.goto('/stores');
@@ -150,18 +150,18 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await addItem(page, 'Bread', '0.99');
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await expect(finish).toContainText('£3.89');
+	await expect(finish).toContainText('3.89');
 	await expect(finish).toContainText('Enter the receipt total to finish the trip');
 	// The trip cannot be finished until the receipt total is entered.
 	await expect(finish.getByRole('button', { name: 'Finish trip' })).toBeDisabled();
 	await finish.getByRole('button', { name: 'Finish trip' }).click({ force: true });
 	await expect(finish).toBeVisible();
 
-	const receipt = finish.getByLabel('Receipt total (£)');
+	const receipt = finish.getByLabel('Receipt total');
 	await receipt.fill('3.90');
-	await expect(finish).toContainText('The till charged £0.01 more than Trolay added up.');
+	await expect(finish).toContainText('The till charged 0.01 more than Trolay added up.');
 	await receipt.fill('3.8');
-	await expect(finish).toContainText('The till charged £0.09 less than Trolay added up.');
+	await expect(finish).toContainText('The till charged 0.09 less than Trolay added up.');
 	await receipt.fill('abc');
 	await expect(finish).toContainText('Enter the total like 42.50.');
 	await expect(finish.getByRole('button', { name: 'Finish trip' })).toBeDisabled();
@@ -172,7 +172,7 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await receipt.press('Tab');
 	await finish.getByRole('button', { name: 'Close' }).click();
 	await menu(page, 'Finish trip');
-	await expect(finish.getByLabel('Receipt total (£)')).toHaveValue('3.89');
+	await expect(finish.getByLabel('Receipt total')).toHaveValue('3.89');
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
@@ -183,19 +183,19 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	const trips = page.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
 	await expect(trips.getByRole('link')).toContainText('Asda');
-	await expect(trips.getByRole('link')).toContainText('£3.89');
+	await expect(trips.getByRole('link')).toContainText('3.89');
 	await expect(trips.getByRole('link')).toContainText('3 items');
 	await expect(trips.getByRole('link')).toContainText('✓ Receipt matched');
 	await trips.getByRole('link').click();
 	await expect(page.getByRole('heading', { name: 'Asda' })).toBeVisible();
-	await expect(page.getByLabel('Trip totals')).toContainText('£3.89');
-	await expect(page.getByLabel('Trip totals')).toContainText('£3.25');
-	await expect(page.getByLabel('Trip totals')).toContainText('£0.64');
+	await expect(page.getByLabel('Trip totals')).toContainText('3.89');
+	await expect(page.getByLabel('Trip totals')).toContainText('3.25');
+	await expect(page.getByLabel('Trip totals')).toContainText('0.64');
 	await expect(page.getByText('✓ The receipt matched.')).toBeVisible();
 	const items = page.getByRole('list', { name: 'Items bought' }).getByRole('listitem');
 	await expect(items).toHaveCount(2);
-	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('2 × £1.45 incl. VAT');
-	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('£2.90');
+	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('2 × 1.45 incl. tax');
+	await expect(items.filter({ hasText: 'Milk 2L' })).toContainText('2.90');
 	await expect(page.getByRole('button', { name: /Decrease|Delete Milk|Delete Bread/ })).toHaveCount(
 		0
 	);
@@ -218,7 +218,7 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 async function finishTrip(page: Page, receipt = '10.00') {
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total (£)').fill(receipt);
+	await finish.getByLabel('Receipt total').fill(receipt);
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 }
@@ -249,13 +249,13 @@ test('exports one trip or all history as CSV for spreadsheets', async ({ page })
 	expect([...all.bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
 	const rows = all.bytes.subarray(3).toString('utf8').split('\r\n');
 	expect(rows[0]).toBe(
-		'Date,Store,Description,Barcode,Quantity,Currency,Unit price,Unit price includes VAT,Line total incl. VAT,Line total excl. VAT,VAT'
+		'Date,Store,Description,Barcode,Quantity,Currency,Unit price,Unit price includes tax,Line total incl. tax,Line total excl. tax,Tax'
 	);
 	// Oldest trip first.
 	expect(rows[1]).toMatch(
-		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2},Tesco,"Pâté, ""smooth""",,1,GBP,2\.50,Yes,2\.50,2\.08,0\.42$/
+		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2},Tesco,"Pâté, ""smooth""",,1,,2\.50,Yes,2\.50,2\.08,0\.42$/
 	);
-	expect(rows[2]).toMatch(/,Tesco,Milk 2L,,2,GBP,1\.45,Yes,2\.90,2\.42,0\.48$/);
+	expect(rows[2]).toMatch(/,Tesco,Milk 2L,,2,,1\.45,Yes,2\.90,2\.42,0\.48$/);
 	expect(rows).toHaveLength(4);
 
 	await page.getByRole('link', { name: /Tesco/ }).first().click();
@@ -317,7 +317,7 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	// The open trip came across too.
 	await fresh.goto('/');
 	await expect(fresh.getByRole('button', { name: 'Store: Lidl' })).toBeVisible();
-	await expect(fresh.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
+	await expect(fresh.getByRole('button', { name: /^Eggs / })).toBeVisible();
 	await phone.close();
 });
 
@@ -331,12 +331,12 @@ test('history can be opened in the middle of a trip, and leads back to it', asyn
 	await menu(page, 'History');
 	const trips = page.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
-	await expect(trips.getByRole('link')).toContainText('£0.82');
+	await expect(trips.getByRole('link')).toContainText('0.82');
 
 	// Back to the trolley, with the open trip as it was.
 	await page.getByRole('link', { name: 'Back to Trolley' }).click();
 	await expect(page.getByRole('button', { name: 'Store: Aldi' })).toBeVisible();
-	await expect(page.getByRole('button', { name: /^Eggs £/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Eggs / })).toBeVisible();
 });
 
 test('the header shows the store with its branch underneath, and the menu opens and closes', async ({

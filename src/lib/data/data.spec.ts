@@ -165,7 +165,7 @@ describe('trips', () => {
 		expect((await getOpenTrip())?.budgetMinor).toBe(8_000);
 		await setTripBudget(trip.id, undefined);
 		expect((await getOpenTrip())?.budgetMinor).toBeUndefined();
-		await expect(setTripBudget(trip.id, 0)).rejects.toThrow('more than £0');
+		await expect(setTripBudget(trip.id, 0)).rejects.toThrow('more than 0');
 	});
 });
 
@@ -522,7 +522,9 @@ describe('a discount on the cart', () => {
 
 	it('refuses a discount that is nothing, or over 100%', async () => {
 		const trip = await aTripWithMilk();
-		await expect(setTripDiscount(trip.id, { kind: 'amount', value: 0 })).rejects.toThrow('£0');
+		await expect(setTripDiscount(trip.id, { kind: 'amount', value: 0 })).rejects.toThrow(
+			'more than 0'
+		);
 		await expect(setTripDiscount(trip.id, { kind: 'percent', value: 10_001 })).rejects.toThrow(
 			'100%'
 		);
@@ -594,7 +596,7 @@ describe('multi-buy offers on items', () => {
 		).rejects.toThrow('2 or more');
 		await expect(
 			addItem(trip.id, { ...bread, offerQuantity: 2, offerPriceMinor: 0 })
-		).rejects.toThrow('above £0');
+		).rejects.toThrow('above 0');
 	});
 
 	it('marks an item edited when the offer read from the label is changed, and reverts it', async () => {

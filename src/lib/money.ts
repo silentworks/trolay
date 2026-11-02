@@ -3,7 +3,8 @@ import { appLocale, numberSeparators } from './locale.ts';
 // All amounts are integer pence ("minor units") and tax rates are integer basis points
 // (2000 = 20%), so every calculation stays in exact integer arithmetic.
 
-export const DEFAULT_VAT_BPS = 2000;
+/** A store's rate when none was given (data made before rates were guessed by region). */
+export const DEFAULT_TAX_BPS = 2000;
 const BPS_SCALE = 10_000;
 
 export type TotalMode = 'incl' | 'excl';
@@ -129,38 +130,40 @@ export function budgetStatus(spentMinor: number, budgetMinor: number): BudgetSta
 	return 'ok';
 }
 
-/** A store with no currency set shows amounts in pounds, as Trolay always has. */
-export const DEFAULT_CURRENCY = 'GBP';
-
 const moneyFormats = new Map<string, Intl.NumberFormat>();
 
-function moneyFormat(currency: string, locale: string): Intl.NumberFormat {
-	const key = `${locale} ${currency}`;
+/** A store's currency, or plain two-decimal numbers for a store with none. */
+function moneyFormat(currency: string | undefined, locale: string): Intl.NumberFormat {
+	const key = `${locale} ${currency ?? ''}`;
 	let format = moneyFormats.get(key);
 	if (!format) {
-		format = new Intl.NumberFormat(locale, {
-			style: 'currency',
-			currency,
-			currencyDisplay: 'narrowSymbol'
-		});
+		format = new Intl.NumberFormat(
+			locale,
+			currency
+				? { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }
+				: { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		);
 		moneyFormats.set(key, format);
 	}
 	return format;
 }
 
-/** e.g. "£1,234.56" in en-GB, "1.234,56 €" for EUR in de-DE. */
-export function formatMoney(
-	minor: number,
-	currency = DEFAULT_CURRENCY,
-	locale = appLocale()
-): string {
+/** e.g. "1,234.56" with no currency, "1.234,56 €" for EUR in de-DE, "$4.50" for USD in en-US. */
+export function formatMoney(minor: number, currency?: string, locale = appLocale()): string {
 	return moneyFormat(currency, locale).format(minor / 100);
 }
 
-/** The symbol for a currency, e.g. "£", "€" or "$", for field labels. */
-export function currencySymbol(currency = DEFAULT_CURRENCY, locale = appLocale()): string {
+/** The symbol for a currency, e.g. "€" or "$"; empty for a store with none. */
+export function currencySymbol(currency?: string, locale = appLocale()): string {
+	if (!currency) return '';
 	const parts = moneyFormat(currency, locale).formatToParts(1);
 	return parts.find((part) => part.type === 'currency')?.value ?? currency;
+}
+
+/** A field label with the currency's symbol when there is one: "Unit price (€)" or "Unit price". */
+export function amountLabel(label: string, currency?: string, locale = appLocale()): string {
+	const symbol = currencySymbol(currency, locale);
+	return symbol ? `${label} (${symbol})` : label;
 }
 
 /** Spaces and apostrophes between digits group them ("1 234,50", "1'234.50") in any locale. */

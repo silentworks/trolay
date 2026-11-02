@@ -45,9 +45,9 @@ test("each store's trips show its own currency, in the cart, history and the tri
 	await page.getByRole('button', { name: /Lidl/ }).click();
 	const edit = page.getByRole('dialog', { name: 'Edit store' });
 	await expect(edit.getByText('The amounts stay the same.')).toBeVisible();
-	await edit.getByLabel(/Currency/).selectOption({ label: 'Not set (shows £)' });
+	await edit.getByLabel(/Currency/).selectOption({ label: 'None' });
 	await edit.getByRole('button', { name: 'Save changes' }).click();
 	await expect(edit).toBeHidden();
 	await page.goto('/history');
-	await expect(trips.filter({ hasText: 'Lidl' })).toContainText('£4.50');
+	await expect(trips.filter({ hasText: 'Lidl' })).toContainText('4.50');
 });

@@ -1,4 +1,4 @@
-import { appLocale } from './locale.ts';
+import { appLocale, phoneRegion } from './locale.ts';
 
 // The currencies a store can be set to. Amounts are kept in hundredths, so only currencies
 // written with two decimals are offered: yen (none) or dinar (three) would show wrong amounts.
@@ -80,11 +80,7 @@ const REGION_CURRENCY: Record<string, string> = {
 
 /** The currency of the phone's region, e.g. "EUR" for de-DE; undefined when unknown. */
 export function regionCurrency(locale = appLocale()): string | undefined {
-	try {
-		const region = new Intl.Locale(locale).maximize().region;
-		const code = region ? REGION_CURRENCY[region] : undefined;
-		return code && isSupportedCurrency(code) ? code : undefined;
-	} catch {
-		return undefined;
-	}
+	const region = phoneRegion(locale);
+	const code = region ? REGION_CURRENCY[region] : undefined;
+	return code && isSupportedCurrency(code) ? code : undefined;
 }

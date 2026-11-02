@@ -6,13 +6,13 @@
 	import { startTrip } from '#lib/data/trips.ts';
 	import {
 		currencySymbol,
-		DEFAULT_VAT_BPS,
 		formatPercent,
 		minorToInput,
 		parsePercent,
 		parsePounds
 	} from '#lib/money.ts';
 	import { regionCurrency } from '#lib/currencies.ts';
+	import { regionTax } from '#lib/taxes.ts';
 	import AppHeader from './AppHeader.svelte';
 	import CurrencySelect from './CurrencySelect.svelte';
 
@@ -29,11 +29,11 @@
 	let { explainOnly = false, ondone }: Props = $props();
 	const uid = $props.id();
 
-	type Step = 'welcome' | 'store' | 'vat' | 'budget' | 'ready';
+	type Step = 'welcome' | 'store' | 'tax' | 'budget' | 'ready';
 	// Fixed for the guide's life: the page picks it once.
 	const steps: Step[] = untrack(() => explainOnly)
 		? ['welcome', 'ready']
-		: ['welcome', 'store', 'vat', 'budget', 'ready'];
+		: ['welcome', 'store', 'tax', 'budget', 'ready'];
 	let index = $state(0);
 	const step = $derived(steps[index]);
 
@@ -41,7 +41,10 @@
 	let name = $state('');
 	let branch = $state('');
 	let currency = $state(regionCurrency() ?? '');
-	let vat = $state(formatPercent(DEFAULT_VAT_BPS));
+	// Guessed from the phone's region; with no good guess it starts at 0% and asks.
+	const guess = regionTax();
+	const askForRate = !guess || guess.varies;
+	let rate = $state(formatPercent(guess?.rateBps ?? 0));
 	let pricesIncludeTax = $state(true);
 	let budget = $state('');
 	let error = $state('');
@@ -69,8 +72,8 @@
 			error = 'Enter the name of the store, like Tesco or Lidl.';
 			return;
 		}
-		if (step === 'vat' && parsePercent(vat) === null) {
-			error = 'Enter a VAT rate between 0 and 100.';
+		if (step === 'tax' && parsePercent(rate) === null) {
+			error = 'Enter a sales tax rate between 0 and 100.';
 			return;
 		}
 		if (step === 'budget' && readBudget() === null) {
@@ -97,7 +100,7 @@
 				const store = await addStore({
 					name,
 					branch,
-					taxRateBps: parsePercent(vat) ?? DEFAULT_VAT_BPS,
+					taxRateBps: parsePercent(rate) ?? 0,
 					pricesIncludeTax,
 					currency
 				});
@@ -166,23 +169,25 @@
 				<CurrencySelect id="{uid}-currency" bind:value={currency} />
 				<span class="hint">Guessed from your phone's region. Prices show in it.</span>
 			</div>
-		{:else if step === 'vat'}
-			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>VAT at {name.trim()}</h2>
+		{:else if step === 'tax'}
+			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Sales tax at {name.trim()}</h2>
 			<p class="hint">
-				Trolay shows your total with and without VAT. Most UK shops charge 20% and print prices with
-				VAT included, so you can usually keep these as they are.
+				Trolay shows your total with and without sales tax.
+				{askForRate
+					? 'Enter the rate where you shop. A recent receipt usually shows it.'
+					: "The rate is guessed from your phone's region, so you can usually keep it."}
 			</p>
 			<div class="field">
-				<label for="{uid}-vat">VAT rate (%)</label>
-				<input id="{uid}-vat" class="input" bind:value={vat} inputmode="decimal" />
+				<label for="{uid}-rate">Sales tax rate (%)</label>
+				<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
 			</div>
 			<label class="check">
 				<input type="checkbox" bind:checked={pricesIncludeTax} />
-				Shelf labels include VAT
+				Shelf prices include sales tax
 			</label>
 			<p class="hint">
-				Turn this off only if the store shows prices without VAT, as some trade and wholesale shops
-				do.
+				Leave this on if the price on the shelf is what you pay. Turn it off if the store adds tax
+				on top, at the till or on the receipt.
 			</p>
 		{:else if step === 'budget'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Set a budget for this trip?</h2>
@@ -197,7 +202,7 @@
 					class="input"
 					bind:value={budget}
 					inputmode="decimal"
-					placeholder={currencySymbol(currency || undefined)}
+					placeholder={currencySymbol(currency || undefined) || undefined}
 					aria-invalid={readBudget() === null}
 				/>
 			</div>

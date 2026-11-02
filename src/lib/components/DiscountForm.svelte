@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import {
-		currencySymbol,
+		amountLabel,
 		formatMoney,
 		formatPercent,
 		minorToInput,
@@ -13,7 +13,7 @@
 	interface Props {
 		discount?: Discount;
 		onsave: (discount: Discount | undefined) => Promise<void>;
-		/** The store's currency (ISO 4217); unset shows pounds. */
+		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
@@ -53,7 +53,7 @@
 			class="btn"
 			type="button"
 			aria-pressed={kind === 'amount'}
-			onclick={() => (kind = 'amount')}>Amount ({currencySymbol(currency)})</button
+			onclick={() => (kind = 'amount')}>{amountLabel('Amount', currency)}</button
 		>
 		<button
 			class="btn"
@@ -65,7 +65,7 @@
 
 	<div class="field">
 		<label for="{uid}-discount"
-			>{kind === 'amount' ? `Discount (${currencySymbol(currency)})` : 'Discount (%)'}</label
+			>{kind === 'amount' ? amountLabel('Discount', currency) : 'Discount (%)'}</label
 		>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input id="{uid}-discount" class="input" bind:value inputmode="decimal" autofocus />

@@ -244,7 +244,7 @@ describe('parseLabel: raised pence and whole numbers', () => {
 	});
 });
 
-describe('parseLabel: VAT', () => {
+describe('parseLabel: sales tax', () => {
 	it('reads the marker on the price, and checks it against the other price', () => {
 		const reading = parseLabel([
 			line('Cola 24 x 330ml Cans', 300, 80, 44),
@@ -254,6 +254,18 @@ describe('parseLabel: VAT', () => {
 		]);
 		expect(filledFields(reading)).toMatchObject({ unitPriceMinor: 1050, priceIncludesTax: false });
 		expect(reading.checks).toContain('inc and ex VAT prices agree');
+	});
+
+	it('knows sales tax by its other names', () => {
+		const marked = (marker: string) =>
+			filled([line('Cola 24 x 330ml Cans', 300, 80, 44), line(`$10.50 ${marker}`, 280, 285, 123)])
+				.priceIncludesTax;
+		for (const marker of ['plus tax', '+ tax', 'excl. GST', 'zzgl. MwSt', 'ex IVA']) {
+			expect(marked(marker), marker).toBe(false);
+		}
+		for (const marker of ['incl. tax', 'inc GST', 'inkl. MwSt', 'TVA incluse', 'IVA incluido']) {
+			expect(marked(marker), marker).toBe(true);
+		}
 	});
 
 	it('works out the big price is inc VAT from the marked ex VAT price', () => {

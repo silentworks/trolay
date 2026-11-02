@@ -33,7 +33,7 @@ function validate(input: ItemInput): ItemInput {
 			!Number.isInteger(offerPriceMinor) ||
 			offerPriceMinor! <= 0)
 	) {
-		throw new Error('A multi-buy offer is for 2 or more items, at a price above £0.');
+		throw new Error('A multi-buy offer is for 2 or more items, at a price above 0.');
 	}
 	const barcode = input.barcode?.replace(/\s/g, '') || undefined;
 	if (barcode !== undefined && !isValidGtin(barcode)) {

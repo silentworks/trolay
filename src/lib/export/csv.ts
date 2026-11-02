@@ -1,5 +1,5 @@
 import type { Item, Store, Trip } from '#lib/data/db.ts';
-import { DEFAULT_CURRENCY, formatPercent, lineTotals, tripTotals } from '#lib/money.ts';
+import { formatPercent, lineTotals, tripTotals } from '#lib/money.ts';
 
 // CSV for spreadsheets. Excel only reads UTF-8 (and so "€" in a store name) when the file starts with a byte
 // order mark, and expects CRLF line ends; Google Sheets accepts both.
@@ -18,14 +18,14 @@ const HEADER = [
 	'Quantity',
 	'Currency',
 	'Unit price',
-	'Unit price includes VAT',
-	'Line total incl. VAT',
-	'Line total excl. VAT',
-	'VAT'
+	'Unit price includes tax',
+	'Line total incl. tax',
+	'Line total excl. tax',
+	'Tax'
 ];
 
 // Amounts and dates in fixed forms, whatever the phone's locale, so the file reads the same anywhere.
-const pounds = (minor: number) => (minor / 100).toFixed(2);
+const amount = (minor: number) => (minor / 100).toFixed(2);
 
 /** "2026-10-28 17:46" in the device's time zone: sorts as text and spreadsheets read it as a date. */
 function dateTime(ms: number): string {
@@ -56,7 +56,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 		const storeName = store
 			? [store.name, store.branch].filter(Boolean).join(' · ')
 			: 'Deleted store';
-		const currency = store?.currency ?? DEFAULT_CURRENCY;
+		const currency = store?.currency ?? '';
 		for (const item of [...items].sort((a, b) => a.createdAt - b.createdAt)) {
 			const line = lineTotals(item, taxRateBps);
 			rows.push(
@@ -67,11 +67,11 @@ export function tripsToCsv(trips: TripForExport[]): string {
 					barcode(item.barcode),
 					String(item.quantity),
 					currency,
-					pounds(item.unitPriceMinor),
+					amount(item.unitPriceMinor),
 					item.priceIncludesTax ? 'Yes' : 'No',
-					pounds(line.inclMinor),
-					pounds(line.exclMinor),
-					pounds(line.inclMinor - line.exclMinor)
+					amount(line.inclMinor),
+					amount(line.exclMinor),
+					amount(line.inclMinor - line.exclMinor)
 				].join(',')
 			);
 		}
@@ -91,11 +91,11 @@ export function tripsToCsv(trips: TripForExport[]): string {
 					'',
 					'1',
 					currency,
-					pounds(-discountMinor),
+					amount(-discountMinor),
 					'Yes',
-					pounds(-discountMinor),
-					pounds(-exclMinor),
-					pounds(-(discountMinor - exclMinor))
+					amount(-discountMinor),
+					amount(-exclMinor),
+					amount(-(discountMinor - exclMinor))
 				].join(',')
 			);
 		}

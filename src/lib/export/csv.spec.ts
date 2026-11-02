@@ -51,8 +51,8 @@ describe('tripsToCsv', () => {
 			{ trip: discounted, store, items: [item({ description: 'Wine', unitPriceMinor: 600 })] }
 		]);
 		expect(csv.slice(1).split('\r\n').slice(1)).toEqual([
-			'2026-10-28 17:46,Tesco · Leeds,Wine,,1,GBP,6.00,Yes,6.00,5.00,1.00',
-			'2026-10-28 17:46,Tesco · Leeds,Discount (10%),,1,GBP,-0.60,Yes,-0.60,-0.50,-0.10',
+			'2026-10-28 17:46,Tesco · Leeds,Wine,,1,,6.00,Yes,6.00,5.00,1.00',
+			'2026-10-28 17:46,Tesco · Leeds,Discount (10%),,1,,-0.60,Yes,-0.60,-0.50,-0.10',
 			''
 		]);
 	});
@@ -70,19 +70,19 @@ describe('tripsToCsv', () => {
 		]);
 		expect(csv.startsWith('﻿')).toBe(true);
 		expect(csv.slice(1).split('\r\n')).toEqual([
-			'Date,Store,Description,Barcode,Quantity,Currency,Unit price,Unit price includes VAT,Line total incl. VAT,Line total excl. VAT,VAT',
-			'2026-10-28 17:46,Tesco · Leeds,Milk 2L,="5012345678900",2,GBP,1.45,Yes,2.90,2.42,0.48',
-			'2026-10-28 17:46,Tesco · Leeds,Bread,,1,GBP,0.99,Yes,0.99,0.83,0.16',
+			'Date,Store,Description,Barcode,Quantity,Currency,Unit price,Unit price includes tax,Line total incl. tax,Line total excl. tax,Tax',
+			'2026-10-28 17:46,Tesco · Leeds,Milk 2L,="5012345678900",2,,1.45,Yes,2.90,2.42,0.48',
+			'2026-10-28 17:46,Tesco · Leeds,Bread,,1,,0.99,Yes,0.99,0.83,0.16',
 			''
 		]);
 	});
 
-	it('works out incl. VAT from a trade price entered excl. VAT', () => {
+	it('works out incl. tax from a trade price entered excl. tax', () => {
 		const csv = tripsToCsv([
 			{ trip, store, items: [item({ unitPriceMinor: 1000, priceIncludesTax: false })] }
 		]);
 		expect(csv.split('\r\n')[1]).toBe(
-			'2026-10-28 17:46,Tesco · Leeds,Milk,,1,GBP,10.00,No,12.00,10.00,2.00'
+			'2026-10-28 17:46,Tesco · Leeds,Milk,,1,,10.00,No,12.00,10.00,2.00'
 		);
 	});
 
@@ -109,6 +109,11 @@ describe('tripsToCsv', () => {
 		]);
 		expect(csv).toContain(`"'=HYPERLINK(""http://x"")"`);
 		expect(csv).toContain(",'-5% off,");
+	});
+
+	it('says nothing of pounds or VAT for a store with no currency', () => {
+		const csv = tripsToCsv([{ trip, store, items: [item({})] }]);
+		expect(csv).not.toMatch(/£|GBP|VAT/);
 	});
 
 	it("writes each trip's store currency", () => {

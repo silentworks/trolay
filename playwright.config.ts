@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { FAKE_CAMERA_VIDEO, ONBOARDED_STATE } from './e2e/global-setup';
+import { BASE, E2E_PORT, FAKE_CAMERA_VIDEO, ONBOARDED_STATE } from './e2e/global-setup';
 
 export default defineConfig({
 	testDir: 'e2e',
@@ -10,8 +10,8 @@ export default defineConfig({
 	webServer: [
 		{
 			// vite proxies /api to the API below, as in production where they share an origin.
-			command: 'pnpm build && pnpm preview --port 4173 --strictPort',
-			port: 4173,
+			command: `pnpm build && pnpm preview --port ${E2E_PORT} --strictPort`,
+			port: E2E_PORT,
 			env: { API_PORT: '8788' },
 			reuseExistingServer: !process.env.CI
 		},
@@ -24,7 +24,7 @@ export default defineConfig({
 		}
 	],
 	use: {
-		baseURL: 'http://localhost:4173',
+		baseURL: BASE,
 		...devices['Pixel 7'],
 		// The app follows the phone's locale; tests that want another set their own.
 		locale: 'en-GB',

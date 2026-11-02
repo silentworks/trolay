@@ -3,6 +3,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
+ * The built app is served here for the tests. Not vite preview's usual 4173, which other local
+ * projects tend to hold: the tests would reuse whatever answered there.
+ */
+export const E2E_PORT = 4183;
+export const BASE = `http://localhost:${E2E_PORT}`;
+
+/**
  * Browser storage every test phone starts with: the first-run guide already seen, so tests begin
  * on the start screen. The guide's own tests start without it.
  */
@@ -82,7 +89,7 @@ export default function globalSetup() {
 			cookies: [],
 			origins: [
 				{
-					origin: 'http://localhost:4173',
+					origin: BASE,
 					localStorage: [{ name: 'trolley.onboarded', value: 'true' }]
 				}
 			]

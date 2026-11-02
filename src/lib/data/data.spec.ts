@@ -24,6 +24,7 @@ import {
 	getOpenTrip,
 	getTrip,
 	listFinishedTrips,
+	looksLikeTaxAddedAtTill,
 	receiptDifference,
 	setReceiptTotal,
 	setTripBudget,
@@ -288,6 +289,23 @@ describe('finishing a trip', () => {
 		expect(receiptDifference(389, 389)).toBe(0);
 		expect(receiptDifference(390, 389)).toBe(1);
 		expect(receiptDifference(388, 389)).toBe(-1);
+	});
+
+	it('spots a receipt higher by about one lot of sales tax', () => {
+		// 8% on 10.00 is 0.80; a penny or two of rounding either way still counts.
+		expect(looksLikeTaxAddedAtTill(80, 1000, 800)).toBe(true);
+		expect(looksLikeTaxAddedAtTill(82, 1000, 800)).toBe(true);
+		expect(looksLikeTaxAddedAtTill(1, 1000, 800)).toBe(false);
+		expect(looksLikeTaxAddedAtTill(200, 1000, 800)).toBe(false);
+		// No rate set: anything like a typical sales tax.
+		expect(looksLikeTaxAddedAtTill(73, 1000, 0)).toBe(true);
+		expect(looksLikeTaxAddedAtTill(20, 1000, 0)).toBe(false);
+		expect(looksLikeTaxAddedAtTill(150, 1000, 0)).toBe(false);
+		// Less, the same, or nothing to compare with.
+		expect(looksLikeTaxAddedAtTill(-80, 1000, 800)).toBe(false);
+		expect(looksLikeTaxAddedAtTill(0, 1000, 800)).toBe(false);
+		expect(looksLikeTaxAddedAtTill(undefined, 1000, 800)).toBe(false);
+		expect(looksLikeTaxAddedAtTill(80, 0, 800)).toBe(false);
 	});
 
 	it('only takes a receipt total on an open trip, and rejects a negative or fractional one', async () => {

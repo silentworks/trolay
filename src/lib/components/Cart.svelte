@@ -327,6 +327,7 @@
 				{totals}
 				{discount}
 				currency={store.currency}
+				taxAddedAtTill={!store.pricesIncludeTax}
 				budgetMinor={trip.budgetMinor}
 				onbudget={() => (sheet = { kind: 'budget' })}
 			/>
@@ -396,6 +397,8 @@
 			appTotalMinor={totals.inclMinor}
 			receiptTotalMinor={trip.receiptTotalMinor}
 			currency={store?.currency}
+			taxRateBps={store?.taxRateBps ?? 0}
+			taxAdded={(store?.taxRateBps ?? 0) > 0 && items.some((item) => !item.priceIncludesTax)}
 			{photoCount}
 			onreceipt={(minor) => setReceiptTotal(tripId, minor)}
 			onfinish={() => run(finish)}

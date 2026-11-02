@@ -12,9 +12,12 @@ export interface RegionTax {
 	 * rate fits: the guess is 0% and the shopper is asked for theirs.
 	 */
 	varies: boolean;
+	/** Shelf prices leave sales tax out and the till adds it (US, Canada). */
+	addedAtTill: boolean;
 }
 
 const VARIES = new Set(['BR', 'CA', 'IN', 'US']);
+const ADDED_AT_TILL = new Set(['CA', 'US']);
 
 // Standard rates in percent, as of 2026. Check them now and then: countries change them.
 const STANDARD_RATE: Record<string, number> = {
@@ -68,7 +71,18 @@ const STANDARD_RATE: Record<string, number> = {
 export function regionTax(locale = appLocale()): RegionTax | undefined {
 	const region = phoneRegion(locale);
 	if (!region) return undefined;
-	if (VARIES.has(region)) return { rateBps: 0, varies: true };
+	const addedAtTill = ADDED_AT_TILL.has(region);
+	if (VARIES.has(region)) return { rateBps: 0, varies: true, addedAtTill };
 	const rate = STANDARD_RATE[region];
-	return rate === undefined ? undefined : { rateBps: Math.round(rate * 100), varies: false };
+	return rate === undefined
+		? undefined
+		: { rateBps: Math.round(rate * 100), varies: false, addedAtTill };
+}
+
+/** What to tell the shopper about the rate when the guess can't be trusted; nothing when it can. */
+export function rateHint(guess: RegionTax | undefined): string | undefined {
+	if (!guess) return 'Enter the sales tax rate where you shop. A recent receipt usually shows it.';
+	if (guess.varies)
+		return 'Sales tax depends on where you shop. Check a recent receipt for the rate.';
+	return undefined;
 }

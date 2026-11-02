@@ -12,7 +12,7 @@
 		parsePounds
 	} from '#lib/money.ts';
 	import { regionCurrency } from '#lib/currencies.ts';
-	import { regionTax } from '#lib/taxes.ts';
+	import { rateHint, regionTax } from '#lib/taxes.ts';
 	import AppHeader from './AppHeader.svelte';
 	import CurrencySelect from './CurrencySelect.svelte';
 
@@ -43,9 +43,10 @@
 	let currency = $state(regionCurrency() ?? '');
 	// Guessed from the phone's region; with no good guess it starts at 0% and asks.
 	const guess = regionTax();
-	const askForRate = !guess || guess.varies;
+	const hint = rateHint(guess);
 	let rate = $state(formatPercent(guess?.rateBps ?? 0));
-	let pricesIncludeTax = $state(true);
+	// Shelf prices include tax, except where tills add it (US, Canada).
+	let pricesIncludeTax = $state(!guess?.addedAtTill);
 	let budget = $state('');
 	let error = $state('');
 	let saving = $state(false);
@@ -171,23 +172,28 @@
 			</div>
 		{:else if step === 'tax'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Sales tax at {name.trim()}</h2>
-			<p class="hint">
-				Trolay shows your total with and without sales tax.
-				{askForRate
-					? 'Enter the rate where you shop. A recent receipt usually shows it.'
-					: "The rate is guessed from your phone's region, so you can usually keep it."}
-			</p>
+			<fieldset class="choice">
+				<legend>Do shelf prices include sales tax?</legend>
+				<label class="check">
+					<input type="radio" name="{uid}-includes" bind:group={pricesIncludeTax} value={true} />
+					Yes, the price on the shelf is what I pay
+				</label>
+				<label class="check">
+					<input type="radio" name="{uid}-includes" bind:group={pricesIncludeTax} value={false} />
+					No, tax is added at the till
+				</label>
+			</fieldset>
 			<div class="field">
 				<label for="{uid}-rate">Sales tax rate (%)</label>
 				<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
+				<span class="hint">
+					{hint ?? "Guessed from your phone's region, so you can usually keep it."}
+				</span>
 			</div>
-			<label class="check">
-				<input type="checkbox" bind:checked={pricesIncludeTax} />
-				Shelf prices include sales tax
-			</label>
 			<p class="hint">
-				Leave this on if the price on the shelf is what you pay. Turn it off if the store adds tax
-				on top, at the till or on the receipt.
+				{pricesIncludeTax
+					? 'Trolay works out how much of each price is tax, so you can see your total with and without it.'
+					: 'Trolay adds the tax to your total, so it matches the receipt.'}
 			</p>
 		{:else if step === 'budget'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Set a budget for this trip?</h2>
@@ -311,5 +317,18 @@
 
 	.skip {
 		justify-self: center;
+	}
+
+	.choice {
+		display: grid;
+		gap: 8px;
+		margin: 0 0 16px;
+		padding: 0;
+		border: none;
+	}
+
+	.choice legend {
+		margin-bottom: 8px;
+		font-weight: 600;
 	}
 </style>

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { BASE } from './global-setup';
 import { copyPasskeys, withPasskeys } from './passkeys';
 
 async function addItem(page: Page, description: string, price: string) {
@@ -14,7 +15,7 @@ const synced = (page: Page) => page.getByRole('status').filter({ hasText: '✓ S
 
 test('what one phone does appears on the other, and back', async ({ browser }) => {
 	// Phone A: shop without an account, then make one. What is already there is uploaded.
-	const a = await (await browser.newContext({ baseURL: 'http://localhost:4173' })).newPage();
+	const a = await (await browser.newContext({ baseURL: BASE })).newPage();
 	const passkeysA = await withPasskeys(a);
 	await a.goto('/');
 	await a.getByRole('button', { name: 'Add a new store' }).click();
@@ -27,7 +28,7 @@ test('what one phone does appears on the other, and back', async ({ browser }) =
 	await expect(synced(a)).toBeVisible();
 
 	// Phone B: the same passkey, a different phone with nothing on it.
-	const b = await (await browser.newContext({ baseURL: 'http://localhost:4173' })).newPage();
+	const b = await (await browser.newContext({ baseURL: BASE })).newPage();
 	await copyPasskeys(passkeysA, await withPasskeys(b));
 	await b.goto('/account');
 	await b.getByRole('button', { name: 'Sign in with a passkey' }).click();
@@ -48,7 +49,7 @@ test('what one phone does appears on the other, and back', async ({ browser }) =
 });
 
 test('changes made with no signal wait, and are sent when it returns', async ({ browser }) => {
-	const context = await browser.newContext({ baseURL: 'http://localhost:4173' });
+	const context = await browser.newContext({ baseURL: BASE });
 	const page = await context.newPage();
 	await withPasskeys(page);
 	await page.goto('/');

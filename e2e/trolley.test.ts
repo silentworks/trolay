@@ -44,17 +44,10 @@ test('a full trip: add, edit, switch totals, budget, delete with undo, reload', 
 	await addItem(page, 'Milk 2L', '1.45', 2);
 	await expectTotal(page, '2.90');
 
-	// The breakdown folds out under the total, and stays open after a reload.
-	const breakdown = footer(page).getByRole('definition');
-	await expect(footer(page).getByText('Excl. tax')).toBeHidden();
-	await footer(page).getByRole('button', { name: 'Show excl.' }).click();
-	await expect(footer(page).getByText('Excl. tax')).toBeVisible();
-	await expect(breakdown.filter({ hasText: '2.42' })).toBeVisible();
-	await expect(breakdown.filter({ hasText: '0.48' })).toBeVisible();
-	await page.reload();
-	await expect(footer(page).getByText('Excl. tax')).toBeVisible();
-	await footer(page).getByRole('button', { name: 'Hide excl.' }).click();
-	await expect(footer(page).getByText('Excl. tax')).toBeHidden();
+	// Under the total: excl. tax, the item count and the tax, with nothing to tap.
+	await expect(footer(page)).toContainText('2.42 excl.');
+	await expect(footer(page)).toContainText('2 items');
+	await expect(footer(page)).toContainText('0.48 tax');
 
 	// Editing recomputes the totals immediately.
 	await page.getByRole('button', { name: /^Milk 2L / }).click();

@@ -6,7 +6,6 @@
 		type Discount,
 		type DiscountedTotals
 	} from '#lib/money.ts';
-	import { settings } from '#lib/settings.svelte.ts';
 
 	interface Props {
 		totals: DiscountedTotals;
@@ -23,10 +22,8 @@
 	let { totals, discount, budgetMinor, onbudget, currency, taxRateBps, taxAddedAtTill }: Props =
 		$props();
 
-	// The headline is what is paid; the rest folds away under it.
+	// The headline is what is paid; the excl. total, tax and item count sit under it.
 	const headline = $derived(totals.inclMinor);
-	const open = $derived(settings.totalsOpen);
-	const breakdownId = $props.id();
 	const status = $derived(budgetMinor === undefined ? 'ok' : budgetStatus(headline, budgetMinor));
 	const left = $derived(budgetMinor === undefined ? 0 : budgetMinor - headline);
 	/** The bar fills as the budget is spent; full once over. */
@@ -36,44 +33,33 @@
 	const money = (minor: number) => formatMoney(minor, currency);
 </script>
 
-<!-- The running total on a dark card, with its breakdown and the budget. -->
+<!-- The running total on a dark card: what is paid, then excl. tax, items and tax, then the budget. -->
 <section class="totals" aria-label="Trolley total">
 	<p class="mode">Total incl. tax</p>
 	<p class="amount">{money(headline)}</p>
-	<button
-		class="switch"
-		type="button"
-		aria-expanded={open}
-		aria-controls={breakdownId}
-		onclick={() => settings.toggleTotals()}
-	>
-		{open ? 'Hide excl.' : 'Show excl.'}
-		<svg class:open viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-	</button>
-
-	<dl class="breakdown" id={breakdownId} hidden={!open}>
+	<dl class="under">
+		<div>
+			<dt class="visually-hidden">Excl. tax</dt>
+			<dd>{money(totals.exclMinor)} excl.</dd>
+		</div>
+		<div>
+			<dt class="visually-hidden">Items</dt>
+			<dd>{totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'}</dd>
+		</div>
+		<div>
+			<dt class="visually-hidden">
+				Tax ({formatPercent(taxRateBps)}%{taxAddedAtTill ? ', added at till' : ''})
+			</dt>
+			<dd>{money(totals.taxMinor)} {taxAddedAtTill ? 'tax at till' : 'tax'}</dd>
+		</div>
 		{#if totals.discountMinor > 0}
-			<div>
+			<div class="discount">
 				<dt>
 					Discount{discount?.kind === 'percent' ? ` (${formatPercent(discount.value)}%)` : ''}
 				</dt>
 				<dd>−{money(totals.discountMinor)}</dd>
 			</div>
 		{/if}
-		<div>
-			<dt>Excl. tax</dt>
-			<dd>{money(totals.exclMinor)}</dd>
-		</div>
-		<div>
-			<dt>
-				Tax ({formatPercent(taxRateBps)}%{taxAddedAtTill ? ', added at till' : ''})
-			</dt>
-			<dd>{money(totals.taxMinor)}</dd>
-		</div>
-		<div>
-			<dt>Items</dt>
-			<dd>{totals.itemCount}</dd>
-		</div>
 	</dl>
 
 	{#if budgetMinor === undefined}
@@ -131,65 +117,31 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	.switch {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		min-height: 36px;
-		padding: 0;
-		border: none;
-		background: transparent;
-		color: var(--link);
-		font-size: 0.92rem;
-		font-weight: 600;
-		text-decoration: underline;
-		text-underline-offset: 3px;
+	.under {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 2px 12px;
+		margin: 2px 0 0;
+		color: var(--total-muted);
+		font-size: 0.88rem;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.switch svg,
-	.set-budget {
-		color: var(--link);
+	.under dd {
+		margin: 0;
 	}
 
-	.switch svg {
-		width: 16px;
-		height: 16px;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 2;
-		transition: transform 0.15s ease-out;
-	}
-
-	.switch svg.open {
-		transform: rotate(180deg);
-	}
-
-	.breakdown:not([hidden]) {
-		display: grid;
-		gap: 6px;
-		margin: 6px 0 0;
-		padding-top: 12px;
-		border-top: 1px solid var(--line);
-		font-size: 0.95rem;
-	}
-
-	.breakdown div {
+	.discount {
 		display: flex;
 		justify-content: space-between;
 		gap: 12px;
-	}
-
-	.breakdown dt {
-		color: var(--total-muted);
-	}
-
-	.breakdown dd {
-		margin: 0;
-		font-variant-numeric: tabular-nums;
+		flex-basis: 100%;
 	}
 
 	.set-budget {
 		min-height: 44px;
+		color: var(--link);
 		margin-top: 4px;
 		padding: 0;
 		border: none;

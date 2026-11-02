@@ -30,7 +30,7 @@ test.describe('on a US phone', () => {
 		const footer = page.getByRole('region', { name: 'Trolley total' });
 		await expect(footer).toContainText('Total incl. tax');
 		await expect(footer.getByText('$10.80', { exact: true })).toBeVisible();
-		await expect(footer).toContainText('Tax (8%, added at till)');
+		await expect(footer).toContainText('$0.80 tax at till');
 		await expect(footer).toContainText('$0.80');
 
 		await menu(page, 'Finish trip');

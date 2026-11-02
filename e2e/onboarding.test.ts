@@ -14,6 +14,8 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeFocused();
 	await page.getByRole('button', { name: 'Next' }).click();
 	await expect(page.getByRole('alert')).toContainText('Enter the name of the store');
+	// Guessed from the phone's region (en-GB in these tests).
+	await expect(page.getByLabel('Currency')).toHaveValue('GBP');
 	await page.getByLabel('Store name').fill('Lidl');
 	await page.getByLabel(/Branch or location/).fill('Hackney');
 	await page.getByRole('button', { name: 'Next' }).click();

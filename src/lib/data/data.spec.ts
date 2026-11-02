@@ -61,6 +61,23 @@ describe('stores', () => {
 		expect((await listStores()).map((s) => s.name)).toEqual(['Tesco', 'Aldi']);
 	});
 
+	it('keeps a currency as its ISO code, and clears it when left empty', async () => {
+		const store = await addStore({ name: 'Lidl', currency: ' eur ' });
+		expect(store.currency).toBe('EUR');
+		await updateStore(store.id, { name: 'Lidl', currency: 'USD' });
+		expect((await db.stores.get(store.id))?.currency).toBe('USD');
+		await updateStore(store.id, { name: 'Lidl', currency: '' });
+		expect((await db.stores.get(store.id))?.currency).toBeUndefined();
+	});
+
+	it('refuses a currency it cannot show amounts in', async () => {
+		await expect(addStore({ name: 'Aeon', currency: 'JPY' })).rejects.toThrow(
+			"can't show amounts in JPY"
+		);
+		await expect(addStore({ name: 'Aeon', currency: 'XYZ1' })).rejects.toThrow();
+		expect(await listStores()).toEqual([]);
+	});
+
 	it('updates name, branch and VAT settings', async () => {
 		const store = await addStore({ name: 'Tesco' });
 		await updateStore(store.id, {

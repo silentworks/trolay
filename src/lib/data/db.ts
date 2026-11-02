@@ -19,6 +19,8 @@ export interface Store extends SyncMeta, Pending {
 	/** VAT rate in basis points: 2000 = 20%. */
 	taxRateBps: number;
 	pricesIncludeTax: boolean;
+	/** ISO 4217 code amounts at this store are shown in, e.g. "EUR"; unset shows pounds. */
+	currency?: string;
 	createdAt: number;
 	lastUsedAt: number;
 }

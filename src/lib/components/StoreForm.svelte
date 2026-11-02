@@ -3,6 +3,7 @@
 	import type { Store } from '#lib/data/db.ts';
 	import type { StoreInput } from '#lib/data/stores.ts';
 	import { DEFAULT_VAT_BPS, formatPercent, parsePercent } from '#lib/money.ts';
+	import CurrencySelect from './CurrencySelect.svelte';
 
 	interface Props {
 		store?: Store;
@@ -19,6 +20,7 @@
 	let branch = $state(initial?.branch ?? '');
 	let vat = $state(formatPercent(initial?.taxRateBps ?? DEFAULT_VAT_BPS));
 	let pricesIncludeTax = $state(initial?.pricesIncludeTax ?? true);
+	let currency = $state(initial?.currency ?? '');
 	let error = $state('');
 	let saving = $state(false);
 
@@ -32,7 +34,7 @@
 		saving = true;
 		error = '';
 		try {
-			await onsubmit({ name, branch, taxRateBps, pricesIncludeTax });
+			await onsubmit({ name, branch, taxRateBps, pricesIncludeTax, currency });
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -60,6 +62,16 @@
 	<div class="field">
 		<label for="{uid}-branch">Branch or location <span class="hint">(optional)</span></label>
 		<input id="{uid}-branch" class="input" bind:value={branch} autocomplete="off" />
+	</div>
+
+	<div class="field">
+		<label for="{uid}-currency">Currency <span class="hint">(optional)</span></label>
+		<CurrencySelect id="{uid}-currency" bind:value={currency} />
+		{#if store}
+			<span class="hint">
+				Changing it changes how this store's past trips are shown too. The amounts stay the same.
+			</span>
+		{/if}
 	</div>
 
 	<div class="field">

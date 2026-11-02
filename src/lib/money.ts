@@ -129,16 +129,38 @@ export function budgetStatus(spentMinor: number, budgetMinor: number): BudgetSta
 	return 'ok';
 }
 
-const gbp = new Map<string, Intl.NumberFormat>();
+/** A store with no currency set shows amounts in pounds, as Trolay always has. */
+export const DEFAULT_CURRENCY = 'GBP';
 
-/** e.g. "£1,234.56" in en-GB, "1.234,56 £" in de-DE. */
-export function formatGBP(minor: number, locale = appLocale()): string {
-	let format = gbp.get(locale);
+const moneyFormats = new Map<string, Intl.NumberFormat>();
+
+function moneyFormat(currency: string, locale: string): Intl.NumberFormat {
+	const key = `${locale} ${currency}`;
+	let format = moneyFormats.get(key);
 	if (!format) {
-		format = new Intl.NumberFormat(locale, { style: 'currency', currency: 'GBP' });
-		gbp.set(locale, format);
+		format = new Intl.NumberFormat(locale, {
+			style: 'currency',
+			currency,
+			currencyDisplay: 'narrowSymbol'
+		});
+		moneyFormats.set(key, format);
 	}
-	return format.format(minor / 100);
+	return format;
+}
+
+/** e.g. "£1,234.56" in en-GB, "1.234,56 €" for EUR in de-DE. */
+export function formatMoney(
+	minor: number,
+	currency = DEFAULT_CURRENCY,
+	locale = appLocale()
+): string {
+	return moneyFormat(currency, locale).format(minor / 100);
+}
+
+/** The symbol for a currency, e.g. "£", "€" or "$", for field labels. */
+export function currencySymbol(currency = DEFAULT_CURRENCY, locale = appLocale()): string {
+	const parts = moneyFormat(currency, locale).formatToParts(1);
+	return parts.find((part) => part.type === 'currency')?.value ?? currency;
 }
 
 /** Spaces and apostrophes between digits group them ("1 234,50", "1'234.50") in any locale. */

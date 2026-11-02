@@ -8,7 +8,7 @@
 	import { deleteTrip, deleteTripPhotos, getTrip, receiptDifference } from '#lib/data/trips.ts';
 	import { exportTripCsv } from '#lib/export/history.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
-	import { formatGBP, lineTotals } from '#lib/money.ts';
+	import { formatMoney, lineTotals } from '#lib/money.ts';
 	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
 	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
 	import PhotoImage from './PhotoImage.svelte';
@@ -36,6 +36,7 @@
 
 	const trip = $derived(view.current?.trip);
 	const totals = $derived(trip?.totals);
+	const currency = $derived(view.current?.store?.currency);
 	const difference = $derived(
 		trip && totals ? receiptDifference(trip.receiptTotalMinor, totals.inclMinor) : undefined
 	);
@@ -96,21 +97,21 @@
 		<dl class="sums" aria-label="Trip totals">
 			<div class="headline">
 				<dt>Total incl. VAT</dt>
-				<dd>{formatGBP(totals.inclMinor)}</dd>
+				<dd>{formatMoney(totals.inclMinor, currency)}</dd>
 			</div>
 			{#if totals.discountMinor}
 				<div>
 					<dt>Discount taken off</dt>
-					<dd>−{formatGBP(totals.discountMinor)}</dd>
+					<dd>−{formatMoney(totals.discountMinor, currency)}</dd>
 				</div>
 			{/if}
 			<div>
 				<dt>Excl. VAT</dt>
-				<dd>{formatGBP(totals.exclMinor)}</dd>
+				<dd>{formatMoney(totals.exclMinor, currency)}</dd>
 			</div>
 			<div>
 				<dt>VAT</dt>
-				<dd>{formatGBP(totals.inclMinor - totals.exclMinor)}</dd>
+				<dd>{formatMoney(totals.inclMinor - totals.exclMinor, currency)}</dd>
 			</div>
 			<div>
 				<dt>Items</dt>
@@ -118,7 +119,11 @@
 			</div>
 			<div>
 				<dt>Receipt total</dt>
-				<dd>{trip.receiptTotalMinor === undefined ? '—' : formatGBP(trip.receiptTotalMinor)}</dd>
+				<dd>
+					{trip.receiptTotalMinor === undefined
+						? '—'
+						: formatMoney(trip.receiptTotalMinor, currency)}
+				</dd>
 			</div>
 		</dl>
 
@@ -127,7 +132,7 @@
 				{#if difference === 0}
 					✓ The receipt matched.
 				{:else}
-					The till charged {formatGBP(Math.abs(difference))}
+					The till charged {formatMoney(Math.abs(difference), currency)}
 					{difference > 0 ? 'more' : 'less'} than Trolay added up.
 				{/if}
 			</p>
@@ -163,13 +168,13 @@
 					{/if}
 					<span class="name">{name}</span>
 					<span class="line-total"
-						>{formatGBP(item.priceIncludesTax ? line.inclMinor : line.exclMinor)}</span
+						>{formatMoney(item.priceIncludesTax ? line.inclMinor : line.exclMinor, currency)}</span
 					>
 					<span class="meta">
-						{item.quantity} × {formatGBP(item.unitPriceMinor)}
+						{item.quantity} × {formatMoney(item.unitPriceMinor, currency)}
 						{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}{item.offerQuantity &&
 						item.offerPriceMinor
-							? ` · ${item.offerQuantity} for ${formatGBP(item.offerPriceMinor)}`
+							? ` · ${item.offerQuantity} for ${formatMoney(item.offerPriceMinor, currency)}`
 							: ''}{item.barcode ? ` · ${item.barcode}` : ''}
 					</span>
 				</li>

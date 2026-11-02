@@ -7,7 +7,7 @@
 	import { deleteTrip, listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { exportHistoryCsv } from '#lib/export/history.ts';
-	import { formatGBP } from '#lib/money.ts';
+	import { formatMoney } from '#lib/money.ts';
 	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
 
 	const history = new LiveQuery(() => listFinishedTrips());
@@ -72,7 +72,7 @@
 							<span class="store">
 								{store?.name ?? 'Deleted store'}{store?.branch ? ` · ${store.branch}` : ''}
 							</span>
-							<span class="total">{formatGBP(trip.totals?.inclMinor ?? 0)}</span>
+							<span class="total">{formatMoney(trip.totals?.inclMinor ?? 0, store?.currency)}</span>
 							<span class="when">
 								{trip.finishedAt ? formatWhen(trip.finishedAt) : ''} ·
 								{trip.totals?.itemCount ?? 0}
@@ -87,7 +87,10 @@
 								{:else if difference === 0}
 									✓ Receipt matched
 								{:else}
-									Receipt {difference > 0 ? '+' : '−'}{formatGBP(Math.abs(difference))}
+									Receipt {difference > 0 ? '+' : '−'}{formatMoney(
+										Math.abs(difference),
+										store?.currency
+									)}
 								{/if}
 							</span>
 							{#if trip.photosKept}<span class="badge">Photos kept</span>{/if}

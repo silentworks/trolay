@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import {
+		currencySymbol,
+		formatMoney,
 		formatPercent,
 		minorToInput,
 		parsePercent,
@@ -11,9 +13,11 @@
 	interface Props {
 		discount?: Discount;
 		onsave: (discount: Discount | undefined) => Promise<void>;
+		/** The store's currency (ISO 4217); unset shows pounds. */
+		currency?: string;
 	}
 
-	let { discount, onsave }: Props = $props();
+	let { discount, onsave, currency }: Props = $props();
 	const uid = $props.id();
 
 	const initial = untrack(() => discount);
@@ -49,7 +53,7 @@
 			class="btn"
 			type="button"
 			aria-pressed={kind === 'amount'}
-			onclick={() => (kind = 'amount')}>Amount (£)</button
+			onclick={() => (kind = 'amount')}>Amount ({currencySymbol(currency)})</button
 		>
 		<button
 			class="btn"
@@ -60,11 +64,16 @@
 	</div>
 
 	<div class="field">
-		<label for="{uid}-discount">{kind === 'amount' ? 'Discount (£)' : 'Discount (%)'}</label>
+		<label for="{uid}-discount"
+			>{kind === 'amount' ? `Discount (${currencySymbol(currency)})` : 'Discount (%)'}</label
+		>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input id="{uid}-discount" class="input" bind:value inputmode="decimal" autofocus />
 		<span class="hint">
-			Taken off the whole trolley, as at the till. It can't take the total below £0.
+			Taken off the whole trolley, as at the till. It can't take the total below {formatMoney(
+				0,
+				currency
+			)}.
 		</span>
 	</div>
 	<button class="btn btn-primary btn-block" type="submit">Save discount</button>

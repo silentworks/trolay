@@ -474,6 +474,21 @@ describe('signing in on a phone that already has data', () => {
 		});
 	});
 
+	describe("a store's currency", () => {
+		it('reaches the other phone, and removing it does too', async () => {
+			await aTripOn(a);
+			await phoneA.run();
+			await edit(a, 'stores', ids.store, { currency: 'EUR' });
+			await phoneA.run();
+			await phoneB.run();
+			expect((await b.stores.get(ids.store))?.currency).toBe('EUR');
+			await edit(a, 'stores', ids.store, { currency: undefined });
+			await phoneA.run();
+			await phoneB.run();
+			expect((await b.stores.get(ids.store))?.currency).toBeUndefined();
+		});
+	});
+
 	describe('a discount on the cart', () => {
 		it('reaches the other phone, and removing it does too', async () => {
 			await aTripOn(a);

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		budgetStatus,
-		formatGBP,
+		formatMoney,
 		formatPercent,
 		headlineTotal,
 		type Discount,
@@ -14,9 +14,11 @@
 		discount?: Discount;
 		budgetMinor?: number;
 		onbudget: () => void;
+		/** The store's currency (ISO 4217); unset shows pounds. */
+		currency?: string;
 	}
 
-	let { totals, discount, budgetMinor, onbudget }: Props = $props();
+	let { totals, discount, budgetMinor, onbudget, currency }: Props = $props();
 
 	const mode = $derived(settings.totalMode);
 	const headline = $derived(headlineTotal(totals, mode));
@@ -30,11 +32,12 @@
 		class="headline"
 		type="button"
 		onclick={() => settings.toggleTotalMode()}
-		aria-label="Total {formatGBP(headline)} {modeLabel}. Tap to show the total {mode === 'incl'
+		aria-label="Total {formatMoney(headline, currency)} {modeLabel}. Tap to show the total {mode ===
+		'incl'
 			? 'excluding'
 			: 'including'} VAT."
 	>
-		<span class="amount">{formatGBP(headline)}</span>
+		<span class="amount">{formatMoney(headline, currency)}</span>
 		<span class="mode">{modeLabel} · tap to switch</span>
 	</button>
 
@@ -44,20 +47,20 @@
 				<dt>
 					Discount{discount?.kind === 'percent' ? ` (${formatPercent(discount.value)}%)` : ''}
 				</dt>
-				<dd>−{formatGBP(totals.discountMinor)}</dd>
+				<dd>−{formatMoney(totals.discountMinor, currency)}</dd>
 			</div>
 		{/if}
 		<div>
 			<dt>Incl. VAT</dt>
-			<dd>{formatGBP(totals.inclMinor)}</dd>
+			<dd>{formatMoney(totals.inclMinor, currency)}</dd>
 		</div>
 		<div>
 			<dt>Excl. VAT</dt>
-			<dd>{formatGBP(totals.exclMinor)}</dd>
+			<dd>{formatMoney(totals.exclMinor, currency)}</dd>
 		</div>
 		<div>
 			<dt>VAT</dt>
-			<dd>{formatGBP(totals.taxMinor)}</dd>
+			<dd>{formatMoney(totals.taxMinor, currency)}</dd>
 		</div>
 		<div>
 			<dt>Items</dt>
@@ -69,15 +72,15 @@
 		{#if budgetMinor === undefined}
 			Set a budget
 		{:else if left >= 0}
-			{formatGBP(left)} left of {formatGBP(budgetMinor)}
+			{formatMoney(left, currency)} left of {formatMoney(budgetMinor, currency)}
 		{:else}
-			{formatGBP(-left)} over budget of {formatGBP(budgetMinor)}
+			{formatMoney(-left, currency)} over budget of {formatMoney(budgetMinor, currency)}
 		{/if}
 	</button>
 
 	<!-- Announces changes to screen readers without moving focus. -->
 	<p class="visually-hidden" aria-live="polite">
-		Total {formatGBP(headline)}
+		Total {formatMoney(headline, currency)}
 		{modeLabel}, {totals.itemCount}
 		{totals.itemCount === 1 ? 'item' : 'items'}{#if budgetMinor !== undefined}{status === 'over'
 				? ', over budget'

@@ -30,6 +30,7 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 		branch: string(),
 		taxRateBps: int(true),
 		pricesIncludeTax: bool(true),
+		currency: string(),
 		createdAt: int(true),
 		lastUsedAt: int(true),
 		deletedAt: int()

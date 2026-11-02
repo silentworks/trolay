@@ -6,7 +6,13 @@
 	import type { ExtractedFields, Item } from '#lib/data/db.ts';
 	import type { ItemInput } from '#lib/data/items.ts';
 	import { isLookupPending, lookupProductName } from '#lib/data/products.ts';
-	import { formatGBP, lineTotals, minorToInput, parsePounds } from '#lib/money.ts';
+	import {
+		currencySymbol,
+		formatMoney,
+		lineTotals,
+		minorToInput,
+		parsePounds
+	} from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
 	import PhotoImage from './PhotoImage.svelte';
 
@@ -24,6 +30,8 @@
 		onrevert?: () => Promise<void>;
 		/** Editing: replaces the item's photo with a new one. */
 		onretake?: (photo: Blob) => Promise<void>;
+		/** The store's currency (ISO 4217); unset shows pounds. */
+		currency?: string;
 	}
 
 	let {
@@ -35,7 +43,8 @@
 		onsave,
 		ondelete,
 		onrevert,
-		onretake
+		onretake,
+		currency
 	}: Props = $props();
 	const uid = $props.id();
 
@@ -45,7 +54,7 @@
 	let price = $state(initial.item ? minorToInput(initial.item.unitPriceMinor) : '');
 	let quantity = $state(initial.item?.quantity ?? 1);
 	let priceIncludesTax = $state(initial.item?.priceIncludesTax ?? initial.defaultIncludesTax);
-	// A multi-buy offer ("2 for £3.00"): both boxes empty means none.
+	// A multi-buy offer ("2 for 3.00"): both boxes empty means none.
 	let offerQuantity = $state(initial.item?.offerQuantity ? String(initial.item.offerQuantity) : '');
 	let offerPrice = $state(
 		initial.item?.offerPriceMinor ? minorToInput(initial.item.offerPriceMinor) : ''
@@ -281,7 +290,7 @@
 
 	<div class="row">
 		<div class="field" class:needs-check={unread.price && !price}>
-			<label for="{uid}-price">Unit price (£)</label>
+			<label for="{uid}-price">Unit price ({currencySymbol(currency)})</label>
 			<input
 				id="{uid}-price"
 				class="input"
@@ -339,7 +348,7 @@
 				inputmode="numeric"
 				placeholder="2"
 			/>
-			<span>for £</span>
+			<span>for {currencySymbol(currency)}</span>
 			<input
 				class="input"
 				aria-label="Offer: price for the items"
@@ -376,7 +385,10 @@
 
 	{#if preview}
 		<p class="preview">
-			Line total {formatGBP(preview.inclMinor)} incl. VAT · {formatGBP(preview.exclMinor)} excl.
+			Line total {formatMoney(preview.inclMinor, currency)} incl. VAT · {formatMoney(
+				preview.exclMinor,
+				currency
+			)} excl.
 		</p>
 	{/if}
 

@@ -1,3 +1,4 @@
+import { isSupportedCurrency } from '#lib/currencies.ts';
 import { DEFAULT_VAT_BPS } from '#lib/money.ts';
 import { db, isLive, newId, type Store } from './db';
 import { deleteTrip } from './trips';
@@ -7,6 +8,8 @@ export interface StoreInput {
 	branch?: string;
 	taxRateBps?: number;
 	pricesIncludeTax?: boolean;
+	/** ISO 4217 code; empty or unset for none. */
+	currency?: string;
 }
 
 function cleanName(name: string): string {
@@ -19,6 +22,13 @@ function cleanBranch(branch: string | undefined): string | undefined {
 	return branch?.trim() || undefined;
 }
 
+function cleanCurrency(currency: string | undefined): string | undefined {
+	const code = currency?.trim().toUpperCase();
+	if (!code) return undefined;
+	if (!isSupportedCurrency(code)) throw new Error(`Trolay can't show amounts in ${code}.`);
+	return code;
+}
+
 /** UK defaults: 20% VAT, shelf labels include VAT. */
 export async function addStore(input: StoreInput): Promise<Store> {
 	const now = Date.now();
@@ -28,6 +38,7 @@ export async function addStore(input: StoreInput): Promise<Store> {
 		branch: cleanBranch(input.branch),
 		taxRateBps: input.taxRateBps ?? DEFAULT_VAT_BPS,
 		pricesIncludeTax: input.pricesIncludeTax ?? true,
+		currency: cleanCurrency(input.currency),
 		createdAt: now,
 		lastUsedAt: now,
 		updatedAt: now
@@ -40,6 +51,7 @@ export async function updateStore(id: string, input: StoreInput): Promise<void> 
 	await db.stores.update(id, {
 		name: cleanName(input.name),
 		branch: cleanBranch(input.branch),
+		currency: cleanCurrency(input.currency),
 		...(input.taxRateBps !== undefined && { taxRateBps: input.taxRateBps }),
 		...(input.pricesIncludeTax !== undefined && { pricesIncludeTax: input.pricesIncludeTax }),
 		updatedAt: Date.now()

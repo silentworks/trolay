@@ -2,7 +2,7 @@
 	import type { Item } from '#lib/data/db.ts';
 	import { itemName } from '#lib/data/items.ts';
 	import PhotoImage from './PhotoImage.svelte';
-	import { formatGBP, lineTotals } from '#lib/money.ts';
+	import { formatMoney, lineTotals } from '#lib/money.ts';
 
 	interface Props {
 		item: Item;
@@ -13,9 +13,12 @@
 		onphoto: () => void;
 		/** Who added it, on a shared trip: "you", a name. Nothing on a trip that is not shared. */
 		addedBy?: string;
+		/** The store's currency (ISO 4217); unset shows pounds. */
+		currency?: string;
 	}
 
-	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto, addedBy }: Props = $props();
+	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto, addedBy, currency }: Props =
+		$props();
 
 	const totals = $derived(lineTotals(item, taxRateBps));
 	const name = $derived(itemName(item));
@@ -79,11 +82,11 @@
 		<button class="main" type="button" onclick={click}>
 			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
-				{formatGBP(item.unitPriceMinor)} each
+				{formatMoney(item.unitPriceMinor, currency)} each
 				<span class="badge">{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}</span>
 				{#if item.offerQuantity && item.offerPriceMinor}
 					<span class="badge" class:applied={item.quantity >= item.offerQuantity}>
-						{item.offerQuantity} for {formatGBP(item.offerPriceMinor)}
+						{item.offerQuantity} for {formatMoney(item.offerPriceMinor, currency)}
 					</span>
 				{/if}
 				{#if item.edited}<span class="badge edited">edited</span>{/if}
@@ -93,7 +96,7 @@
 
 		<div class="side">
 			<span class="line-total"
-				>{formatGBP(item.priceIncludesTax ? totals.inclMinor : totals.exclMinor)}</span
+				>{formatMoney(item.priceIncludesTax ? totals.inclMinor : totals.exclMinor, currency)}</span
 			>
 			<div class="stepper" role="group" aria-label="Quantity of {name}">
 				<button

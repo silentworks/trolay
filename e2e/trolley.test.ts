@@ -245,17 +245,17 @@ test('exports one trip or all history as CSV for spreadsheets', async ({ page })
 		await page.getByRole('navigation', { name: 'Menu' }).getByText('Export all as CSV').click();
 	});
 	expect(all.name).toMatch(/^trolay-history-\d{4}-\d{2}-\d{2}\.csv$/);
-	// UTF-8 with a byte order mark, so Excel shows "£" and "â" intact.
+	// UTF-8 with a byte order mark, so Excel shows "â" intact.
 	expect([...all.bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
 	const rows = all.bytes.subarray(3).toString('utf8').split('\r\n');
 	expect(rows[0]).toBe(
-		'Date,Store,Description,Barcode,Quantity,Unit price (£),Unit price includes VAT,Line total incl. VAT (£),Line total excl. VAT (£),VAT (£)'
+		'Date,Store,Description,Barcode,Quantity,Currency,Unit price,Unit price includes VAT,Line total incl. VAT,Line total excl. VAT,VAT'
 	);
 	// Oldest trip first.
 	expect(rows[1]).toMatch(
-		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2},Tesco,"Pâté, ""smooth""",,1,2\.50,Yes,2\.50,2\.08,0\.42$/
+		/^\d{4}-\d{2}-\d{2} \d{2}:\d{2},Tesco,"Pâté, ""smooth""",,1,GBP,2\.50,Yes,2\.50,2\.08,0\.42$/
 	);
-	expect(rows[2]).toMatch(/,Tesco,Milk 2L,,2,1\.45,Yes,2\.90,2\.42,0\.48$/);
+	expect(rows[2]).toMatch(/,Tesco,Milk 2L,,2,GBP,1\.45,Yes,2\.90,2\.42,0\.48$/);
 	expect(rows).toHaveLength(4);
 
 	await page.getByRole('link', { name: /Tesco/ }).first().click();

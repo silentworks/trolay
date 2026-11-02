@@ -3,7 +3,8 @@ import {
 	applyDiscount,
 	enteredTotal,
 	budgetStatus,
-	formatGBP,
+	currencySymbol,
+	formatMoney,
 	formatPercent,
 	headlineTotal,
 	lineTotals,
@@ -119,12 +120,22 @@ describe('budgetStatus', () => {
 	});
 });
 
-describe('formatGBP', () => {
-	it('formats pence as pounds', () => {
-		expect(formatGBP(123)).toBe('£1.23');
-		expect(formatGBP(0, 'en-GB')).toBe('£0.00');
-		expect(formatGBP(123_456, 'en-GB')).toBe('£1,234.56');
-		expect(formatGBP(123_456, 'de-DE')).toBe('1.234,56\u00a0£');
+describe('formatMoney and currencySymbol', () => {
+	it('shows pounds when no currency is set', () => {
+		expect(formatMoney(123, undefined, 'en-GB')).toBe('£1.23');
+		expect(formatMoney(0, undefined, 'en-GB')).toBe('£0.00');
+		expect(formatMoney(123_456, undefined, 'en-GB')).toBe('£1,234.56');
+		expect(formatMoney(123_456, undefined, 'de-DE')).toBe('1.234,56\u00a0£');
+		expect(currencySymbol(undefined, 'en-GB')).toBe('£');
+	});
+
+	it("shows a store's currency the locale's way, with its everyday symbol", () => {
+		expect(formatMoney(450, 'EUR', 'de-DE')).toBe('4,50\u00a0€');
+		expect(formatMoney(450, 'EUR', 'en-GB')).toBe('€4.50');
+		expect(formatMoney(450, 'USD', 'en-GB')).toBe('$4.50');
+		expect(formatMoney(-450, 'USD', 'en-US')).toBe('-$4.50');
+		expect(currencySymbol('EUR', 'de-DE')).toBe('€');
+		expect(currencySymbol('USD', 'en-GB')).toBe('$');
 	});
 });
 

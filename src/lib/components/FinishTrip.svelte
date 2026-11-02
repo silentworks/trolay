@@ -3,7 +3,7 @@
 	import { readText } from '#lib/capture/ocr/browser.ts';
 	import { parseReceipt } from '#lib/capture/receipt/parse.ts';
 	import { isMismatch, receiptDifference } from '#lib/data/trips.ts';
-	import { formatGBP, minorToInput, parsePounds } from '#lib/money.ts';
+	import { currencySymbol, formatMoney, minorToInput, parsePounds } from '#lib/money.ts';
 	import CameraCapture from './CameraCapture.svelte';
 
 	interface Props {
@@ -14,9 +14,12 @@
 		/** Saves the receipt total as it is typed, so it survives closing the sheet. */
 		onreceipt: (receiptTotalMinor: number | undefined) => Promise<void>;
 		onfinish: () => Promise<void>;
+		/** The store's currency (ISO 4217); unset shows pounds. */
+		currency?: string;
 	}
 
-	let { appTotalMinor, receiptTotalMinor, photoCount, onreceipt, onfinish }: Props = $props();
+	let { appTotalMinor, receiptTotalMinor, photoCount, onreceipt, onfinish, currency }: Props =
+		$props();
 	const uid = $props.id();
 
 	const initial = untrack(() => receiptTotalMinor);
@@ -70,12 +73,12 @@
 	<dl class="sums">
 		<div>
 			<dt>Trolay total, incl. VAT</dt>
-			<dd>{formatGBP(appTotalMinor)}</dd>
+			<dd>{formatMoney(appTotalMinor, currency)}</dd>
 		</div>
 	</dl>
 
 	<div class="field">
-		<label for="{uid}-receipt">Receipt total (£)</label>
+		<label for="{uid}-receipt">Receipt total ({currencySymbol(currency)})</label>
 		<input
 			id="{uid}-receipt"
 			class="input"
@@ -112,9 +115,9 @@
 		{:else if difference === 0}
 			✓ The receipt matches.
 		{:else if difference > 0}
-			The till charged {formatGBP(difference)} more than Trolay added up.
+			The till charged {formatMoney(difference, currency)} more than Trolay added up.
 		{:else}
-			The till charged {formatGBP(-difference)} less than Trolay added up.
+			The till charged {formatMoney(-difference, currency)} less than Trolay added up.
 		{/if}
 	</p>
 

@@ -39,7 +39,12 @@ async function snapshot() {
 /** A history with the awkward cases: kept photos, a deleted item, an open trip, a deleted store. */
 async function fillDatabase() {
 	const tesco = await addStore({ name: 'Tesco', branch: 'Leeds' });
-	const makro = await addStore({ name: 'Makro', taxRateBps: 2000, pricesIncludeTax: false });
+	const makro = await addStore({
+		name: 'Makro',
+		taxRateBps: 2000,
+		pricesIncludeTax: false,
+		currency: 'EUR'
+	});
 	const gone = await addStore({ name: 'Closed shop' });
 	await db.stores.update(gone.id, { deletedAt: Date.now() });
 
@@ -130,7 +135,7 @@ describe('JSON backup', () => {
 		});
 
 		it('from a newer version', () =>
-			refused((b) => void (b.format = 4), 'newer version of Trolay'));
+			refused((b) => void (b.format = 5), 'newer version of Trolay'));
 
 		it('a table missing', () => refused((b) => void delete b.items, 'has no items'));
 

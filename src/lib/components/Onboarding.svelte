@@ -5,13 +5,16 @@
 	import { addStore } from '#lib/data/stores.ts';
 	import { startTrip } from '#lib/data/trips.ts';
 	import {
+		currencySymbol,
 		DEFAULT_VAT_BPS,
 		formatPercent,
 		minorToInput,
 		parsePercent,
 		parsePounds
 	} from '#lib/money.ts';
+	import { regionCurrency } from '#lib/currencies.ts';
 	import AppHeader from './AppHeader.svelte';
+	import CurrencySelect from './CurrencySelect.svelte';
 
 	interface Props {
 		/**
@@ -37,6 +40,7 @@
 	// Kept across Back and Next; the store and trip are only made on the last step.
 	let name = $state('');
 	let branch = $state('');
+	let currency = $state(regionCurrency() ?? '');
 	let vat = $state(formatPercent(DEFAULT_VAT_BPS));
 	let pricesIncludeTax = $state(true);
 	let budget = $state('');
@@ -94,7 +98,8 @@
 					name,
 					branch,
 					taxRateBps: parsePercent(vat) ?? DEFAULT_VAT_BPS,
-					pricesIncludeTax
+					pricesIncludeTax,
+					currency
 				});
 				await startTrip(store.id, readBudget() ?? undefined);
 			});
@@ -156,6 +161,11 @@
 				<label for="{uid}-branch">Branch or location <span class="hint">(optional)</span></label>
 				<input id="{uid}-branch" class="input" bind:value={branch} autocomplete="off" />
 			</div>
+			<div class="field">
+				<label for="{uid}-currency">Currency</label>
+				<CurrencySelect id="{uid}-currency" bind:value={currency} />
+				<span class="hint">Guessed from your phone's region. Prices show in it.</span>
+			</div>
 		{:else if step === 'vat'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>VAT at {name.trim()}</h2>
 			<p class="hint">
@@ -187,7 +197,7 @@
 					class="input"
 					bind:value={budget}
 					inputmode="decimal"
-					placeholder="£"
+					placeholder={currencySymbol(currency || undefined)}
 					aria-invalid={readBudget() === null}
 				/>
 			</div>

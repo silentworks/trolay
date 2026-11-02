@@ -288,6 +288,7 @@
 					<ItemRow
 						{item}
 						taxRateBps={store.taxRateBps}
+						currency={store.currency}
 						onedit={() => (sheet = { kind: 'edit', item })}
 						ondelete={() => remove(item)}
 						onquantity={(quantity) => run(() => setQuantity(item.id, quantity))}
@@ -325,6 +326,7 @@
 			<TotalsFooter
 				{totals}
 				{discount}
+				currency={store.currency}
 				budgetMinor={trip.budgetMinor}
 				onbudget={() => (sheet = { kind: 'budget' })}
 			/>
@@ -343,6 +345,7 @@
 			<ItemForm
 				{capture}
 				storeId={store.id}
+				currency={store.currency}
 				defaultIncludesTax={store.pricesIncludeTax}
 				taxRateBps={store.taxRateBps}
 				onsave={(input, extracted) => saveNew(input, extracted, capture)}
@@ -356,6 +359,7 @@
 			<ItemForm
 				{item}
 				storeId={store.id}
+				currency={store.currency}
 				defaultIncludesTax={store.pricesIncludeTax}
 				taxRateBps={store.taxRateBps}
 				onsave={(input) => saveEdit(item, input)}
@@ -376,17 +380,22 @@
 	/>
 
 	<Sheet open={sheet?.kind === 'budget'} title="Trip budget" onclose={() => (sheet = null)}>
-		<BudgetForm budgetMinor={trip.budgetMinor} onsave={saveBudget} />
+		<BudgetForm budgetMinor={trip.budgetMinor} onsave={saveBudget} currency={store?.currency} />
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'discount'} title="Discount" onclose={() => (sheet = null)}>
-		{#if sheet?.kind === 'discount'}<DiscountForm {discount} onsave={saveDiscount} />{/if}
+		{#if sheet?.kind === 'discount'}<DiscountForm
+				{discount}
+				onsave={saveDiscount}
+				currency={store?.currency}
+			/>{/if}
 	</Sheet>
 
 	<Sheet open={sheet?.kind === 'finish'} title="Finish trip" onclose={() => (sheet = null)}>
 		<FinishTrip
 			appTotalMinor={totals.inclMinor}
 			receiptTotalMinor={trip.receiptTotalMinor}
+			currency={store?.currency}
 			{photoCount}
 			onreceipt={(minor) => setReceiptTotal(tripId, minor)}
 			onfinish={() => run(finish)}

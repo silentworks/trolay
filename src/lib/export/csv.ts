@@ -1,7 +1,7 @@
 import type { Item, Store, Trip } from '#lib/data/db.ts';
-import { formatPercent, lineTotals, tripTotals } from '#lib/money.ts';
+import { DEFAULT_CURRENCY, formatPercent, lineTotals, tripTotals } from '#lib/money.ts';
 
-// CSV for spreadsheets. Excel only reads UTF-8 (and so "£") when the file starts with a byte
+// CSV for spreadsheets. Excel only reads UTF-8 (and so "€" in a store name) when the file starts with a byte
 // order mark, and expects CRLF line ends; Google Sheets accepts both.
 
 export interface TripForExport {
@@ -16,11 +16,12 @@ const HEADER = [
 	'Description',
 	'Barcode',
 	'Quantity',
-	'Unit price (£)',
+	'Currency',
+	'Unit price',
 	'Unit price includes VAT',
-	'Line total incl. VAT (£)',
-	'Line total excl. VAT (£)',
-	'VAT (£)'
+	'Line total incl. VAT',
+	'Line total excl. VAT',
+	'VAT'
 ];
 
 // Amounts and dates in fixed forms, whatever the phone's locale, so the file reads the same anywhere.
@@ -55,6 +56,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 		const storeName = store
 			? [store.name, store.branch].filter(Boolean).join(' · ')
 			: 'Deleted store';
+		const currency = store?.currency ?? DEFAULT_CURRENCY;
 		for (const item of [...items].sort((a, b) => a.createdAt - b.createdAt)) {
 			const line = lineTotals(item, taxRateBps);
 			rows.push(
@@ -64,6 +66,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 					text(item.description),
 					barcode(item.barcode),
 					String(item.quantity),
+					currency,
 					pounds(item.unitPriceMinor),
 					item.priceIncludesTax ? 'Yes' : 'No',
 					pounds(line.inclMinor),
@@ -87,6 +90,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 					text(label),
 					'',
 					'1',
+					currency,
 					pounds(-discountMinor),
 					'Yes',
 					pounds(-discountMinor),

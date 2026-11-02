@@ -34,10 +34,8 @@
 	import { letGoOfTrip } from '#lib/sync/letgo.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import { applyDiscount, headlineTotal, tripTotals, type Discount } from '#lib/money.ts';
-	import { settings } from '#lib/settings.svelte.ts';
+	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
 	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
-	import BudgetBar from './BudgetBar.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import DiscountForm from './DiscountForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
@@ -310,13 +308,6 @@
 			</div>
 		{/if}
 
-		<BudgetBar
-			spentMinor={headlineTotal(totals, settings.totalMode)}
-			budgetMinor={trip.budgetMinor}
-			currency={store.currency}
-			onbudget={() => (sheet = { kind: 'budget' })}
-		/>
-
 		<div class="dock">
 			{#if toast}
 				{#key toast.id}
@@ -332,8 +323,10 @@
 				{totals}
 				{discount}
 				currency={store.currency}
+				taxRateBps={store.taxRateBps}
 				taxAddedAtTill={!store.pricesIncludeTax}
 				budgetMinor={trip.budgetMinor}
+				onbudget={() => (sheet = { kind: 'budget' })}
 			/>
 			<div class="actions">
 				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
@@ -473,7 +466,7 @@
 		margin: 0 auto;
 		padding: 0 var(--gutter);
 		/* Leaves room for the dock so the last item can scroll above it. */
-		padding-bottom: calc(260px + env(safe-area-inset-bottom));
+		padding-bottom: calc(400px + env(safe-area-inset-bottom));
 	}
 
 	.status {

@@ -9,11 +9,10 @@ async function menu(page: Page, entry: 'Stores' | 'Finish trip' | 'Leave store')
 const footer = (page: Page) => page.getByRole('region', { name: 'Trolley total' });
 
 /** The headline on the total card: "Total incl. tax" over the amount. */
-async function expectTotal(page: Page, amount: string, mode: 'incl' | 'excl' = 'incl') {
-	await expect(footer(page)).toContainText(`Total ${mode}. tax`);
+async function expectTotal(page: Page, amount: string) {
+	await expect(footer(page)).toContainText('Total incl. tax');
 	await expect(footer(page).getByText(amount, { exact: true })).toBeVisible();
 }
-
 async function startTripAtNewStore(page: Page, name: string) {
 	await page.goto('/');
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
@@ -44,15 +43,18 @@ test('a full trip: add, edit, switch totals, budget, delete with undo, reload', 
 	// 2 × £1.45 incl. VAT = £2.90; excl. = £2.90 / 1.2 = £2.4167 → £2.42
 	await addItem(page, 'Milk 2L', '1.45', 2);
 	await expectTotal(page, '2.90');
-	await expect(footer(page)).toContainText('2.42');
-	await expect(footer(page)).toContainText('0.48');
 
-	// The headline switches to excl. VAT and stays that way after a reload.
+	// The breakdown folds out under the total, and stays open after a reload.
+	const breakdown = footer(page).getByRole('definition');
+	await expect(footer(page).getByText('Excl. tax')).toBeHidden();
 	await footer(page).getByRole('button', { name: 'Show excl.' }).click();
-	await expectTotal(page, '2.42', 'excl');
+	await expect(footer(page).getByText('Excl. tax')).toBeVisible();
+	await expect(breakdown.filter({ hasText: '2.42' })).toBeVisible();
+	await expect(breakdown.filter({ hasText: '0.48' })).toBeVisible();
 	await page.reload();
-	await expectTotal(page, '2.42', 'excl');
-	await footer(page).getByRole('button', { name: 'Show incl.' }).click();
+	await expect(footer(page).getByText('Excl. tax')).toBeVisible();
+	await footer(page).getByRole('button', { name: 'Hide excl.' }).click();
+	await expect(footer(page).getByText('Excl. tax')).toBeHidden();
 
 	// Editing recomputes the totals immediately.
 	await page.getByRole('button', { name: /^Milk 2L / }).click();

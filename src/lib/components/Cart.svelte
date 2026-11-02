@@ -466,7 +466,7 @@
 		margin: 0 auto;
 		padding: 0 var(--gutter);
 		/* Leaves room for the dock so the last item can scroll above it. */
-		padding-bottom: calc(400px + env(safe-area-inset-bottom));
+		padding-bottom: calc(300px + env(safe-area-inset-bottom));
 	}
 
 	.status {

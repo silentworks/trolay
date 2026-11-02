@@ -3,7 +3,6 @@
 		budgetStatus,
 		formatMoney,
 		formatPercent,
-		headlineTotal,
 		type Discount,
 		type DiscountedTotals
 	} from '#lib/money.ts';
@@ -24,8 +23,10 @@
 	let { totals, discount, budgetMinor, onbudget, currency, taxRateBps, taxAddedAtTill }: Props =
 		$props();
 
-	const mode = $derived(settings.totalMode);
-	const headline = $derived(headlineTotal(totals, mode));
+	// The headline is what is paid; the rest folds away under it.
+	const headline = $derived(totals.inclMinor);
+	const open = $derived(settings.totalsOpen);
+	const breakdownId = $props.id();
 	const status = $derived(budgetMinor === undefined ? 'ok' : budgetStatus(headline, budgetMinor));
 	const left = $derived(budgetMinor === undefined ? 0 : budgetMinor - headline);
 	/** The bar fills as the budget is spent; full once over. */
@@ -37,14 +38,20 @@
 
 <!-- The running total on a dark card, with its breakdown and the budget. -->
 <section class="totals" aria-label="Trolley total">
-	<p class="mode">Total {mode === 'incl' ? 'incl. tax' : 'excl. tax'}</p>
+	<p class="mode">Total incl. tax</p>
 	<p class="amount">{money(headline)}</p>
-	<button class="switch" type="button" onclick={() => settings.toggleTotalMode()}>
-		{mode === 'incl' ? 'Show excl.' : 'Show incl.'}
-		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+	<button
+		class="switch"
+		type="button"
+		aria-expanded={open}
+		aria-controls={breakdownId}
+		onclick={() => settings.toggleTotals()}
+	>
+		{open ? 'Hide excl.' : 'Show excl.'}
+		<svg class:open viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
 	</button>
 
-	<dl class="breakdown">
+	<dl class="breakdown" id={breakdownId} hidden={!open}>
 		{#if totals.discountMinor > 0}
 			<div>
 				<dt>
@@ -54,14 +61,12 @@
 			</div>
 		{/if}
 		<div>
-			<dt>{mode === 'incl' ? 'Excl. tax' : 'Incl. tax'}</dt>
-			<dd>{money(mode === 'incl' ? totals.exclMinor : totals.inclMinor)}</dd>
+			<dt>Excl. tax</dt>
+			<dd>{money(totals.exclMinor)}</dd>
 		</div>
 		<div>
 			<dt>
-				Tax ({taxAddedAtTill
-					? `${formatPercent(taxRateBps)}%, added at till`
-					: `${formatPercent(taxRateBps)}%`})
+				Tax ({formatPercent(taxRateBps)}%{taxAddedAtTill ? ', added at till' : ''})
 			</dt>
 			<dd>{money(totals.taxMinor)}</dd>
 		</div>
@@ -93,8 +98,7 @@
 
 	<!-- Announces changes to screen readers without moving focus. -->
 	<p class="visually-hidden" aria-live="polite">
-		Total {money(headline)}
-		{mode === 'incl' ? 'incl. tax' : 'excl. tax'}, {totals.itemCount}
+		Total {money(headline)} incl. tax, {totals.itemCount}
 		{totals.itemCount === 1 ? 'item' : 'items'}{#if budgetMinor !== undefined}{status === 'over'
 				? ', over budget'
 				: status === 'warning'
@@ -153,9 +157,14 @@
 		fill: none;
 		stroke: currentColor;
 		stroke-width: 2;
+		transition: transform 0.15s ease-out;
 	}
 
-	.breakdown {
+	.switch svg.open {
+		transform: rotate(180deg);
+	}
+
+	.breakdown:not([hidden]) {
 		display: grid;
 		gap: 6px;
 		margin: 6px 0 0;

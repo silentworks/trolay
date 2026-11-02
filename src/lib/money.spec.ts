@@ -7,7 +7,6 @@ import {
 	currencySymbol,
 	formatMoney,
 	formatPercent,
-	headlineTotal,
 	lineTotals,
 	minorToInput,
 	parsePercent,
@@ -96,13 +95,6 @@ describe('tripTotals', () => {
 
 	it('is zero for an empty cart', () => {
 		expect(tripTotals([], 2000)).toEqual({ inclMinor: 0, exclMinor: 0, taxMinor: 0, itemCount: 0 });
-	});
-});
-
-describe('headlineTotal', () => {
-	it('picks the figure for the chosen mode', () => {
-		expect(headlineTotal({ inclMinor: 120, exclMinor: 100 }, 'incl')).toBe(120);
-		expect(headlineTotal({ inclMinor: 120, exclMinor: 100 }, 'excl')).toBe(100);
 	});
 });
 

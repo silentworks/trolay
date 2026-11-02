@@ -189,7 +189,10 @@
 	/** Leaving or removing is about the trip's people, so the cart says what it will do first. */
 	const role = $derived(members.roleOf(account.userId));
 	const menu = $derived.by(() => {
-		const entries: MenuEntry[] = [{ label: 'Stores', href: resolve('/stores') }];
+		const entries: MenuEntry[] = [
+			{ label: 'Stores', href: resolve('/stores') },
+			{ label: 'Settings', href: resolve('/settings') }
+		];
 		if (role === 'partner') {
 			entries.push({ label: 'Leave this trip', onclick: () => (sheet = { kind: 'leaveShared' }) });
 		} else if (members.shared) {

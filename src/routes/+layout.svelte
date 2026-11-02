@@ -7,11 +7,16 @@
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
+	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
+	import { applyTheme } from '#lib/theme.ts';
 	import { LiveTrip } from '#lib/sync/live.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	// The look chosen in Settings; "match my phone" follows the phone as it switches.
+	$effect(() => applyTheme(settings.theme));
 
 	$effect(() => {
 		requestPersistentStorage().catch((error: unknown) =>

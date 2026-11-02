@@ -167,9 +167,10 @@
 					>
 					<span class="meta">
 						{item.quantity} × {formatGBP(item.unitPriceMinor)}
-						{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}{item.barcode
-							? ` · ${item.barcode}`
-							: ''}
+						{item.priceIncludesTax ? 'incl. VAT' : 'excl. VAT'}{item.offerQuantity &&
+						item.offerPriceMinor
+							? ` · ${item.offerQuantity} for ${formatGBP(item.offerPriceMinor)}`
+							: ''}{item.barcode ? ` · ${item.barcode}` : ''}
 					</span>
 				</li>
 			{/each}

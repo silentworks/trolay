@@ -353,3 +353,87 @@ describe('packSize', () => {
 		expect(packSize('Eggs 12 Pack')).toBeUndefined();
 	});
 });
+
+describe('parseLabel: multi-buy offers and unit prices', () => {
+	const bread = [line('Hovis Soft White Bread 800g', 200, 100, 45, { width: 560 })];
+
+	it('reads "2 for £3.00" beside the single price', () => {
+		const reading = parseLabel([
+			...bread,
+			line('£1.89', 400, 300, 200, { width: 420 }),
+			line('2 for £3.00', 180, 520, 60, { width: 330 })
+		]);
+		expect(filledFields(reading)).toMatchObject({
+			unitPriceMinor: 189,
+			multiBuy: { quantity: 2, totalMinor: 300 }
+		});
+	});
+
+	it('reads "Any 3 for £5" and "Buy 2 for £3" in other wordings', () => {
+		const any = filledFields(
+			parseLabel([
+				...bread,
+				line('£1.89', 400, 300, 200, { width: 420 }),
+				line('Any 3 for £5', 180, 520, 60, { width: 380 })
+			])
+		);
+		expect(any.multiBuy).toEqual({ quantity: 3, totalMinor: 500 });
+		const buy = filledFields(
+			parseLabel([
+				...bread,
+				line('£1.89', 400, 300, 200, { width: 420 }),
+				line('Buy 2 for £3.00', 180, 520, 60, { width: 440 })
+			])
+		);
+		expect(buy.multiBuy).toEqual({ quantity: 2, totalMinor: 300 });
+	});
+
+	it('ignores an offer that saves nothing, and an offer with no price to measure it against', () => {
+		const noSaving = filledFields(
+			parseLabel([
+				...bread,
+				line('£1.89', 400, 300, 200, { width: 420 }),
+				line('2 for £4.00', 180, 520, 60, { width: 330 })
+			])
+		);
+		expect(noSaving.unitPriceMinor).toBe(189);
+		expect(noSaving.multiBuy).toBeUndefined();
+		const noPrice = filledFields(parseLabel([...bread, line('2 for £3.00', 180, 520, 60)]));
+		expect(noPrice.multiBuy).toBeUndefined();
+	});
+
+	it('leaves conflicting offers for the shopper', () => {
+		const reading = parseLabel([
+			...bread,
+			line('£1.89', 400, 300, 200, { width: 420 }),
+			line('2 for £3.00', 180, 520, 60, { width: 330 }),
+			line('3 for £4.00', 180, 620, 60, { width: 330 })
+		]);
+		expect(reading.multiBuy).toBeUndefined();
+	});
+
+	it('does not take an offer price for the item price', () => {
+		const reading = parseLabel([
+			...bread,
+			line('£1.89', 400, 300, 200, { width: 420 }),
+			line('2 for £3.00', 180, 520, 90, { width: 500 })
+		]);
+		expect(reading.unitPriceMinor?.value).toBe(189);
+	});
+
+	it('reads the printed unit price for showing', () => {
+		const kg = parseLabel([
+			line('Cully & Sully Smoked Salmon & Haddock Chowder 400g', 392, 143, 45, { width: 622 }),
+			line('£1.99', 516, 330, 220, { width: 489 }),
+			line('49.8p per 100g', 165, 295, 51, { width: 181 })
+		]);
+		expect(filledFields(kg).perUnit).toBe('49.8p per 100g');
+		const litre = parseLabel([
+			line("MARIANNE'S AVOCADO OIL 2 L", 190, 118, 39, { width: 520 }),
+			line('PRICE PER LITER', 129, 286, 17),
+			line('9.995', 114, 325, 40),
+			line('19.99', 503, 351, 127)
+		]);
+		expect(filledFields(litre).perUnit).toBe('£9.995 per liter');
+	});
+});

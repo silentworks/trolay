@@ -59,6 +59,9 @@ export interface ExtractedFields {
 	description?: string;
 	unitPriceMinor?: number;
 	priceIncludesTax?: boolean;
+	offer?: { quantity: number; totalMinor: number };
+	/** The unit price printed on the label, for showing: "£2.50 per kg". */
+	perUnit?: string;
 	confidence: number;
 }
 
@@ -70,6 +73,9 @@ export interface Item extends SyncMeta, Pending {
 	unitPriceMinor: number;
 	priceIncludesTax: boolean;
 	quantity: number;
+	/** A multi-buy offer ("2 for £3.00"): every `offerQuantity` items cost `offerPriceMinor` together. */
+	offerQuantity?: number;
+	offerPriceMinor?: number;
 	photoId?: string;
 	extracted?: ExtractedFields;
 	edited: boolean;

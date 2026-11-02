@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { lineTotals } from '#lib/money.ts';
 import { db } from './db';
 import {
 	addItem,
@@ -539,5 +540,76 @@ describe('a discount on the cart', () => {
 		await expect(setTripDiscount(trip.id, { kind: 'amount', value: 100 })).rejects.toThrow(
 			'not open'
 		);
+	});
+});
+
+describe('multi-buy offers on items', () => {
+	const bread = { ...milk, description: 'Bread', unitPriceMinor: 189 };
+
+	async function anOpenTrip() {
+		const store = await addStore({ name: 'Tesco' });
+		return startTrip(store.id);
+	}
+
+	it('stores an offer, and the line total follows the quantity', async () => {
+		const trip = await anOpenTrip();
+		const item = await addItem(trip.id, { ...bread, offerQuantity: 2, offerPriceMinor: 300 });
+		expect(item).toMatchObject({ offerQuantity: 2, offerPriceMinor: 300 });
+		await setQuantity(item.id, 2);
+		const [stored] = await listTripItems(trip.id);
+		expect(lineTotals(stored, 2000).inclMinor).toBe(300);
+	});
+
+	it('removes an offer when an item is saved without one', async () => {
+		const trip = await anOpenTrip();
+		const item = await addItem(trip.id, { ...bread, offerQuantity: 2, offerPriceMinor: 300 });
+		await updateItem(item.id, bread);
+		const stored = await db.items.get(item.id);
+		expect(stored?.offerQuantity).toBeUndefined();
+		expect(stored?.offerPriceMinor).toBeUndefined();
+	});
+
+	it('refuses half an offer, or an offer for fewer than two', async () => {
+		const trip = await anOpenTrip();
+		await expect(addItem(trip.id, { ...bread, offerQuantity: 2 })).rejects.toThrow('both');
+		await expect(
+			addItem(trip.id, { ...bread, offerQuantity: 1, offerPriceMinor: 100 })
+		).rejects.toThrow('2 or more');
+		await expect(
+			addItem(trip.id, { ...bread, offerQuantity: 2, offerPriceMinor: 0 })
+		).rejects.toThrow('above £0');
+	});
+
+	it('marks an item edited when the offer read from the label is changed, and reverts it', async () => {
+		const trip = await anOpenTrip();
+		const item = await addItem(
+			trip.id,
+			{ ...bread, offerQuantity: 2, offerPriceMinor: 300 },
+			{
+				extracted: {
+					unitPriceMinor: 189,
+					offer: { quantity: 2, totalMinor: 300 },
+					confidence: 0.95
+				}
+			}
+		);
+		expect(item.edited).toBe(false);
+		await updateItem(item.id, { ...bread, offerQuantity: 3, offerPriceMinor: 400 });
+		expect((await db.items.get(item.id))?.edited).toBe(true);
+		await revertItem(item.id);
+		expect(await db.items.get(item.id)).toMatchObject({
+			offerQuantity: 2,
+			offerPriceMinor: 300,
+			edited: false
+		});
+	});
+
+	it('is saved in the finished trip totals', async () => {
+		const trip = await anOpenTrip();
+		await addItem(trip.id, { ...bread, quantity: 2, offerQuantity: 2, offerPriceMinor: 300 });
+		await setReceiptTotal(trip.id, 300);
+		const { difference } = await finishTrip(trip.id);
+		expect(difference).toBe(0);
+		expect((await getTrip(trip.id))?.totals?.inclMinor).toBe(300);
 	});
 });

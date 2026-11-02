@@ -15,6 +15,18 @@
 
 	let { children }: LayoutProps = $props();
 
+	// Safari on iPhone ignores the viewport's zoom lock; its own gesture events are the way to stop
+	// a pinch there.
+	$effect(() => {
+		const stop = (event: Event) => event.preventDefault();
+		document.addEventListener('gesturestart', stop);
+		document.addEventListener('gesturechange', stop);
+		return () => {
+			document.removeEventListener('gesturestart', stop);
+			document.removeEventListener('gesturechange', stop);
+		};
+	});
+
 	// The look chosen in Settings; "match my phone" follows the phone as it switches.
 	$effect(() => applyTheme(settings.theme));
 

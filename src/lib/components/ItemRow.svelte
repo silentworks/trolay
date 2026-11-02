@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Item } from '#lib/data/db.ts';
 	import { itemName } from '#lib/data/items.ts';
-	import PhotoImage from './PhotoImage.svelte';
 	import { formatMoney, lineTotals } from '#lib/money.ts';
 
 	interface Props {
@@ -10,15 +9,13 @@
 		onedit: () => void;
 		ondelete: () => void;
 		onquantity: (quantity: number) => void;
-		onphoto: () => void;
 		/** Who added it, on a shared trip: "you", a name. Nothing on a trip that is not shared. */
 		addedBy?: string;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 	}
 
-	let { item, taxRateBps, onedit, ondelete, onquantity, onphoto, addedBy, currency }: Props =
-		$props();
+	let { item, taxRateBps, onedit, ondelete, onquantity, addedBy, currency }: Props = $props();
 
 	const totals = $derived(lineTotals(item, taxRateBps));
 	const name = $derived(itemName(item));
@@ -73,13 +70,6 @@
 		onpointercancel={() => (offset = 0)}
 	>
 		<span class="dot" class:edited={item.edited} aria-hidden="true"></span>
-		{#if item.photoId}
-			<button class="thumb" type="button" aria-label="Photo of {name}" onclick={onphoto}>
-				{#key item.photoId}
-					<PhotoImage photoId={item.photoId} size="thumb" alt="" />
-				{/key}
-			</button>
-		{/if}
 		<button class="main" type="button" onclick={click}>
 			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
@@ -178,17 +168,6 @@
 
 	.dot.edited {
 		background: var(--warning);
-	}
-
-	.thumb {
-		flex: none;
-		width: 44px;
-		height: 44px;
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		background: var(--surface-2);
-		overflow: hidden;
 	}
 
 	.main {

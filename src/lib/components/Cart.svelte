@@ -299,7 +299,6 @@
 						onedit={() => (sheet = { kind: 'edit', item })}
 						ondelete={() => remove(item)}
 						onquantity={(quantity) => run(() => setQuantity(item.id, quantity))}
-						onphoto={() => (viewing = item)}
 						addedBy={members.label(item.addedBy, account.userId)}
 					/>
 				{/each}
@@ -380,6 +379,7 @@
 			{@const item = sheet.item}
 			<ItemForm
 				{item}
+				onphoto={() => (viewing = item)}
 				storeId={store.id}
 				currency={store.currency}
 				defaultIncludesTax={store.pricesIncludeTax}

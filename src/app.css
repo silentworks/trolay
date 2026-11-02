@@ -82,6 +82,11 @@ body {
 	-webkit-text-size-adjust: 100%;
 }
 
+/* No pinch or double-tap zoom: the app keeps its size (with the viewport tag in app.html). */
+html {
+	touch-action: pan-x pan-y;
+}
+
 body {
 	min-height: 100dvh;
 	overscroll-behavior-y: contain;

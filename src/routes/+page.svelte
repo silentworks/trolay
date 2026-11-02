@@ -1,11 +1,19 @@
 <script lang="ts">
 	import Cart from '#lib/components/Cart.svelte';
+	import Onboarding from '#lib/components/Onboarding.svelte';
 	import StartTrip from '#lib/components/StartTrip.svelte';
+	import { db } from '#lib/data/db.ts';
 	import { getOpenTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 
 	const openTrip = new LiveQuery(() => getOpenTrip());
+	// A phone that has never had a store or a trip, deleted ones included. Stores synced from an
+	// account or restored from a backup count, so those phones skip the guide.
+	const fresh = new LiveQuery(
+		async () => (await db.stores.count()) + (await db.trips.count()) === 0
+	);
 	let notice = $state<string>();
 
 	function finished(photosKept: boolean) {
@@ -17,6 +25,10 @@
 	function left(message?: string) {
 		notice = message ?? 'You left the store. Nothing was saved.';
 	}
+
+	$effect(() => {
+		if (fresh.loaded && !fresh.current && !settings.onboarded) settings.markOnboarded();
+	});
 
 	// The owner took this phone off a shared trip: its copy has been let go of.
 	$effect(() => {
@@ -31,8 +43,10 @@
 	<title>Trolay</title>
 </svelte:head>
 
-{#if openTrip.loaded}
-	{#if openTrip.current}
+{#if openTrip.loaded && fresh.loaded}
+	{#if fresh.current && !settings.onboarded}
+		<Onboarding ondone={() => settings.markOnboarded()} />
+	{:else if openTrip.current}
 		{#key openTrip.current.id}
 			<Cart tripId={openTrip.current.id} onfinished={finished} onleft={left} />
 		{/key}

@@ -5,6 +5,7 @@ import type { TotalMode } from '#lib/money.ts';
 
 const TOTAL_MODE_KEY = 'trolley.totalMode';
 const INSTALL_NUDGE_KEY = 'trolley.installNudgeDismissed';
+const ONBOARDED_KEY = 'trolley.onboarded';
 
 function read(key: string): string | null {
 	try {
@@ -25,6 +26,8 @@ function write(key: string, value: string): void {
 class Settings {
 	totalMode = $state<TotalMode>(read(TOTAL_MODE_KEY) === 'excl' ? 'excl' : 'incl');
 	installNudgeDismissed = $state(read(INSTALL_NUDGE_KEY) === 'true');
+	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
+	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 
 	toggleTotalMode(): void {
 		this.totalMode = this.totalMode === 'incl' ? 'excl' : 'incl';
@@ -34,6 +37,11 @@ class Settings {
 	dismissInstallNudge(): void {
 		this.installNudgeDismissed = true;
 		write(INSTALL_NUDGE_KEY, 'true');
+	}
+
+	markOnboarded(): void {
+		this.onboarded = true;
+		write(ONBOARDED_KEY, 'true');
 	}
 }
 

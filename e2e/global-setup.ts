@@ -2,6 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+/**
+ * Browser storage every test phone starts with: the first-run guide already seen, so tests begin
+ * on the start screen. The guide's own tests start without it.
+ */
+export const ONBOARDED_STATE = resolve('e2e/.generated/onboarded.json');
+
 /** The real shelf-label photo the fake camera shows (see fixtures/labels/real/ATTRIBUTION.md). */
 export const FAKE_CAMERA_LABEL = 'fixtures/labels/real/uk-cully-sully-chowder.jpg';
 /** Printed below the label, outside the guide, so live scanning has a barcode to find. */
@@ -70,6 +76,18 @@ function ean13Svg(code: string, module = 6, height = 220): string {
 export default function globalSetup() {
 	const dir = 'e2e/.generated';
 	mkdirSync(dir, { recursive: true });
+	writeFileSync(
+		ONBOARDED_STATE,
+		JSON.stringify({
+			cookies: [],
+			origins: [
+				{
+					origin: 'http://localhost:4173',
+					localStorage: [{ name: 'trolley.onboarded', value: 'true' }]
+				}
+			]
+		})
+	);
 	writeFileSync(`${dir}/barcode.svg`, ean13Svg(FAKE_CAMERA_BARCODE));
 	execFileSync('rsvg-convert', ['-o', `${dir}/barcode.png`, `${dir}/barcode.svg`]);
 	execFileSync('magick', [

@@ -144,6 +144,10 @@
 	{/if}
 
 	{#if account.error}<p class="error" role="alert">{account.error}</p>{/if}
+
+	<a class="btn btn-ghost btn-block guide" href={resolve('/welcome')}
+		>Show the getting started guide</a
+	>
 </div>
 
 <style>
@@ -178,6 +182,10 @@
 
 	.email label {
 		font-weight: 600;
+	}
+
+	.guide {
+		margin-top: 28px;
 	}
 
 	.actions {

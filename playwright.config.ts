@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { FAKE_CAMERA_VIDEO } from './e2e/global-setup';
+import { FAKE_CAMERA_VIDEO, ONBOARDED_STATE } from './e2e/global-setup';
 
 export default defineConfig({
 	testDir: 'e2e',
@@ -25,7 +25,8 @@ export default defineConfig({
 	],
 	use: {
 		baseURL: 'http://localhost:4173',
-		...devices['Pixel 7']
+		...devices['Pixel 7'],
+		storageState: ONBOARDED_STATE
 	},
 	projects: [
 		{ name: 'app', testIgnore: /camera\.test\.ts/ },

@@ -3,7 +3,7 @@ import { FAKE_CAMERA_BARCODE as BARCODE } from './global-setup';
 import { inviteLink, joinedPartner, ownerWithTrip } from './shared';
 
 /** Picks an entry from the shopping screen's ⋮ menu. */
-async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip') {
+async function menu(page: Page, entry: 'Stores' | 'Finish trip') {
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();
 }
@@ -34,7 +34,7 @@ async function listOnOpenFoodFacts(page: Page, product: object) {
 }
 
 async function snapLabel(page: Page) {
-	await page.getByRole('button', { name: 'Snap label' }).click();
+	await page.getByRole('button', { name: 'Snap price' }).click();
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	await expect(camera.getByText('Fill the frame with the shelf label')).toBeVisible();
 	await expect(camera.getByRole('status')).toHaveText(`Barcode ${BARCODE} ✓`, READ_TIMEOUT);
@@ -75,7 +75,7 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 
 test('Choose photo opens the gallery or file picker, not the camera app', async ({ page }) => {
 	await startTrip(page);
-	await page.getByRole('button', { name: 'Snap label' }).click();
+	await page.getByRole('button', { name: 'Snap price' }).click();
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	// `capture` on a file input sends a phone straight to its camera, with no way to pick a file.
 	const input = camera.locator('input[type=file]');
@@ -86,7 +86,7 @@ test('Choose photo opens the gallery or file picker, not the camera app', async 
 
 test('fields the reader could not read are left empty and highlighted', async ({ page }) => {
 	await startTrip(page);
-	await page.getByRole('button', { name: 'Snap label' }).click();
+	await page.getByRole('button', { name: 'Snap price' }).click();
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	// A real Swedish LCD label: its seven-segment price can't be read with confidence, so it is
 	// left for the shopper; the printed name can.
@@ -179,7 +179,7 @@ test('a barcode scanned with no signal is named once the signal returns', async 
 	await sheet.getByLabel('Unit price').fill('1.45');
 	await sheet.getByRole('button', { name: 'Add to cart' }).click();
 	await expect(
-		page.getByRole('button', { name: `Unnamed item ${BARCODE} 1.45 each incl. tax` })
+		page.getByRole('button', { name: `Unnamed item ${BARCODE} 1.45 each · incl. tax` })
 	).toBeVisible();
 
 	await listOnOpenFoodFacts(page, { brands: 'Dairy Co', product_name: 'Semi Skimmed Milk' });

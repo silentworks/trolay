@@ -7,7 +7,6 @@ import { appLocale, numberSeparators } from './locale.ts';
 export const DEFAULT_TAX_BPS = 2000;
 const BPS_SCALE = 10_000;
 
-export type TotalMode = 'incl' | 'excl';
 export type BudgetStatus = 'ok' | 'warning' | 'over';
 
 export interface PricedLine {
@@ -117,10 +116,6 @@ export function applyDiscount(
 		discountMinor,
 		beforeMinor: before
 	};
-}
-
-export function headlineTotal(totals: LineTotals, mode: TotalMode): number {
-	return mode === 'incl' ? totals.inclMinor : totals.exclMinor;
 }
 
 /** Amber from 90% of the budget, red once the budget is exceeded. */

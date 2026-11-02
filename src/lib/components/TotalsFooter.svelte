@@ -3,11 +3,9 @@
 		budgetStatus,
 		formatMoney,
 		formatPercent,
-		headlineTotal,
 		type Discount,
 		type DiscountedTotals
 	} from '#lib/money.ts';
-	import { settings } from '#lib/settings.svelte.ts';
 
 	interface Props {
 		totals: DiscountedTotals;
@@ -16,74 +14,77 @@
 		onbudget: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
+		taxRateBps: number;
 		/** The store's shelf prices leave tax out and the till adds it. */
 		taxAddedAtTill?: boolean;
 	}
 
-	let { totals, discount, budgetMinor, onbudget, currency, taxAddedAtTill }: Props = $props();
+	let { totals, discount, budgetMinor, onbudget, currency, taxRateBps, taxAddedAtTill }: Props =
+		$props();
 
-	const mode = $derived(settings.totalMode);
-	const headline = $derived(headlineTotal(totals, mode));
+	// The headline is what is paid; the excl. total, tax and item count sit under it.
+	const headline = $derived(totals.inclMinor);
 	const status = $derived(budgetMinor === undefined ? 'ok' : budgetStatus(headline, budgetMinor));
 	const left = $derived(budgetMinor === undefined ? 0 : budgetMinor - headline);
-	const modeLabel = $derived(mode === 'incl' ? 'incl. tax' : 'excl. tax');
+	/** The bar fills as the budget is spent; full once over. */
+	const fill = $derived(
+		budgetMinor ? Math.min(100, Math.round((headline / budgetMinor) * 100)) : 0
+	);
+	const money = (minor: number) => formatMoney(minor, currency);
 </script>
 
-<section class="totals" data-status={status} aria-label="Trolley total">
-	<button
-		class="headline"
-		type="button"
-		onclick={() => settings.toggleTotalMode()}
-		aria-label="Total {formatMoney(headline, currency)} {modeLabel}. Tap to show the total {mode ===
-		'incl'
-			? 'excluding'
-			: 'including'} tax."
-	>
-		<span class="amount">{formatMoney(headline, currency)}</span>
-		<span class="mode">{modeLabel} · tap to switch</span>
-	</button>
-
-	<dl class="breakdown">
+<!-- The running total on a dark card: what is paid, then excl. tax, items and tax, then the budget. -->
+<section class="totals" aria-label="Trolley total">
+	<p class="mode">Total incl. tax</p>
+	<p class="amount">{money(headline)}</p>
+	<dl class="under">
+		<div>
+			<dt class="visually-hidden">Excl. tax</dt>
+			<dd>{money(totals.exclMinor)} excl.</dd>
+		</div>
+		<div>
+			<dt class="visually-hidden">Items</dt>
+			<dd>{totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'}</dd>
+		</div>
+		<div>
+			<dt class="visually-hidden">
+				Tax ({formatPercent(taxRateBps)}%{taxAddedAtTill ? ', added at till' : ''})
+			</dt>
+			<dd>{money(totals.taxMinor)} {taxAddedAtTill ? 'tax at till' : 'tax'}</dd>
+		</div>
 		{#if totals.discountMinor > 0}
-			<div>
+			<div class="discount">
 				<dt>
 					Discount{discount?.kind === 'percent' ? ` (${formatPercent(discount.value)}%)` : ''}
 				</dt>
-				<dd>−{formatMoney(totals.discountMinor, currency)}</dd>
+				<dd>−{money(totals.discountMinor)}</dd>
 			</div>
 		{/if}
-		<div>
-			<dt>Incl. tax</dt>
-			<dd>{formatMoney(totals.inclMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>Excl. tax</dt>
-			<dd>{formatMoney(totals.exclMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>{taxAddedAtTill ? 'Tax (added at till)' : 'Tax'}</dt>
-			<dd>{formatMoney(totals.taxMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>Items</dt>
-			<dd>{totals.itemCount}</dd>
-		</div>
 	</dl>
 
-	<button class="budget" type="button" onclick={onbudget}>
-		{#if budgetMinor === undefined}
-			Set a budget
-		{:else if left >= 0}
-			{formatMoney(left, currency)} left of {formatMoney(budgetMinor, currency)}
-		{:else}
-			{formatMoney(-left, currency)} over budget of {formatMoney(budgetMinor, currency)}
-		{/if}
-	</button>
+	{#if budgetMinor === undefined}
+		<button class="set-budget" type="button" onclick={onbudget}>Set a budget</button>
+	{:else}
+		<section class="budget" data-status={status} aria-label="Budget">
+			<button type="button" onclick={onbudget} aria-label="Budget: change it">
+				<span class="line">
+					<span>{left >= 0 ? 'Budget left' : 'Over budget'}</span>
+					<span class="figures">
+						{left >= 0
+							? `${money(left)} of ${money(budgetMinor)}`
+							: `${money(-left)} over ${money(budgetMinor)}`}
+					</span>
+				</span>
+				<span class="track" aria-hidden="true"
+					><span class="fill" style:width="{fill}%"></span></span
+				>
+			</button>
+		</section>
+	{/if}
 
 	<!-- Announces changes to screen readers without moving focus. -->
 	<p class="visually-hidden" aria-live="polite">
-		Total {formatMoney(headline, currency)}
-		{modeLabel}, {totals.itemCount}
+		Total {money(headline)} incl. tax, {totals.itemCount}
 		{totals.itemCount === 1 ? 'item' : 'items'}{#if budgetMinor !== undefined}{status === 'over'
 				? ', over budget'
 				: status === 'warning'
@@ -94,82 +95,112 @@
 
 <style>
 	.totals {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 4px 12px;
-		align-items: center;
-		padding: 10px 12px;
-		border-radius: var(--radius);
-		background: var(--surface);
-		border: 2px solid var(--border);
-	}
-
-	.totals[data-status='warning'] {
-		background: var(--warning-bg);
-		border-color: var(--warning-text);
-		color: var(--warning-text);
-	}
-
-	.totals[data-status='over'] {
-		background: var(--danger-bg);
-		border-color: var(--danger);
-		color: var(--danger-text);
-	}
-
-	.headline {
-		display: grid;
-		justify-items: start;
-		min-height: var(--tap);
-		padding: 0;
-		border: none;
-		background: transparent;
-		text-align: left;
-	}
-
-	.amount {
-		font-size: 1.9rem;
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-		line-height: 1.1;
+		--line: rgb(255 255 255 / 0.12);
+		--link: #a9c1ff;
+		padding: 14px 18px 16px;
+		border-radius: 18px;
+		background: var(--total-bg);
+		color: var(--total-text);
 	}
 
 	.mode {
-		font-size: 0.85rem;
-		opacity: 0.85;
+		margin: 0;
+		color: var(--total-muted);
+		font-size: 0.88rem;
 	}
 
-	.breakdown {
-		display: grid;
-		grid-template-columns: auto auto;
-		gap: 0 10px;
+	.amount {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: 2.3rem;
+		font-weight: 800;
+		line-height: 1.1;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.breakdown div {
-		display: contents;
+	.under {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 2px 12px;
+		margin: 2px 0 0;
+		color: var(--total-muted);
+		font-size: 0.88rem;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.breakdown dt {
-		opacity: 0.85;
-	}
-
-	.breakdown dd {
+	.under dd {
 		margin: 0;
-		text-align: right;
-		font-weight: 600;
 	}
 
-	.budget {
-		grid-column: 1 / -1;
+	.discount {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		flex-basis: 100%;
+	}
+
+	.set-budget {
 		min-height: 44px;
+		color: var(--link);
+		margin-top: 4px;
+		padding: 0;
 		border: none;
-		border-top: 1px solid currentColor;
 		background: transparent;
 		font-weight: 700;
+	}
+
+	.budget button {
+		display: grid;
+		gap: 8px;
+		width: 100%;
+		margin-top: 10px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: inherit;
 		text-align: left;
-		padding: 6px 0 0;
-		border-top-color: color-mix(in srgb, currentColor 25%, transparent);
+	}
+
+	.line {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		color: var(--total-muted);
+		font-size: 0.88rem;
+	}
+
+	.figures {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.track {
+		height: 8px;
+		border-radius: 999px;
+		background: rgb(255 255 255 / 0.14);
+		overflow: hidden;
+	}
+
+	.fill {
+		display: block;
+		height: 100%;
+		border-radius: inherit;
+		background: #6f93ff;
+		transition: width 0.2s ease-out;
+	}
+
+	[data-status='warning'] .fill {
+		background: #fbbf24;
+	}
+
+	[data-status='warning'] .line {
+		color: #fcd34d;
+	}
+
+	[data-status='over'] .fill {
+		background: #f87171;
+	}
+
+	[data-status='over'] .line {
+		color: #fca5a5;
 	}
 </style>

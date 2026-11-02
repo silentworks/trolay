@@ -216,8 +216,8 @@
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>How a trip works</h2>
 			<ol class="points">
 				<li>
-					<strong>Add items.</strong> Tap 📷 Snap label and point the camera at the shelf label. Trolay
-					reads the name and price, and you check them. Or tap Add by hand and type them in.
+					<strong>Add items.</strong> Tap Snap price and point the camera at the shelf label. Trolay reads
+					the name and price, and you check them. Or tap the keyboard button and type them in.
 				</li>
 				<li>
 					<strong>Watch the total.</strong> The total at the bottom updates as you add items and change

@@ -72,6 +72,7 @@
 		onpointerup={pointerup}
 		onpointercancel={() => (offset = 0)}
 	>
+		<span class="dot" class:edited={item.edited} aria-hidden="true"></span>
 		{#if item.photoId}
 			<button class="thumb" type="button" aria-label="Photo of {name}" onclick={onphoto}>
 				{#key item.photoId}
@@ -82,8 +83,9 @@
 		<button class="main" type="button" onclick={click}>
 			<span class="description" class:unnamed={!item.description}>{name}</span>
 			<span class="meta">
-				{formatMoney(item.unitPriceMinor, currency)} each
-				<span class="badge">{item.priceIncludesTax ? 'incl. tax' : 'excl. tax'}</span>
+				{formatMoney(item.unitPriceMinor, currency)} each · {item.priceIncludesTax
+					? 'incl. tax'
+					: 'excl. tax'}
 				{#if item.offerQuantity && item.offerPriceMinor}
 					<span class="badge" class:applied={item.quantity >= item.offerQuantity}>
 						{item.offerQuantity} for {formatMoney(item.offerPriceMinor, currency)}
@@ -94,31 +96,30 @@
 			{#if addedBy}<span class="meta by">Added by {addedBy}</span>{/if}
 		</button>
 
-		<div class="side">
-			<span class="line-total"
-				>{formatMoney(item.priceIncludesTax ? totals.inclMinor : totals.exclMinor, currency)}</span
+		<div class="stepper" role="group" aria-label="Quantity of {name}">
+			<button
+				type="button"
+				aria-label="Decrease quantity"
+				disabled={item.quantity <= 1}
+				onclick={() => onquantity(item.quantity - 1)}>−</button
 			>
-			<div class="stepper" role="group" aria-label="Quantity of {name}">
-				<button
-					class="btn"
-					type="button"
-					aria-label="Decrease quantity"
-					disabled={item.quantity <= 1}
-					onclick={() => onquantity(item.quantity - 1)}>−</button
-				>
-				<span class="qty" aria-live="polite">{item.quantity}</span>
-				<button
-					class="btn"
-					type="button"
-					aria-label="Increase quantity"
-					onclick={() => onquantity(item.quantity + 1)}>+</button
-				>
-			</div>
+			<span class="qty" aria-live="polite">{item.quantity}</span>
+			<button
+				type="button"
+				aria-label="Increase quantity"
+				onclick={() => onquantity(item.quantity + 1)}>+</button
+			>
 		</div>
 
-		<button class="btn btn-ghost delete" type="button" aria-label="Delete {name}" onclick={ondelete}
-			>🗑</button
+		<span class="line-total"
+			>{formatMoney(item.priceIncludesTax ? totals.inclMinor : totals.exclMinor, currency)}</span
 		>
+
+		<button class="delete" type="button" aria-label="Delete {name}" onclick={ondelete}>
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+			</svg>
+		</button>
 	</div>
 </li>
 
@@ -126,10 +127,14 @@
 	.row {
 		position: relative;
 		overflow: hidden;
-		border-radius: var(--radius);
+		border-bottom: 1px solid var(--border);
 	}
 
-	/* The red layer only shows while swiping, so it can't bleed around the row's corners. */
+	.row:first-child {
+		border-top: 1px solid var(--border);
+	}
+
+	/* The red layer only shows while swiping. */
 	.row.swiping {
 		background: var(--danger);
 	}
@@ -149,14 +154,12 @@
 
 	.content {
 		position: relative;
-		display: grid;
-		grid-template-columns: auto 1fr auto auto;
+		display: flex;
 		align-items: center;
-		gap: 4px;
-		padding: 8px 4px 8px 0;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
+		gap: 6px;
+		min-height: 72px;
+		padding: 8px 0 8px 4px;
+		background: var(--bg);
 		touch-action: pan-y;
 		transition: transform 0.15s ease-out;
 	}
@@ -165,34 +168,44 @@
 		opacity: 0.7;
 	}
 
+	.dot {
+		flex: none;
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.dot.edited {
+		background: var(--warning);
+	}
+
 	.thumb {
-		width: 52px;
-		height: 52px;
-		margin-left: 8px;
+		flex: none;
+		width: 44px;
+		height: 44px;
 		padding: 0;
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 10px;
 		background: var(--surface-2);
 		overflow: hidden;
 	}
 
-	/* Rows without a photo: the description takes the thumbnail's column too. */
-	.content > .main:first-child {
-		grid-column: span 2;
-	}
-
 	.main {
+		flex: 1;
+		min-width: 0;
 		display: grid;
 		gap: 2px;
 		min-height: var(--tap);
-		padding: 4px 12px;
+		padding: 2px 6px;
 		text-align: left;
 		border: none;
 		background: transparent;
 	}
 
 	.description {
-		font-weight: 600;
+		font-weight: 700;
+		font-size: 1rem;
 		overflow-wrap: anywhere;
 	}
 
@@ -203,7 +216,7 @@
 
 	.meta {
 		color: var(--muted);
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 	}
 
 	.badge {
@@ -212,12 +225,13 @@
 		padding: 0 6px;
 		border-radius: 999px;
 		background: var(--surface-2);
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 	}
 
 	.badge.applied {
-		background: var(--accent);
-		color: var(--on-accent, #fff);
+		background: var(--accent-soft);
+		color: var(--accent-soft-text);
+		font-weight: 600;
 	}
 
 	.badge.edited {
@@ -225,36 +239,87 @@
 		color: var(--warning-text);
 	}
 
-	.side {
-		display: grid;
-		justify-items: end;
-		gap: 2px;
-	}
-
-	.line-total {
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-		padding-right: 4px;
-	}
-
 	.stepper {
+		flex: none;
 		display: flex;
 		align-items: center;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: var(--surface);
 	}
 
-	.stepper .btn {
-		min-width: 44px;
-		min-height: 44px;
+	.stepper button {
+		width: 34px;
+		height: 44px;
 		padding: 0;
+		border: none;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--text);
+		font-size: 1.15rem;
+		line-height: 1;
+	}
+
+	.stepper button:disabled {
+		color: var(--muted);
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 
 	.qty {
-		min-width: 2.5ch;
+		min-width: 2ch;
 		text-align: center;
 		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.line-total {
+		flex: none;
+		min-width: 4.2ch;
+		text-align: right;
+		font-weight: 800;
+		font-size: 1rem;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.delete {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 44px;
 		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--muted);
+	}
+
+	.delete svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	/* A narrow phone: the stepper goes under the name, so the name keeps its room. */
+	@media (max-width: 380px) {
+		.content {
+			flex-wrap: wrap;
+		}
+
+		.main {
+			flex-basis: calc(100% - 120px);
+		}
+
+		.stepper {
+			margin-left: 17px;
+		}
+
+		.line-total {
+			margin-left: auto;
+		}
 	}
 </style>

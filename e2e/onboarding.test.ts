@@ -37,7 +37,7 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await page.getByRole('button', { name: 'Start shopping' }).click();
 
 	await expect(page.getByRole('button', { name: 'Store: Lidl' })).toBeVisible();
-	await expect(page.getByRole('region', { name: 'Trolley total' })).toContainText('40.00');
+	await expect(page.getByRole('region', { name: 'Budget' })).toContainText('40.00 of');
 
 	// Done: a reload stays on the trolley, and the store was made once.
 	await page.reload();

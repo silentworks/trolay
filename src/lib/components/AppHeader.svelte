@@ -20,9 +20,22 @@
 		/** Makes the title a button, named by titleLabel. */
 		ontitle?: () => void;
 		titleLabel?: string;
+		/** A round History button before the menu. */
+		history?: string;
+		/** Title on the left, larger, as on the trolley; centred otherwise. */
+		start?: boolean;
 	}
 
-	let { title, subtitle, back, menu, ontitle, titleLabel }: Props = $props();
+	let {
+		title,
+		subtitle,
+		back,
+		menu,
+		ontitle,
+		titleLabel,
+		history,
+		start = false
+	}: Props = $props();
 
 	const menuId = $props.id();
 	let open = $state(false);
@@ -50,7 +63,7 @@
 	The header sits on its own surface, edge to edge. The side buttons take equal columns, so the
 	title is centred on the screen even when only one side has a button.
 -->
-<header class="bar">
+<header class="bar" class:start>
 	{#if back}
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
 		<a class="round back" href={back.href} aria-label="Back to {back.label}">
@@ -70,43 +83,57 @@
 		</div>
 	{/if}
 
-	{#if menu}
-		<button
-			bind:this={toggle}
-			class="round more"
-			type="button"
-			aria-label="Menu"
-			aria-expanded={open}
-			aria-controls={menuId}
-			onclick={() => (open = !open)}
-		>
-			<svg viewBox="0 0 24 24" aria-hidden="true">
-				<circle cx="12" cy="5" r="1.8" />
-				<circle cx="12" cy="12" r="1.8" />
-				<circle cx="12" cy="19" r="1.8" />
-			</svg>
-		</button>
-		{#if open}
-			<nav bind:this={panel} id={menuId} class="menu" aria-label="Menu">
-				{#each menu as entry (entry.label)}
-					{#if entry.href}
-						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
-						<a class:primary={entry.primary} href={entry.href} onclick={() => (open = false)}>
-							{entry.label}
-						</a>
-					{:else}
-						<button
-							class:primary={entry.primary}
-							class:danger={entry.danger}
-							type="button"
-							onclick={() => pick(entry)}
-						>
-							{entry.label}
-						</button>
-					{/if}
-				{/each}
-			</nav>
-		{/if}
+	{#if history || menu}
+		<div class="side">
+			{#if history}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
+				<a class="round history" href={history} aria-label="History">
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+						<path d="M3 3v5h5" />
+						<path d="M12 7v5l3 2" />
+					</svg>
+				</a>
+			{/if}
+			{#if menu}
+				<button
+					bind:this={toggle}
+					class="round more"
+					type="button"
+					aria-label="Menu"
+					aria-expanded={open}
+					aria-controls={menuId}
+					onclick={() => (open = !open)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<circle cx="12" cy="5" r="1.8" />
+						<circle cx="12" cy="12" r="1.8" />
+						<circle cx="12" cy="19" r="1.8" />
+					</svg>
+				</button>
+				{#if open}
+					<nav bind:this={panel} id={menuId} class="menu" aria-label="Menu">
+						{#each menu as entry (entry.label)}
+							{#if entry.href}
+								<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
+								<a class:primary={entry.primary} href={entry.href} onclick={() => (open = false)}>
+									{entry.label}
+								</a>
+							{:else}
+								<button
+									class:primary={entry.primary}
+									class:danger={entry.danger}
+									type="button"
+									onclick={() => pick(entry)}
+								>
+									{entry.label}
+								</button>
+							{/if}
+						{/each}
+					</nav>
+				{/if}
+			{/if}
+		</div>
 	{/if}
 </header>
 
@@ -116,15 +143,38 @@
 		top: 0;
 		z-index: 1;
 		display: grid;
-		grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap);
+		grid-template-columns: minmax(var(--tap), max-content) minmax(0, 1fr) minmax(
+				var(--tap),
+				max-content
+			);
 		grid-template-areas: 'back title more';
 		align-items: center;
 		gap: 8px;
-		margin: 0 calc(-1 * var(--gutter)) 16px;
+		margin: 0 calc(-1 * var(--gutter)) 12px;
 		padding: calc(8px + env(safe-area-inset-top)) var(--gutter) 8px;
-		background: var(--surface);
-		border-bottom: 1px solid var(--border);
-		box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+		background: var(--bg);
+	}
+
+	/* The trolley: the store's name on the left, the buttons on the right. */
+	.bar.start {
+		grid-template-columns: minmax(0, 1fr) max-content;
+		grid-template-areas: 'title more';
+	}
+
+	.bar.start .title {
+		justify-items: start;
+		text-align: left;
+	}
+
+	.bar.start .name {
+		font-size: 1.45rem;
+	}
+
+	.side {
+		grid-area: more;
+		display: flex;
+		gap: 8px;
+		justify-content: end;
 	}
 
 	.title {
@@ -162,18 +212,14 @@
 		width: var(--tap);
 		height: var(--tap);
 		padding: 0;
-		border: none;
-		border-radius: 50%;
-		background: var(--surface-2);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		background: var(--surface);
 		color: var(--text);
 	}
 
 	.back {
 		grid-area: back;
-	}
-
-	.more {
-		grid-area: more;
 	}
 
 	.round svg {
@@ -182,7 +228,8 @@
 		fill: currentColor;
 	}
 
-	.back svg {
+	.back svg,
+	.history svg {
 		fill: none;
 		stroke: currentColor;
 		stroke-width: 2;

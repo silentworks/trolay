@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** Picks an entry from the shopping screen's ⋮ menu. */
-async function menu(page: Page, entry: 'History' | 'Stores' | 'Finish trip' | 'Leave store') {
+async function menu(page: Page, entry: 'Stores' | 'Finish trip' | 'Leave store') {
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();
 }
@@ -67,16 +67,18 @@ test('a full trip: add, edit, switch totals, budget, delete with undo, reload', 
 	await expect(footer(page).getByRole('button', { name: /Total 1\.50 incl\. tax/ })).toBeVisible();
 
 	// Budget: £1.60 → £1.50 is 94% → amber.
-	await footer(page).getByRole('button', { name: 'Set a budget' }).click();
+	await page.getByRole('button', { name: 'Set a budget' }).click();
 	await page.getByRole('dialog', { name: 'Trip budget' }).getByLabel('Budget').fill('1.60');
 	await page.getByRole('button', { name: 'Save budget' }).click();
-	await expect(footer(page)).toHaveAttribute('data-status', 'warning');
-	await expect(footer(page)).toContainText('0.10 left of 1.60');
+	const budget = page.getByRole('region', { name: 'Budget' });
+	await expect(budget).toHaveAttribute('data-status', 'warning');
+	await expect(budget).toContainText('1.50 of 1.60');
+	await expect(budget).toContainText('0.10 left');
 
 	// Over budget → red.
 	await addItem(page, 'Bread', '1.10');
-	await expect(footer(page)).toHaveAttribute('data-status', 'over');
-	await expect(footer(page)).toContainText('1.00 over budget');
+	await expect(budget).toHaveAttribute('data-status', 'over');
+	await expect(budget).toContainText('1.00 over budget');
 
 	// Delete with undo.
 	await page.getByRole('button', { name: 'Delete Bread' }).click();
@@ -328,7 +330,7 @@ test('history can be opened in the middle of a trip, and leads back to it', asyn
 	await page.getByRole('button', { name: /^Aldi/ }).click();
 	await addItem(page, 'Eggs', '2.10');
 
-	await menu(page, 'History');
+	await page.getByRole('link', { name: 'History' }).click();
 	const trips = page.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
 	await expect(trips.getByRole('link')).toContainText('0.82');

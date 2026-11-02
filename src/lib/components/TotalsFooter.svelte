@@ -12,24 +12,30 @@
 	interface Props {
 		totals: DiscountedTotals;
 		discount?: Discount;
+		/** Only for the spoken update; the budget bar shows it. */
 		budgetMinor?: number;
-		onbudget: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 		/** The store's shelf prices leave tax out and the till adds it. */
 		taxAddedAtTill?: boolean;
 	}
 
-	let { totals, discount, budgetMinor, onbudget, currency, taxAddedAtTill }: Props = $props();
+	let { totals, discount, budgetMinor, currency, taxAddedAtTill }: Props = $props();
 
 	const mode = $derived(settings.totalMode);
 	const headline = $derived(headlineTotal(totals, mode));
 	const status = $derived(budgetMinor === undefined ? 'ok' : budgetStatus(headline, budgetMinor));
-	const left = $derived(budgetMinor === undefined ? 0 : budgetMinor - headline);
 	const modeLabel = $derived(mode === 'incl' ? 'incl. tax' : 'excl. tax');
+	/** The other total, shown small under the headline. */
+	const other = $derived(
+		mode === 'incl'
+			? `${formatMoney(totals.exclMinor, currency)} excl. tax`
+			: `${formatMoney(totals.inclMinor, currency)} incl. tax`
+	);
 </script>
 
-<section class="totals" data-status={status} aria-label="Trolley total">
+<!-- The running total, on a dark card. Tapping it switches the headline between incl. and excl. tax. -->
+<section class="totals" aria-label="Trolley total">
 	<button
 		class="headline"
 		type="button"
@@ -39,11 +45,15 @@
 			? 'excluding'
 			: 'including'} tax."
 	>
+		<span class="mode">Total {modeLabel}</span>
 		<span class="amount">{formatMoney(headline, currency)}</span>
-		<span class="mode">{modeLabel} · tap to switch</span>
 	</button>
 
-	<dl class="breakdown">
+	<dl class="under">
+		<div>
+			<dt class="visually-hidden">{mode === 'incl' ? 'Excl. tax' : 'Incl. tax'}</dt>
+			<dd>{other}</dd>
+		</div>
 		{#if totals.discountMinor > 0}
 			<div>
 				<dt>
@@ -52,33 +62,14 @@
 				<dd>−{formatMoney(totals.discountMinor, currency)}</dd>
 			</div>
 		{/if}
-		<div>
-			<dt>Incl. tax</dt>
-			<dd>{formatMoney(totals.inclMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>Excl. tax</dt>
-			<dd>{formatMoney(totals.exclMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>{taxAddedAtTill ? 'Tax (added at till)' : 'Tax'}</dt>
-			<dd>{formatMoney(totals.taxMinor, currency)}</dd>
-		</div>
-		<div>
-			<dt>Items</dt>
-			<dd>{totals.itemCount}</dd>
+		<div class="tax">
+			<dt class="visually-hidden">{taxAddedAtTill ? 'Tax (added at till)' : 'Tax'}</dt>
+			<dd>
+				{formatMoney(totals.taxMinor, currency)}
+				{taxAddedAtTill ? 'tax (added at till)' : 'tax'}
+			</dd>
 		</div>
 	</dl>
-
-	<button class="budget" type="button" onclick={onbudget}>
-		{#if budgetMinor === undefined}
-			Set a budget
-		{:else if left >= 0}
-			{formatMoney(left, currency)} left of {formatMoney(budgetMinor, currency)}
-		{:else}
-			{formatMoney(-left, currency)} over budget of {formatMoney(budgetMinor, currency)}
-		{/if}
-	</button>
 
 	<!-- Announces changes to screen readers without moving focus. -->
 	<p class="visually-hidden" aria-live="polite">
@@ -95,81 +86,59 @@
 <style>
 	.totals {
 		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 4px 12px;
-		align-items: center;
-		padding: 10px 12px;
-		border-radius: var(--radius);
-		background: var(--surface);
-		border: 2px solid var(--border);
-	}
-
-	.totals[data-status='warning'] {
-		background: var(--warning-bg);
-		border-color: var(--warning-text);
-		color: var(--warning-text);
-	}
-
-	.totals[data-status='over'] {
-		background: var(--danger-bg);
-		border-color: var(--danger);
-		color: var(--danger-text);
+		gap: 6px;
+		padding: 14px 16px 12px;
+		border-radius: 18px;
+		background: var(--total-bg);
+		color: var(--total-text);
 	}
 
 	.headline {
-		display: grid;
-		justify-items: start;
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
 		min-height: var(--tap);
 		padding: 0;
 		border: none;
 		background: transparent;
+		color: inherit;
 		text-align: left;
 	}
 
+	.mode {
+		font-size: 0.95rem;
+		color: var(--total-muted);
+	}
+
 	.amount {
-		font-size: 1.9rem;
+		font-size: 2rem;
 		font-weight: 800;
 		font-variant-numeric: tabular-nums;
 		line-height: 1.1;
 	}
 
-	.mode {
-		font-size: 0.85rem;
-		opacity: 0.85;
-	}
-
-	.breakdown {
-		display: grid;
-		grid-template-columns: auto auto;
-		gap: 0 10px;
+	.under {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 2px 12px;
 		margin: 0;
+		color: var(--total-muted);
 		font-size: 0.85rem;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.breakdown div {
-		display: contents;
+	.under div {
+		display: flex;
+		gap: 6px;
 	}
 
-	.breakdown dt {
-		opacity: 0.85;
-	}
-
-	.breakdown dd {
+	.under dd {
 		margin: 0;
-		text-align: right;
-		font-weight: 600;
 	}
 
-	.budget {
-		grid-column: 1 / -1;
-		min-height: 44px;
-		border: none;
-		border-top: 1px solid currentColor;
-		background: transparent;
-		font-weight: 700;
-		text-align: left;
-		padding: 6px 0 0;
-		border-top-color: color-mix(in srgb, currentColor 25%, transparent);
+	.tax {
+		margin-left: auto;
 	}
 </style>

@@ -1,26 +1,34 @@
 :root {
 	color-scheme: light dark;
 
-	--bg: #f4f6f5;
+	--bg: #f6f8fc;
 	--surface: #ffffff;
-	--surface-2: #e9eeec;
-	--text: #121a18;
-	--muted: #4f5b57;
-	--border: #cdd5d2;
-	--accent: #0b6b62;
-	--accent-strong: #08534c;
+	--surface-2: #eef1f7;
+	--text: #111827;
+	--muted: #5b6474;
+	/* Card edges are soft; anything you type in or press keeps a stronger edge. */
+	--border: #e2e7f0;
+	--control-border: #8b95a7;
+	--accent: #1d4ed8;
+	--accent-strong: #1e40af;
 	--on-accent: #ffffff;
+	--accent-soft: #e3ebff;
+	--accent-soft-text: #1e3a8a;
+	--total-bg: #111827;
+	--total-text: #ffffff;
+	--total-muted: #a5adbb;
 	--focus: #1d4ed8;
+	--warning: #d97706;
 	--warning-bg: #fef3c7;
 	--warning-text: #7c3a03;
 	--danger: #b42318;
 	--danger-bg: #fee4e2;
 	--danger-text: #8a1c12;
 
-	--radius: 12px;
+	--radius: 14px;
 	--tap: 48px;
 	--gutter: 16px;
-	--shadow: 0 -4px 16px rgb(0 0 0 / 0.08);
+	--shadow: 0 -4px 16px rgb(17 24 39 / 0.06);
 
 	font-family:
 		system-ui,
@@ -34,16 +42,23 @@
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--bg: #0e1413;
-		--surface: #172120;
-		--surface-2: #213029;
-		--text: #e9efed;
-		--muted: #a3b1ad;
-		--border: #33423e;
-		--accent: #3cc9b4;
-		--accent-strong: #6fe0cf;
-		--on-accent: #04201c;
+		--bg: #0b0f17;
+		--surface: #151b26;
+		--surface-2: #1f2633;
+		--text: #e8ecf3;
+		--muted: #9ca5b6;
+		--border: #262e3d;
+		--control-border: #657190;
+		--accent: #7ea4ff;
+		--accent-strong: #a8c1ff;
+		--on-accent: #0b1530;
+		--accent-soft: #1c2a4d;
+		--accent-soft-text: #c7d6ff;
+		--total-bg: #222c3f;
+		--total-text: #ffffff;
+		--total-muted: #a9b3c4;
 		--focus: #93c5fd;
+		--warning: #fbbf24;
 		--warning-bg: #45290a;
 		--warning-text: #fcd34d;
 		--danger: #f97066;
@@ -121,7 +136,7 @@ button {
 	min-width: var(--tap);
 	padding: 0 18px;
 	border-radius: var(--radius);
-	border: 1px solid var(--border);
+	border: 1px solid var(--control-border);
 	background: var(--surface);
 	font-weight: 600;
 	text-decoration: none;
@@ -180,7 +195,7 @@ button {
 	min-height: var(--tap);
 	padding: 0 14px;
 	border-radius: var(--radius);
-	border: 1px solid var(--border);
+	border: 1px solid var(--control-border);
 	background: var(--surface);
 }
 

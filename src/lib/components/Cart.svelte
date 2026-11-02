@@ -34,8 +34,10 @@
 	import { letGoOfTrip } from '#lib/sync/letgo.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
+	import { applyDiscount, headlineTotal, tripTotals, type Discount } from '#lib/money.ts';
+	import { settings } from '#lib/settings.svelte.ts';
 	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
+	import BudgetBar from './BudgetBar.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import DiscountForm from './DiscountForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
@@ -189,10 +191,7 @@
 	/** Leaving or removing is about the trip's people, so the cart says what it will do first. */
 	const role = $derived(members.roleOf(account.userId));
 	const menu = $derived.by(() => {
-		const entries: MenuEntry[] = [
-			{ label: 'History', href: resolve('/history') },
-			{ label: 'Stores', href: resolve('/stores') }
-		];
+		const entries: MenuEntry[] = [{ label: 'Stores', href: resolve('/stores') }];
 		if (role === 'partner') {
 			entries.push({ label: 'Leave this trip', onclick: () => (sheet = { kind: 'leaveShared' }) });
 		} else if (members.shared) {
@@ -279,8 +278,15 @@
 			subtitle={store.branch}
 			ontitle={tapStoreName}
 			titleLabel="Store: {store.name}"
+			history={resolve('/history')}
+			start
 			{menu}
 		/>
+
+		<div class="status">
+			<span class="pill">Open trip</span>
+			<span class="count">{totals.itemCount} {totals.itemCount === 1 ? 'item' : 'items'}</span>
+		</div>
 
 		{#if items.length}
 			<ul class="items" aria-label="Items in your trolley">
@@ -300,9 +306,16 @@
 		{:else}
 			<div class="empty">
 				<p class="big">Your trolley is empty.</p>
-				<p>Add the first item to start the running total.</p>
+				<p>Snap a shelf price to add the first item and start the running total.</p>
 			</div>
 		{/if}
+
+		<BudgetBar
+			spentMinor={headlineTotal(totals, settings.totalMode)}
+			budgetMinor={trip.budgetMinor}
+			currency={store.currency}
+			onbudget={() => (sheet = { kind: 'budget' })}
+		/>
 
 		<div class="dock">
 			{#if toast}
@@ -315,22 +328,34 @@
 					/>
 				{/key}
 			{/if}
-			<div class="actions">
-				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
-					📷 Snap label
-				</button>
-				<button class="btn manual" type="button" onclick={() => (sheet = { kind: 'add' })}>
-					Add by hand
-				</button>
-			</div>
 			<TotalsFooter
 				{totals}
 				{discount}
 				currency={store.currency}
 				taxAddedAtTill={!store.pricesIncludeTax}
 				budgetMinor={trip.budgetMinor}
-				onbudget={() => (sheet = { kind: 'budget' })}
 			/>
+			<div class="actions">
+				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+						<circle cx="12" cy="13" r="3.5" />
+					</svg>
+					Snap price
+				</button>
+				<button
+					class="btn manual"
+					type="button"
+					aria-label="Add by hand"
+					title="Add by hand"
+					onclick={() => (sheet = { kind: 'add' })}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<rect x="3" y="6" width="18" height="12" rx="2" />
+						<path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" />
+					</svg>
+				</button>
+			</div>
 		</div>
 	</div>
 
@@ -451,18 +476,37 @@
 		padding-bottom: calc(260px + env(safe-area-inset-bottom));
 	}
 
+	.status {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin: -4px 0 10px;
+	}
+
+	.pill {
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: var(--accent-soft);
+		color: var(--accent-soft-text);
+		font-size: 0.85rem;
+		font-weight: 700;
+	}
+
+	.count {
+		color: var(--muted);
+		font-size: 0.92rem;
+	}
+
 	.items {
 		list-style: none;
-		margin: 0;
+		margin: 0 0 12px;
 		padding: 0;
-		display: grid;
-		gap: 8px;
 	}
 
 	.empty {
 		text-align: center;
 		color: var(--muted);
-		padding: 48px 0;
+		padding: 40px 0;
 	}
 
 	.empty .big {
@@ -471,32 +515,45 @@
 		color: var(--text);
 	}
 
-	/* Primary action and totals in the bottom third, always visible. */
+	/* The total and the main action in the bottom third, always visible. */
 	.dock {
 		position: fixed;
 		inset: auto 0 0;
 		display: grid;
-		gap: 8px;
+		gap: 10px;
 		max-width: 560px;
 		margin: 0 auto;
-		padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+		padding: 10px var(--gutter) calc(12px + env(safe-area-inset-bottom));
 		background: var(--bg);
-		box-shadow: var(--shadow);
 	}
 
 	.actions {
 		display: grid;
-		grid-template-columns: 3fr 2fr;
+		grid-template-columns: 1fr auto;
 		gap: 8px;
 	}
 
 	.actions .btn {
-		min-height: 56px;
-		padding: 0 12px;
-		white-space: nowrap;
+		min-height: 58px;
+		border-radius: 18px;
 	}
 
 	.snap {
 		font-size: 1.15rem;
+	}
+
+	.actions svg {
+		width: 24px;
+		height: 24px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.manual {
+		width: 58px;
+		padding: 0;
 	}
 </style>

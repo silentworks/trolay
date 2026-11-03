@@ -2,7 +2,7 @@ import { devices, expect, test, type Page } from '@playwright/test';
 import { FAKE_CAMERA_BARCODE as BARCODE } from './global-setup';
 import { inviteLink, joinedPartner, ownerWithTrip } from './shared';
 
-/** Picks an entry from the shopping screen's ⋮ menu. */
+/** Picks an entry from the shopping screen's ••• menu. */
 async function menu(page: Page, entry: 'Stores' | 'Finish trip') {
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText(entry, { exact: true }).click();

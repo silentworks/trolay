@@ -39,7 +39,7 @@ export async function ownerWithTrip(
 }
 
 /**
- * Picks an entry from the ⋮ menu. A "new version is ready" banner can sit over the menu button
+ * Picks an entry from the ••• menu. A "new version is ready" banner can sit over the menu button
  * (the service worker finds an update now and then), so it is put off first if it is there.
  */
 export async function menu(page: Page, entry: string) {

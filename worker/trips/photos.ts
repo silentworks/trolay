@@ -12,6 +12,16 @@ const MAX_BYTES = 2 * 1024 * 1024;
 const ID = /^[\w-]{1,64}$/;
 const TYPES = new Set(['image/jpeg', 'image/webp', 'image/png']);
 
+/** Whether the bytes open the way a file of this type does, so what is stored is that image. */
+function looksLike(type: string, bytes: Uint8Array): boolean {
+	const starts = (offset: number, ...expected: number[]) =>
+		expected.every((byte, i) => bytes[offset + i] === byte);
+	if (type === 'image/jpeg') return starts(0, 0xff, 0xd8, 0xff);
+	if (type === 'image/png') return starts(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+	// RIFF, a length, then WEBP.
+	return starts(0, 0x52, 0x49, 0x46, 0x46) && starts(8, 0x57, 0x45, 0x42, 0x50);
+}
+
 export const photoKey = (tripId: string, photoId: string) => `trips/${tripId}/${photoId}`;
 
 async function membership(env: Env, userId: string, tripId: string) {
@@ -44,6 +54,10 @@ export async function photo(
 		return new Response(object.body, {
 			headers: {
 				'Content-Type': object.httpMetadata?.contentType ?? 'image/jpeg',
+				// The bytes are a member's upload, served from the app's own origin: the browser must
+				// take them as the image they say they are, and never run anything in them.
+				'X-Content-Type-Options': 'nosniff',
+				'Content-Security-Policy': "sandbox; default-src 'none'",
 				// A photo's id is never reused for different bytes, so it can be kept.
 				'Cache-Control': 'private, max-age=86400, immutable'
 			}
@@ -59,6 +73,7 @@ export async function photo(
 	const bytes = await request.arrayBuffer();
 	if (bytes.byteLength > MAX_BYTES) return error(413, 'too_large');
 	if (!bytes.byteLength) return error(400, 'empty');
+	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
 	await env.PHOTOS.put(photoKey(tripId, photoId), bytes, { httpMetadata: { contentType: type } });
 	// The partner's phone is told, and fetches it.
 	await notifyTrips(env, [tripId]);

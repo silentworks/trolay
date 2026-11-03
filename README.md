@@ -59,21 +59,11 @@ Work is tracked in the Linear project **Trolay**.
   device with no screen lock) is accepted, as the options say it may be; the checks do not
   demand it (`requireUserVerification: false`), and a refused passkey logs why. Account screen:
   `/account`. The app is fully usable without an account.
-- **Sign-in by emailed code, for when a passkey isn't to hand** (`worker/auth/code.ts`,
-  `worker/mail.ts`). The email holds six digits, typed into the Account page, so nothing has to
-  be opened from the mail app (the emailed link it replaced landed on a blank page from there).
-  A code works once and expires after 10 minutes, and a new one replaces the one before it.
-  Six digits are far easier to guess than a link's token, so each code survives five wrong
-  tries and is then locked (every guess is counted before it is looked at); only a hash of it is
-  stored, salted with its row's id. Asking for a code answers the same whether or not the
-  address has an account, and is rate-limited (one a minute and five an hour per address, ten an
-  hour per source). An address with no account gets one when its code is entered; a signed-in
-  user can add an address to their account, and that code signs nobody in. After signing in by
-  code, the app offers to add a passkey on that device. Email goes through Cloudflare Email
-  Service (`send_email` binding `EMAIL`); set `MAIL_FROM` in `wrangler.jsonc` to an address on a
-  domain you have set up there. In development, emails are captured and printed by the API
-  instead of sent (`MAIL_MODE=capture`, set by `pnpm dev:api`); never set it in production,
-  because it exposes the captured emails at `/api/dev/outbox`.
+- **No email sign-in, for now.** Accounts use passkeys only. Sign-in by emailed code was
+  removed (SIL-292) until it's worth the abuse protection it needs: rate limits that hold up
+  against many senders, and a bot check. Accounts made by email before then keep their address,
+  and a device still signed in to one can add a passkey from the Account page. The `login_codes`
+  table is left in place, unused.
 - **Sync across your own devices** (`src/lib/sync/`, `worker/sync/`). Stores, trips and items
   sync; label photos stay on the phone that took them. The app works the same without it.
   - _Outbox:_ a hook on the local tables records, on each record itself, every field that changed

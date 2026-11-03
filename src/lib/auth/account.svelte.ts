@@ -9,19 +9,8 @@ const MESSAGES: Record<string, string> = {
 	verification_failed: 'That passkey was not accepted. Try again.',
 	challenge_expired: 'That took too long. Try again.',
 	already_registered: 'This passkey is already registered.',
-	wrong_account: 'That passkey belongs to a different account.',
-	invalid_email: "That doesn't look like an email address.",
-	too_many_requests: 'Too many requests. Wait a minute and try again.',
-	email_failed: 'The email could not be sent. Try again later.',
-	code_invalid: "That code isn't right, or it has expired. Check it, or ask for a new one.",
-	code_locked: 'Too many wrong tries. Ask for a new code.',
-	invalid_code: 'The code is six digits.',
-	email_in_use: 'That email belongs to a different account.'
+	wrong_account: 'That passkey belongs to a different account.'
 };
-
-/** What entering an emailed code did. */
-export type CodeResult =
-	{ kind: 'signedIn'; hasPasskey: boolean } | { kind: 'added'; email: string };
 
 function explain(cause: unknown): string {
 	if (cause instanceof DOMException || (cause instanceof Error && cause.name in WEBAUTHN_NAMES)) {
@@ -92,8 +81,6 @@ class Account {
 	maybeSignedIn = $state(false);
 	busy = $state(false);
 	error = $state<string>();
-	/** The address a sign-in code was last sent to, until it is used or the person starts over. */
-	codeSentTo = $state<string>();
 
 	/** Asks the server who is signed in. Offline, or with no API, the status stays unknown. */
 	async refresh(): Promise<void> {
@@ -163,43 +150,6 @@ class Account {
 			});
 			this.setSignedIn(user.id);
 		});
-	}
-
-	/** Emails a sign-in code; signed in, the code adds the address to this account instead. */
-	requestCode(email: string): Promise<void> {
-		return this.attempt(async () => {
-			await api('/api/auth/code/request', { email });
-			this.codeSentTo = email.trim();
-		});
-	}
-
-	/** Forgets the address a code was sent to, to ask for one for another address. */
-	startOver(): void {
-		this.codeSentTo = undefined;
-		this.error = undefined;
-	}
-
-	/** Uses the code from the email. Resolves to what it did, or undefined on failure. */
-	async verifyCode(code: string): Promise<CodeResult | undefined> {
-		const email = this.codeSentTo;
-		if (!email) return undefined;
-		let result: CodeResult | undefined;
-		await this.attempt(async () => {
-			const reply = await api<{
-				user?: { id: string };
-				hasPasskey?: boolean;
-				added?: boolean;
-				email?: string;
-			}>('/api/auth/code/verify', { email, code });
-			this.codeSentTo = undefined;
-			if (reply.added) {
-				result = { kind: 'added', email: reply.email ?? '' };
-			} else {
-				this.setSignedIn(reply.user?.id);
-				result = { kind: 'signedIn', hasPasskey: reply.hasPasskey === true };
-			}
-		});
-		return result;
 	}
 
 	signOut(): Promise<void> {

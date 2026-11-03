@@ -6,10 +6,8 @@ import {
 	registrationOptions,
 	registrationVerify
 } from './auth/passkeys.ts';
-import { codeRequest, codeVerify } from './auth/code.ts';
 import type { Env } from './env.ts';
 import { BadRequest, error, json } from './http.ts';
-import { capturedMail } from './mail.ts';
 import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
 import { liveTrip } from './trips/live.ts';
@@ -32,8 +30,6 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/register/verify': { POST: registrationVerify },
 	'/api/auth/login/options': { POST: loginOptions },
 	'/api/auth/login/verify': { POST: loginVerify },
-	'/api/auth/code/request': { POST: codeRequest },
-	'/api/auth/code/verify': { POST: codeVerify },
 	'/api/auth/logout': { POST: logout },
 	'/api/sync/push': { POST: push },
 	'/api/sync/pull': { GET: pull },
@@ -42,14 +38,7 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/trips/live': { GET: liveTrip },
 	'/api/trips/members': { GET: members },
 	'/api/trips/leave': { POST: leaveTrip },
-	'/api/trips/remove-partner': { POST: removePartner },
-	// Emails kept instead of sent, so tests can read the code. Only exists in "capture" mode.
-	'/api/dev/outbox': {
-		GET: (request, env) =>
-			env.MAIL_MODE === 'capture'
-				? json({ mail: capturedMail(new URL(request.url).searchParams.get('to') ?? undefined) })
-				: error(404, 'not_found')
-	}
+	'/api/trips/remove-partner': { POST: removePartner }
 };
 
 /**

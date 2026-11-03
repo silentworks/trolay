@@ -2,7 +2,12 @@
 export function json(body: unknown, status = 200, headers: HeadersInit = {}): Response {
 	return new Response(JSON.stringify(body), {
 		status,
-		headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers }
+		headers: {
+			'Content-Type': 'application/json',
+			'Cache-Control': 'no-store',
+			'X-Content-Type-Options': 'nosniff',
+			...headers
+		}
 	});
 }
 

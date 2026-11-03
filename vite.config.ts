@@ -4,19 +4,24 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { ocrAssetsId } from './scripts/ocr-assets.js';
 
-const CROSS_ORIGIN_ISOLATION = {
+/** The headers static/_headers gives every page in production. Keep the two the same. */
+const PAGE_HEADERS = {
 	'Cross-Origin-Opener-Policy': 'same-origin',
-	'Cross-Origin-Embedder-Policy': 'require-corp'
+	'Cross-Origin-Embedder-Policy': 'require-corp',
+	'Content-Security-Policy': "frame-ancestors 'none'",
+	'X-Frame-Options': 'DENY',
+	'X-Content-Type-Options': 'nosniff',
+	'Referrer-Policy': 'same-origin'
 };
 
 /**
- * The same cross-origin isolation as production (static/_headers), so OCR can use threads in
- * development and tests too. Set by middleware because SvelteKit's preview server answers before
- * Vite's own `preview.headers` are applied.
+ * The same headers as production (static/_headers), so OCR can use threads in development and
+ * tests too, and the tests run under the same rules. Set by middleware because SvelteKit's
+ * preview server answers before Vite's own `preview.headers` are applied.
  */
 function crossOriginIsolation(): Plugin {
 	const middleware: Connect.NextHandleFunction = (_req, res, next) => {
-		for (const [name, value] of Object.entries(CROSS_ORIGIN_ISOLATION)) res.setHeader(name, value);
+		for (const [name, value] of Object.entries(PAGE_HEADERS)) res.setHeader(name, value);
 		next();
 	};
 	return {
@@ -63,7 +68,34 @@ export default defineConfig({
 
 			// Absolute asset paths, as in the built index.html. Relative ones depend on how deep the
 			// URL is, and the service worker serves one cached shell for every URL.
-			paths: { relative: false }
+			paths: { relative: false },
+
+			// What the page may load and run, as a <meta> in index.html. SvelteKit adds the hash of
+			// its own start-up script; there are no other inline scripts. A <meta> policy cannot
+			// refuse framing, so in production the header in static/_headers does; SvelteKit's
+			// preview server sends this policy as a header, frame-ancestors and all.
+			csp: {
+				mode: 'hash',
+				directives: {
+					'default-src': ['self'],
+					// The label reader and barcode reader run WebAssembly.
+					'script-src': ['self', 'wasm-unsafe-eval'],
+					'worker-src': ['self', 'blob:'],
+					// Svelte sets style attributes (style:width and the like).
+					'style-src': ['self', 'unsafe-inline'],
+					// Photos are shown from blobs on the phone.
+					'img-src': ['self', 'blob:', 'data:'],
+					'media-src': ['self', 'blob:'],
+					// The API and its live WebSocket are this origin; product names come from Open Food Facts.
+					'connect-src': ['self', 'https://world.openfoodfacts.org'],
+					'font-src': ['self'],
+					'manifest-src': ['self'],
+					'object-src': ['none'],
+					'base-uri': ['self'],
+					'form-action': ['self'],
+					'frame-ancestors': ['none']
+				}
+			}
 		})
 	],
 	test: {

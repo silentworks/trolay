@@ -245,3 +245,12 @@ To deploy by hand: `pnpm build && pnpm db:migrate:remote && pnpm exec wrangler d
 of its own, which is what the SPA needs. `static/_headers` stops browsers caching the service
 worker and app shell, so new versions are picked up. `/api/*` runs the Worker instead of looking
 for a file.
+
+The page's Content-Security-Policy is a `<meta>` that SvelteKit writes into `index.html`
+(`kit.csp` in `vite.config.ts`, with the hash of its own start-up script): scripts from the site
+only, plus WebAssembly for the label and barcode readers; network calls to the site and Open Food
+Facts only; no plugins. `static/_headers` adds what a `<meta>` can't: `frame-ancestors 'none'`
+and `X-Frame-Options: DENY`, so no other site can frame the app, with `nosniff` and
+`Referrer-Policy: same-origin`. The API's answers carry `nosniff` as well. Anything new the app
+loads from elsewhere needs adding to the policy; `e2e/security-headers.test.ts` fails on any
+violation.

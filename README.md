@@ -59,6 +59,12 @@ Work is tracked in the Linear project **Trolay**.
   device with no screen lock) is accepted, as the options say it may be; the checks do not
   demand it (`requireUserVerification: false`), and a refused passkey logs why. Account screen:
   `/account`. The app is fully usable without an account.
+- **Limits** (`worker/rate.ts`, migration `0010`). Starting a passkey ceremony needs no account,
+  so it is limited to 100 an hour per source (an IPv6 address counts by its /64) and 2,000 an
+  hour over everyone; past that the API answers 429. Counts live in D1 (`rate_events`), kept an
+  hour. An account may keep 1,000 stores and 20,000 trips, and a trip 1,000 items; a new record
+  past that is refused with the reason `limit` (the app keeps it on the phone). A shared trip may
+  hold 500 photos on the server.
 - **No email sign-in, for now.** Accounts use passkeys only. Sign-in by emailed code was
   removed (SIL-292) until it's worth the abuse protection it needs: rate limits that hold up
   against many senders, and a bot check. Accounts made by email before then keep their address,

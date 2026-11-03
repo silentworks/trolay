@@ -9,7 +9,8 @@ const MESSAGES: Record<string, string> = {
 	verification_failed: 'That passkey was not accepted. Try again.',
 	challenge_expired: 'That took too long. Try again.',
 	already_registered: 'This passkey is already registered.',
-	wrong_account: 'That passkey belongs to a different account.'
+	wrong_account: 'That passkey belongs to a different account.',
+	too_many_requests: 'Too many tries. Wait a while and try again.'
 };
 
 function explain(cause: unknown): string {

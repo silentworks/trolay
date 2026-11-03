@@ -17,6 +17,14 @@ const MAX_PUSH_BYTES = 512 * 1024;
 /** A change dated far ahead would beat every later edit, so clocks are only trusted so far. */
 const MAX_CLOCK_AHEAD = 24 * 60 * 60 * 1000;
 const ID = /^[\w-]{1,64}$/;
+/**
+ * The most records one account may keep, so nobody can fill the database. Stores and trips are
+ * counted per account, items per trip (a partner's count towards the trip). Far beyond any
+ * real shopper: years of a trip a day.
+ */
+export const MAX_STORES = 1000;
+export const MAX_TRIPS = 20_000;
+export const MAX_ITEMS_PER_TRIP = 1000;
 
 type Row = Record<string, unknown>;
 type Times = Record<string, { value: unknown; at: number }>;
@@ -102,6 +110,22 @@ async function allowed(
 	return (await isMember(env, resulting.trip_id as string, userId)) ? undefined : 'forbidden';
 }
 
+/** Whether a new record would take its account, or its trip, over the limit. */
+async function full(env: Env, userId: string, table: SyncTable, resulting: Row): Promise<boolean> {
+	const [sql, value, max] =
+		table === 'stores'
+			? ['SELECT COUNT(*) AS n FROM stores WHERE owner_id = ?', userId, MAX_STORES]
+			: table === 'trips'
+				? ['SELECT COUNT(*) AS n FROM trips WHERE owner_id = ?', userId, MAX_TRIPS]
+				: [
+						'SELECT COUNT(*) AS n FROM items WHERE trip_id = ?',
+						resulting.trip_id,
+						MAX_ITEMS_PER_TRIP
+					];
+	const found = await env.DB.prepare(sql).bind(value).first<{ n: number }>();
+	return (found?.n ?? 0) >= max;
+}
+
 /**
  * Merges one change into its row, field by field. Returns the outcome. When two devices write
  * the same row at once the write that lost the race is retried against the new state.
@@ -151,6 +175,9 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 		}
 		const reason = await allowed(env, userId, table, existing, resulting);
 		if (reason) return result('rejected', reason);
+		if (!existing && (await full(env, userId, table, resulting))) {
+			return result('rejected', 'limit');
+		}
 		// Nothing here is newer than what the row holds. Asked after permission, so another
 		// person's record is refused the same whether or not the change would have won.
 		if (existing && !accepted.length) return result('ok');

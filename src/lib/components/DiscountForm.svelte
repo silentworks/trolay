@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { untrack } from 'svelte';
 	import {
 		amountLabel,
@@ -64,17 +65,21 @@
 	</div>
 
 	<div class="field">
-		<label for="{uid}-discount"
-			>{kind === 'amount' ? amountLabel('Discount', currency) : 'Discount (%)'}</label
-		>
+		<div class="with-info">
+			<label for="{uid}-discount"
+				>{kind === 'amount' ? amountLabel('Discount', currency) : 'Discount (%)'}</label
+			>
+			<InfoTip title="Discount">
+				<p>
+					Taken off the whole trolley, as at the till. It can't take the total below {formatMoney(
+						0,
+						currency
+					)}.
+				</p>
+			</InfoTip>
+		</div>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input id="{uid}-discount" class="input" bind:value inputmode="decimal" autofocus />
-		<span class="hint">
-			Taken off the whole trolley, as at the till. It can't take the total below {formatMoney(
-				0,
-				currency
-			)}.
-		</span>
 	</div>
 	<button class="btn btn-primary btn-block" type="submit">Save discount</button>
 	{#if discount}

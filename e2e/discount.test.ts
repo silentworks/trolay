@@ -52,7 +52,7 @@ test('a discount comes off the trolley total, the receipt check and the history'
 	await sheet.getByRole('button', { name: 'Save discount' }).click();
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total').fill('5.40');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('5.40');
 	await expect(finish).toContainText('✓ The receipt matches.');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 

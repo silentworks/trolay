@@ -71,7 +71,7 @@ test('a trip finished while shared stays in both histories', async ({ browser })
 
 	await menu(owner, 'Finish trip');
 	const finish = owner.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total').fill('1.45');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('1.45');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(owner.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 

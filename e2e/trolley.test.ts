@@ -65,7 +65,10 @@ test('a full trip: add, edit, switch totals, budget, delete with undo, reload', 
 
 	// Budget: £1.60 → £1.50 is 94% → amber.
 	await page.getByRole('button', { name: 'Set a budget' }).click();
-	await page.getByRole('dialog', { name: 'Trip budget' }).getByLabel('Budget').fill('1.60');
+	await page
+		.getByRole('dialog', { name: 'Trip budget' })
+		.getByLabel('Budget', { exact: true })
+		.fill('1.60');
 	await page.getByRole('button', { name: 'Save budget' }).click();
 	const budget = page.getByRole('region', { name: 'Budget' });
 	await expect(budget).toHaveAttribute('data-status', 'warning');
@@ -157,7 +160,7 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await finish.getByRole('button', { name: 'Finish trip' }).click({ force: true });
 	await expect(finish).toBeVisible();
 
-	const receipt = finish.getByLabel('Receipt total');
+	const receipt = finish.getByLabel('Receipt total', { exact: true });
 	await receipt.fill('3.90');
 	await expect(finish).toContainText('The till charged 0.01 more than Trolay added up.');
 	await receipt.fill('3.8');
@@ -172,7 +175,7 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await receipt.press('Tab');
 	await finish.getByRole('button', { name: 'Close' }).click();
 	await menu(page, 'Finish trip');
-	await expect(finish.getByLabel('Receipt total')).toHaveValue('3.89');
+	await expect(finish.getByLabel('Receipt total', { exact: true })).toHaveValue('3.89');
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
@@ -218,7 +221,7 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 async function finishTrip(page: Page, receipt = '10.00') {
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total').fill(receipt);
+	await finish.getByLabel('Receipt total', { exact: true }).fill(receipt);
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 }

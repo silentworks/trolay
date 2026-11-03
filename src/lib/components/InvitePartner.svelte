@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { onMount } from 'svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { createInviteLink, explainMissingTrip, InviteError } from '#lib/sharing/invites.ts';
@@ -73,10 +74,16 @@
 </script>
 
 <div class="invite">
-	<p class="hint">
-		Send this link to the person shopping with you. It works once, for one person, and expires in a
-		day. They'll need to sign in to Trolay to accept.
-	</p>
+	<div class="with-info">
+		<p class="hint">Send this link to the person shopping with you.</p>
+		<InfoTip title="Invite links">
+			<p>
+				A link works once, for one person, and expires in a day. They'll need to sign in to Trolay
+				to accept.
+			</p>
+			<p>Making a new link replaces the one before.</p>
+		</InfoTip>
+	</div>
 
 	{#if busy && !link}
 		<p role="status">Making a link…</p>
@@ -105,7 +112,6 @@
 		<button class="btn btn-block again" type="button" disabled={busy} onclick={make}>
 			Make a new link
 		</button>
-		<p class="hint">A new link replaces this one.</p>
 	{/if}
 
 	{#if error}

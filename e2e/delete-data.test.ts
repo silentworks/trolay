@@ -16,7 +16,7 @@ async function finishedTripAt(page: Page, store: string) {
 		.getByText('Finish trip', { exact: true })
 		.click();
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total').fill('1.45');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('1.45');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 }

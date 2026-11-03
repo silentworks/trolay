@@ -236,7 +236,10 @@ test('reads the total of a receipt photographed on a phone', async ({ page }) =>
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-korean-shop.png');
-	await expect(finish.getByLabel('Receipt total')).toHaveValue('7.84', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total', { exact: true })).toHaveValue(
+		'7.84',
+		READ_TIMEOUT
+	);
 });
 
 test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) => {
@@ -255,7 +258,10 @@ test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) =>
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-wholesale-incl-vat.png');
-	await expect(finish.getByLabel('Receipt total')).toHaveValue('443.31', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total', { exact: true })).toHaveValue(
+		'443.31',
+		READ_TIMEOUT
+	);
 });
 
 test('reads the receipt total and keeps the photos when it does not match', async ({ page }) => {
@@ -274,7 +280,10 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 		.getByRole('dialog', { name: 'Snap the receipt' })
 		.locator('input[type=file]')
 		.setInputFiles('fixtures/receipts/real/uk-tesco-1994.jpg');
-	await expect(finish.getByLabel('Receipt total')).toHaveValue('6.71', READ_TIMEOUT);
+	await expect(finish.getByLabel('Receipt total', { exact: true })).toHaveValue(
+		'6.71',
+		READ_TIMEOUT
+	);
 	await expect(finish.getByText('the card and cash lines add up to it')).toBeVisible();
 	await expect(finish.getByText('The till charged 4.72 more than Trolay added up.')).toBeVisible();
 	await expect(finish.getByText('The 1 label photo will be kept as evidence')).toBeVisible();

@@ -31,7 +31,7 @@ test('no screen speaks of pounds, pence or VAT for a store with no currency', as
 	await expectNeutral(page, 'welcome');
 	await page.getByRole('button', { name: 'Get started' }).click();
 	await page.getByLabel('Store name').fill('Corner Shop');
-	await page.getByLabel('Currency').selectOption({ label: 'None' });
+	await page.getByLabel('Currency', { exact: true }).selectOption({ label: 'None' });
 	await expectNeutral(page, 'guide: store');
 	await page.getByRole('button', { name: 'Next' }).click();
 	await expectNeutral(page, 'guide: sales tax');
@@ -65,10 +65,10 @@ test('no screen speaks of pounds, pence or VAT for a store with no currency', as
 
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByLabel('Receipt total').fill('2.60');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('2.60');
 	await expect(finish).toContainText('The till charged 0.10 more');
 	await expectNeutral(page, 'finish');
-	await finish.getByLabel('Receipt total').fill('2.50');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('2.50');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
 

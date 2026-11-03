@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { untrack } from 'svelte';
 	import { readText } from '#lib/capture/ocr/browser.ts';
 	import { parseReceipt } from '#lib/capture/receipt/parse.ts';
@@ -93,7 +94,15 @@
 	</dl>
 
 	<div class="field">
-		<label for="{uid}-receipt">{amountLabel('Receipt total', currency)}</label>
+		<div class="with-info">
+			<label for="{uid}-receipt">{amountLabel('Receipt total', currency)}</label>
+			<InfoTip title="Receipt total">
+				<p>
+					The total printed on the till receipt. You need it to finish the trip, and Trolay checks
+					it against its own total.
+				</p>
+			</InfoTip>
+		</div>
 		<input
 			id="{uid}-receipt"
 			class="input"
@@ -105,7 +114,6 @@
 			aria-invalid={invalid}
 			aria-describedby="{uid}-difference"
 		/>
-		<span class="hint">The total on the till receipt. Needed to finish the trip.</span>
 		{#if read === 'reading'}
 			<p class="read" role="status">Reading the receipt…</p>
 		{:else if read === 'confirmed'}

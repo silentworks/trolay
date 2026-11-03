@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { untrack } from 'svelte';
 	import { amountLabel, minorToInput, parsePounds } from '#lib/money.ts';
 
@@ -30,10 +31,17 @@
 <form onsubmit={submit} novalidate>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 	<div class="field">
-		<label for="{uid}-budget">{amountLabel('Budget', currency)}</label>
+		<div class="with-info">
+			<label for="{uid}-budget">{amountLabel('Budget', currency)}</label>
+			<InfoTip title="Budget">
+				<p>
+					Trolay shows how much of it is left as you add items, against your total incl. tax. The
+					bar turns amber when you're close and red once you go over.
+				</p>
+			</InfoTip>
+		</div>
 		<!-- svelte-ignore a11y_autofocus -->
 		<input id="{uid}-budget" class="input" bind:value inputmode="decimal" autofocus />
-		<span class="hint">Compared with the headline total, incl. or excl. tax as shown.</span>
 	</div>
 	<button class="btn btn-primary btn-block" type="submit">Save budget</button>
 	{#if budgetMinor !== undefined}

@@ -15,7 +15,7 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await page.getByRole('button', { name: 'Next' }).click();
 	await expect(page.getByRole('alert')).toContainText('Enter the name of the store');
 	// Guessed from the phone's region (en-GB in these tests).
-	await expect(page.getByLabel('Currency')).toHaveValue('GBP');
+	await expect(page.getByLabel('Currency', { exact: true })).toHaveValue('GBP');
 	await page.getByLabel('Store name').fill('Lidl');
 	await page.getByLabel(/Branch or location/).fill('Hackney');
 	await page.getByRole('button', { name: 'Next' }).click();
@@ -29,7 +29,7 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 	await page.getByRole('button', { name: 'Next' }).click();
 
 	await expect(page.getByRole('heading', { name: 'Set a budget for this trip?' })).toBeFocused();
-	await page.getByLabel(/Budget/).fill('40');
+	await page.getByLabel(/^Budget/).fill('40');
 	await page.getByRole('button', { name: 'Next' }).click();
 
 	await expect(page.getByRole('heading', { name: 'How a trip works' })).toBeFocused();

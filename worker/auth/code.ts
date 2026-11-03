@@ -8,11 +8,36 @@ const MINUTE = 60 * 1000;
 export const CODE_LIFETIME = 10 * MINUTE;
 /** Wrong guesses a code survives. Six digits are easy to guess, so there are only a few. */
 export const MAX_TRIES = 5;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 // How often codes may be asked for: one per address a minute, a few an hour, and a few more per
-// source, so the form can't be used to flood somebody's inbox.
+// source, so the form can't be used to flood somebody's inbox. Over everyone there is a ceiling
+// too, so a script spraying made-up addresses from many sources can only send so many emails
+// (bounces count against the domain's sending reputation).
 const PER_EMAIL_GAP = MINUTE;
 const PER_EMAIL_HOUR = 5;
 const PER_SOURCE_HOUR = 10;
+const PER_SOURCE_DAY = 30;
+export const ALL_HOUR = 100;
+export const ALL_DAY = 500;
+
+/**
+ * Who is asking, for the per-source limits. An IPv6 address counts by its /64, which is what one
+ * connection is usually given: otherwise every address in it would be a fresh source.
+ */
+export function sourceOf(ip: string | null): string {
+	if (!ip?.includes(':')) return ip ?? 'unknown';
+	const [head, tail = ''] = ip.toLowerCase().split('::');
+	const front = head ? head.split(':') : [];
+	const back = tail ? tail.split(':') : [];
+	const groups = ip.includes('::')
+		? [...front, ...Array(Math.max(0, 8 - front.length - back.length)).fill('0'), ...back]
+		: front;
+	return `${groups
+		.slice(0, 4)
+		.map((group) => group.replace(/^0+(?=.)/, ''))
+		.join(':')}::/64`;
+}
 
 function normaliseEmail(value: unknown): string {
 	const email = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -73,19 +98,24 @@ function emailFor(code: string, adding: boolean) {
 export async function codeRequest(request: Request, env: Env): Promise<Response> {
 	const email = normaliseEmail((await readJson(request)).email);
 	const now = Date.now();
-	const requester = await sha256(request.headers.get('CF-Connecting-IP') ?? 'unknown');
-	const count = async (column: 'email' | 'requester', value: string, since: number) =>
+	const requester = await sha256(sourceOf(request.headers.get('CF-Connecting-IP')));
+	/** Codes asked for since then: for this address or source, or by everyone. */
+	const count = async (since: number, column?: 'email' | 'requester', value?: string) =>
 		(
 			await env.DB.prepare(
-				`SELECT COUNT(*) AS n FROM login_codes WHERE ${column} = ? AND created_at > ?`
+				`SELECT COUNT(*) AS n FROM login_codes
+				 WHERE created_at > ?${column ? ` AND ${column} = ?` : ''}`
 			)
-				.bind(value, since)
+				.bind(since, ...(column ? [value] : []))
 				.first<{ n: number }>()
 		)?.n ?? 0;
 	if (
-		(await count('email', email, now - PER_EMAIL_GAP)) > 0 ||
-		(await count('email', email, now - 60 * MINUTE)) >= PER_EMAIL_HOUR ||
-		(await count('requester', requester, now - 60 * MINUTE)) >= PER_SOURCE_HOUR
+		(await count(now - PER_EMAIL_GAP, 'email', email)) > 0 ||
+		(await count(now - HOUR, 'email', email)) >= PER_EMAIL_HOUR ||
+		(await count(now - HOUR, 'requester', requester)) >= PER_SOURCE_HOUR ||
+		(await count(now - DAY, 'requester', requester)) >= PER_SOURCE_DAY ||
+		(await count(now - HOUR)) >= ALL_HOUR ||
+		(await count(now - DAY)) >= ALL_DAY
 	) {
 		return error(429, 'too_many_requests');
 	}
@@ -94,7 +124,7 @@ export async function codeRequest(request: Request, env: Env): Promise<Response>
 	const code = newCode();
 	const addingTo = (await sessionUser(request, env)) ?? null;
 	await env.DB.batch([
-		env.DB.prepare('DELETE FROM login_codes WHERE created_at < ?').bind(now - 24 * 60 * MINUTE),
+		env.DB.prepare('DELETE FROM login_codes WHERE created_at < ?').bind(now - DAY),
 		// A new code replaces any earlier one for the address asked for the same way, so only the
 		// latest can be used. One account adding the address doesn't cancel a code to sign in with
 		// it, or another account's, or that could be used to swap a code someone was waiting for.

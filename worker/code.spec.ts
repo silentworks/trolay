@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Env } from './env.ts';
+import { ALL_DAY, ALL_HOUR, sourceOf } from './auth/code.ts';
 import { capturedMail } from './mail.ts';
 import { createTestEnv, testClient, type TestEnv } from './testing.ts';
 
@@ -116,6 +117,70 @@ describe('asking for a code', () => {
 		for (let i = 0; i < 10; i++)
 			expect((await request(fresh().email, { headers })).status).toBe(202);
 		expect((await request(fresh().email, { headers })).status).toBe(429);
+	});
+
+	it('limits a source over the day as well as the hour', async () => {
+		const headers = { 'CF-Connecting-IP': '203.0.113.10' };
+		for (let hour = 0; hour < 3; hour++) {
+			for (let i = 0; i < 10; i++)
+				expect((await request(fresh().email, { headers })).status).toBe(202);
+			// An hour on: the hourly limit has passed, but the day's still counts these.
+			await env.DB.prepare('UPDATE login_codes SET created_at = created_at - 3600000').run();
+		}
+		expect((await request(fresh().email, { headers })).status).toBe(429);
+	});
+
+	it('counts an IPv6 source by its /64, however the address is written', async () => {
+		expect(sourceOf('2001:db8:0:1:aaaa::1')).toBe('2001:db8:0:1::/64');
+		expect(sourceOf('2001:DB8:0000:0001:ffff:1:2:3')).toBe('2001:db8:0:1::/64');
+		expect(sourceOf('2001:db8::')).toBe('2001:db8:0:0::/64');
+		expect(sourceOf('::1')).toBe('0:0:0:0::/64');
+		expect(sourceOf('203.0.113.9')).toBe('203.0.113.9');
+		expect(sourceOf(null)).toBe('unknown');
+		// Ten from all over one /64 use up its hour.
+		for (let i = 1; i <= 10; i++) {
+			const headers = { 'CF-Connecting-IP': `2001:db8:5:6:${i.toString(16)}::${i}` };
+			expect((await request(fresh().email, { headers })).status).toBe(202);
+		}
+		const headers = { 'CF-Connecting-IP': '2001:db8:5:6:ffff::9' };
+		expect((await request(fresh().email, { headers })).status).toBe(429);
+	});
+
+	it('sends only so many codes an hour and a day, over everyone', async () => {
+		// Codes already asked for by many sources, made up here rather than sent.
+		const fill = async (count: number, ago: number) => {
+			const at = Date.now() - ago;
+			for (let i = 0; i < count; i += 50) {
+				await env.DB.batch(
+					Array.from({ length: Math.min(50, count - i) }, (_, j) =>
+						env.DB.prepare(
+							`INSERT INTO login_codes (id, email, code_hash, requester, created_at, expires_at)
+							 VALUES (?, ?, 'x', ?, ?, ?)`
+						).bind(`filler-${ago}-${i + j}`, `filler${i + j}@example.com`, `src${i + j}`, at, at)
+					)
+				);
+			}
+		};
+		const clear = () => env.DB.prepare("DELETE FROM login_codes WHERE id LIKE 'filler-%'").run();
+		try {
+			const recent = (await env.DB.prepare(
+				'SELECT COUNT(*) AS n FROM login_codes WHERE created_at > ?'
+			)
+				.bind(Date.now() - 3600000)
+				.first<{ n: number }>())!.n;
+			await fill(ALL_HOUR - recent - 1, 0);
+			expect((await request(fresh().email, fresh())).status).toBe(202);
+			expect((await request(fresh().email, fresh())).status).toBe(429);
+			// Two hours on, the hour is clear but the day is full.
+			await env.DB.prepare('UPDATE login_codes SET created_at = created_at - 7200000').run();
+			const today = (await env.DB.prepare('SELECT COUNT(*) AS n FROM login_codes').first<{
+				n: number;
+			}>())!.n;
+			await fill(ALL_DAY - today, 3 * 3600000);
+			expect((await request(fresh().email, fresh())).status).toBe(429);
+		} finally {
+			await clear();
+		}
 	});
 
 	it('sends through the email binding, from the configured address', async () => {

@@ -102,8 +102,6 @@
 
 <style>
 	.info {
-		position: relative;
-		isolation: isolate;
 		display: inline-grid;
 		place-items: center;
 		flex: none;
@@ -117,16 +115,6 @@
 		color: var(--muted);
 		vertical-align: middle;
 		cursor: pointer;
-	}
-
-	.info::before {
-		content: '';
-		position: absolute;
-		width: 30px;
-		height: 30px;
-		border-radius: 50%;
-		background: var(--surface-2);
-		z-index: -1;
 	}
 
 	.info[aria-expanded='true'],

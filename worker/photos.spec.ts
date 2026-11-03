@@ -75,7 +75,18 @@ async function bytes(
 	if (body !== undefined) headers['Content-Type'] = type;
 	return handleApi(new Request(ORIGIN + path, { method, headers, body }), env);
 }
-const put = (trip: string, photo: string, cookie: string | undefined, body: BodyInit = 'jpeg') =>
+/** The first bytes of each kind of image, then something. */
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
+const WEBP = new Uint8Array(
+	[...'RIFF']
+		.map((c) => c.charCodeAt(0))
+		.concat(
+			[4, 0, 0, 0],
+			[...'WEBPVP8 '].map((c) => c.charCodeAt(0))
+		)
+);
+const put = (trip: string, photo: string, cookie: string | undefined, body: BodyInit = JPEG) =>
 	bytes('PUT', `/api/trips/${trip}/photos/${photo}`, cookie, body);
 const get = (trip: string, photo: string, cookie: string | undefined) =>
 	bytes('GET', `/api/trips/${trip}/photos/${photo}`, cookie);
@@ -102,11 +113,11 @@ const finish = (trip: string, kept: boolean, time = T + 1000) =>
 describe('photos of a shared trip', () => {
 	it('are uploaded by one member and fetched by the other, byte for byte', async () => {
 		const trip = await sharedTrip();
-		expect((await put(trip, 'photo-1', alice, new Uint8Array([1, 2, 3, 255]))).status).toBe(201);
+		expect((await put(trip, 'photo-1', alice)).status).toBe(201);
 		const reply = await get(trip, 'photo-1', bob);
 		expect(reply.status).toBe(200);
 		expect(reply.headers.get('Content-Type')).toBe('image/jpeg');
-		expect([...new Uint8Array(await reply.arrayBuffer())]).toEqual([1, 2, 3, 255]);
+		expect([...new Uint8Array(await reply.arrayBuffer())]).toEqual([...JPEG]);
 		// Either member can add one.
 		expect((await put(trip, 'photo-2', bob)).status).toBe(201);
 		expect((await get(trip, 'photo-2', alice)).status).toBe(200);
@@ -131,6 +142,28 @@ describe('photos of a shared trip', () => {
 		expect((await put(trip, 'p', alice, new Uint8Array(0))).status).toBe(400);
 		expect((await put(trip, 'bad id!', alice)).status).toBe(400);
 		expect(await stored(trip)).toEqual([]);
+	});
+
+	it('must be the kind of image they say they are', async () => {
+		const trip = await sharedTrip();
+		const upload = (body: Uint8Array<ArrayBuffer>, type: string) =>
+			bytes('PUT', `/api/trips/${trip}/photos/p-${type.slice(6)}`, alice, body, type);
+		expect((await upload(PNG, 'image/png')).status).toBe(201);
+		expect((await upload(WEBP, 'image/webp')).status).toBe(201);
+		// HTML, or one image type passed off as another, is refused.
+		const html = new TextEncoder().encode('<html><script>alert(1)</script>');
+		expect((await upload(html, 'image/jpeg')).status).toBe(415);
+		expect((await upload(PNG, 'image/jpeg')).status).toBe(415);
+		expect((await upload(JPEG, 'image/webp')).status).toBe(415);
+		expect(await stored(trip)).toEqual([`trips/${trip}/p-png`, `trips/${trip}/p-webp`]);
+	});
+
+	it('are served so the browser only ever shows them as images', async () => {
+		const trip = await sharedTrip();
+		await put(trip, 'photo-1', alice);
+		const reply = await get(trip, 'photo-1', bob);
+		expect(reply.headers.get('X-Content-Type-Options')).toBe('nosniff');
+		expect(reply.headers.get('Content-Security-Policy')).toBe("sandbox; default-src 'none'");
 	});
 
 	it('are not accepted once the trip has finished', async () => {

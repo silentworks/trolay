@@ -48,7 +48,10 @@ async function phone(): Promise<Phone> {
 	return me;
 }
 
-const bytes = (...values: number[]) => new Blob([new Uint8Array(values)], { type: 'image/jpeg' });
+/** A JPEG as far as the server checks one: its first three bytes, then these. */
+const JPEG = [0xff, 0xd8, 0xff];
+const bytes = (...values: number[]) =>
+	new Blob([new Uint8Array([...JPEG, ...values])], { type: 'image/jpeg' });
 const read = async (blob: Blob) => [...new Uint8Array(await blob.arrayBuffer())];
 const stored = async () =>
 	(await server.env.PHOTOS!.list({ prefix: `trips/${ids.trip}/` })).objects.map((o) => o.key);
@@ -147,7 +150,7 @@ describe('photos on a shared open trip', () => {
 		expect(await partner.db.photos.get(ids.photo)).toBeUndefined();
 		await partner.photos.run();
 		const got = await partner.db.photos.get(ids.photo);
-		expect(await read(got!.blob)).toEqual([1, 2, 3]);
+		expect(await read(got!.blob)).toEqual([...JPEG, 1, 2, 3]);
 		expect(got?.itemId).toBe(ids.item);
 	});
 

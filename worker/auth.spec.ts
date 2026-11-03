@@ -157,6 +157,24 @@ describe('sessions', () => {
 		expect((await call('/api/auth/me', { cookie: other.done.cookie })).body.user).not.toBeNull();
 	});
 
+	it("all end on signing out on all devices, and nobody else's do", async () => {
+		const { authenticator, done: first } = await register();
+		const other = await signIn(authenticator);
+		const { done: stranger } = await register();
+		const out = await call('/api/auth/logout-everywhere', {
+			method: 'POST',
+			body: {},
+			cookie: other.done.cookie
+		});
+		expect(out.setCookie).toContain('Max-Age=0');
+		for (const cookie of [first.cookie, other.done.cookie]) {
+			expect((await call('/api/auth/me', { cookie })).body).toEqual({ user: null });
+		}
+		expect((await call('/api/auth/me', { cookie: stranger.cookie })).body.user).not.toBeNull();
+		// The passkey still signs in again.
+		expect((await signIn(authenticator)).done.status).toBe(200);
+	});
+
 	it('are refused once expired', async () => {
 		const { done } = await register();
 		await env.DB.prepare('UPDATE sessions SET expires_at = ?')

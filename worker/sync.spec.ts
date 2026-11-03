@@ -337,6 +337,24 @@ describe('refusing what the app would never send', () => {
 		expect(await recordOf(alice, 'stores', good)).toBeDefined();
 	});
 
+	it('refuses a trip status or discount kind the app has no such thing as', async () => {
+		const store = uid('store');
+		await push(alice, [change('stores', store, storeFields, T)]);
+		const trip = (fields: Record<string, unknown>) =>
+			change('trips', uid('trip'), { ...tripFields(store), ...fields }, T);
+		const reply = await push(alice, [
+			trip({ status: 'paused' }),
+			trip({ discountKind: 'bogof' }),
+			trip({ status: 'finished', discountKind: 'percent', discountValue: 1000 })
+		]);
+		expect(reply.status).toBe(200);
+		expect(reply.body.results.map((r: PushResult) => r.reason ?? r.status)).toEqual([
+			'invalid',
+			'invalid',
+			'ok'
+		]);
+	});
+
 	it('refuses a request that is not a list of at most 100 changes', async () => {
 		expect((await call('/api/sync/push', { body: {}, cookie: alice })).status).toBe(400);
 		expect((await push(alice, 'nope')).status).toBe(400);

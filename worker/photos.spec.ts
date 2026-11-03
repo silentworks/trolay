@@ -166,6 +166,22 @@ describe('photos of a shared trip', () => {
 		expect(reply.headers.get('Content-Security-Policy')).toBe("sandbox; default-src 'none'");
 	});
 
+	it("can be replaced by their uploader, and not by the trip's other member", async () => {
+		const trip = await sharedTrip();
+		expect((await put(trip, 'photo-1', alice)).status).toBe(201);
+		const replace = await put(trip, 'photo-1', bob, new Uint8Array([0xff, 0xd8, 0xff, 9]));
+		expect(replace.status).toBe(403);
+		expect(await replace.json()).toEqual({ error: 'not_your_photo' });
+		expect([...new Uint8Array(await (await get(trip, 'photo-1', bob)).arrayBuffer())]).toEqual([
+			...JPEG
+		]);
+		expect((await put(trip, 'photo-1', alice, new Uint8Array([0xff, 0xd8, 0xff, 9]))).status).toBe(
+			201
+		); // One stored before uploaders were recorded can be replaced by either member.
+		await env.PHOTOS!.put(`trips/${trip}/old`, new Uint8Array(JPEG));
+		expect((await put(trip, 'old', bob)).status).toBe(201);
+	});
+
 	it('are not accepted once the trip has finished', async () => {
 		const trip = await sharedTrip();
 		await finish(trip, true);

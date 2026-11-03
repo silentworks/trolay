@@ -52,7 +52,8 @@ Work is tracked in the Linear project **Trolay**.
   (the app and API share an origin), so it works on `localhost` in development and on your
   domain in production, but a passkey made in one place is not valid in the other. The session is
   an `HttpOnly`, `Secure`, `SameSite=Lax` cookie (`__Host-session` over HTTPS); only a hash of its
-  token is stored, it lasts 30 days, and signing out ends it on that device only. Each ceremony's
+  token is stored, it lasts 30 days, and signing out ends it on that device only ("Sign out on
+  all devices" ends every session of the account, for a lost phone). Each ceremony's
   challenge is single-use and expires in 5 minutes. State-changing requests must be JSON and
   must not come from another origin. User verification is `preferred`, not required: a passkey
   from an authenticator that cannot verify the user (some password managers and security keys, a
@@ -157,10 +158,12 @@ test:e2e`); the Worker tests cover the door. Deploying creates the class through
   must be an image of at most 2 MB and only while the trip is open. When the trip finishes the
   Worker deletes the trip's photos from R2, unless they were kept as receipt evidence, in which
   case deleting the evidence later (which syncs as `photosKept = false`) deletes them too. The
-  partner's phone drops its copies once the items lose their `photoId`. R2 needs a bucket named
+  partner's phone drops its copies once the items lose their `photoId`. A photo can only be
+  replaced by the account that uploaded it. R2 needs a bucket named
   `trolay-photos` (`wrangler r2 bucket create trolay-photos`).
 - **Who added each item** (`src/lib/sharing/members.svelte.ts`, the cart). An item records the
-  account that added it (`addedBy`, a synced field), and on a trip with more than one person the
+  account that added it (`addedBy`, a synced field; the server only lets a phone name its own
+  account, and only on an item nobody is named on yet), and on a trip with more than one person the
   row says "Added by you", by their name, or, for a passkey-only account with no name, by their
   part ("your partner", "the trip owner"). A trip that is not shared shows nothing extra. The
   phone asks `GET /api/trips/members` after each sync, since a partner can join at any moment;

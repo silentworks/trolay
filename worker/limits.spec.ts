@@ -198,7 +198,9 @@ describe('photos on a trip', () => {
 			}
 		});
 		for (let i = 0; i < MAX_PHOTOS_PER_TRIP; i++) {
-			await env.PHOTOS!.put(`trips/photo-trip/held-${i}`, 'x');
+			await env.PHOTOS!.put(`trips/photo-trip/held-${i}`, 'x', {
+				customMetadata: { by: done.body.user.id }
+			});
 		}
 		const put = (photo: string) =>
 			handleApi(

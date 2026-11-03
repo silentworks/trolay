@@ -8,6 +8,8 @@ export interface FieldSpec {
 	kind: FieldKind;
 	/** Can never be unset: the record cannot exist without it. */
 	required?: boolean;
+	/** The only values a string may take, when it is one of a few. */
+	values?: readonly string[];
 }
 
 export type SyncTable = 'stores' | 'trips' | 'items';
@@ -15,7 +17,11 @@ export type SyncTable = 'stores' | 'trips' | 'items';
 /** Tables in the order a push must send them: a trip needs its store, an item its trip. */
 export const SYNC_TABLES: SyncTable[] = ['stores', 'trips', 'items'];
 
-const string = (required = false): FieldSpec => ({ kind: 'string', required });
+const string = (required = false, values?: readonly string[]): FieldSpec => ({
+	kind: 'string',
+	required,
+	values
+});
 const int = (required = false): FieldSpec => ({ kind: 'int', required });
 const bool = (required = false): FieldSpec => ({ kind: 'bool', required });
 const json = (): FieldSpec => ({ kind: 'json' });
@@ -37,10 +43,10 @@ export const SYNC_FIELDS: Record<SyncTable, Record<string, FieldSpec>> = {
 	},
 	trips: {
 		storeId: string(true),
-		status: string(true),
+		status: string(true, ['open', 'finished']),
 		budgetMinor: int(),
 		receiptTotalMinor: int(),
-		discountKind: string(),
+		discountKind: string(false, ['amount', 'percent']),
 		discountValue: int(),
 		photosKept: bool(true),
 		startedAt: int(true),
@@ -146,7 +152,11 @@ export function validValue(spec: FieldSpec, value: unknown): boolean {
 	if (value === null) return !spec.required;
 	switch (spec.kind) {
 		case 'string':
-			return typeof value === 'string' && value.length <= 2000;
+			return (
+				typeof value === 'string' &&
+				value.length <= 2000 &&
+				(!spec.values || spec.values.includes(value))
+			);
 		case 'int':
 			return Number.isSafeInteger(value);
 		case 'bool':

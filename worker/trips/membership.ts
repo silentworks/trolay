@@ -1,7 +1,7 @@
 import { sessionUser } from '../auth/session.ts';
 import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
-import { notifyTrips } from './live.ts';
+import { dropFromTrip, notifyTrips } from './live.ts';
 
 const ID = /^[\w-]{1,64}$/;
 
@@ -30,7 +30,9 @@ async function end(env: Env, tripId: string, partnerId: string): Promise<boolean
 		).bind(`${tripId}:${partnerId}`, tripId, partnerId, now)
 	]);
 	if (!outcome[0].meta.changes) return false;
-	// The partner's phone, if it is listening, finds out now.
+	// The partner's phone, if it is listening, finds out now, and its live connection is closed; the
+	// owner's is nudged too.
+	await dropFromTrip(env, tripId, partnerId);
 	await notifyTrips(env, [tripId]);
 	return true;
 }

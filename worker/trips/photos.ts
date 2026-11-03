@@ -77,12 +77,20 @@ export async function photo(
 	if (!bytes.byteLength) return error(400, 'empty');
 	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
 	const key = photoKey(tripId, photoId);
+	const existing = await env.PHOTOS.head(key);
+	// A photo is its uploader's: the other member can see it, but not replace it. One uploaded
+	// before uploaders were recorded names nobody, and either member may still replace it.
+	const by = existing?.customMetadata?.by;
+	if (by && by !== userId) return error(403, 'not_your_photo');
 	const held = await env.PHOTOS.list({ prefix: `trips/${tripId}/`, limit: MAX_PHOTOS_PER_TRIP });
-	// Replacing a photo the trip already has is fine; a new one must fit.
-	if (held.objects.length >= MAX_PHOTOS_PER_TRIP && !(await env.PHOTOS.head(key))) {
+	// Replacing a photo of your own is fine; a new one must fit.
+	if (held.objects.length >= MAX_PHOTOS_PER_TRIP && !existing) {
 		return error(413, 'too_many_photos');
 	}
-	await env.PHOTOS.put(key, bytes, { httpMetadata: { contentType: type } });
+	await env.PHOTOS.put(key, bytes, {
+		httpMetadata: { contentType: type },
+		customMetadata: { by: userId }
+	});
 	// The partner's phone is told, and fetches it.
 	await notifyTrips(env, [tripId]);
 	return json({ ok: true }, 201);

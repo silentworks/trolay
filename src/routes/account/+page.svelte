@@ -28,7 +28,19 @@
 			<button class="btn" type="button" disabled={account.busy} onclick={() => account.signOut()}>
 				Sign out
 			</button>
+			<button
+				class="btn btn-ghost"
+				type="button"
+				disabled={account.busy}
+				onclick={() => account.signOutEverywhere()}
+			>
+				Sign out on all devices
+			</button>
 		</div>
+		<p class="hint">
+			Lost a phone? Signing out on all devices ends every session, this one too. What's on each
+			phone stays there.
+		</p>
 	{:else if account.status === 'unknown' && account.maybeSignedIn}
 		<p class="hint">
 			You were signed in here, and there is no signal to check right now. Everything you do is kept

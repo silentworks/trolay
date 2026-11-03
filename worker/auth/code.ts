@@ -99,23 +99,28 @@ export async function codeRequest(request: Request, env: Env): Promise<Response>
 	const email = normaliseEmail((await readJson(request)).email);
 	const now = Date.now();
 	const requester = await sha256(sourceOf(request.headers.get('CF-Connecting-IP')));
-	/** Codes asked for since then: for this address or source, or by everyone. */
-	const count = async (since: number, column?: 'email' | 'requester', value?: string) =>
-		(
-			await env.DB.prepare(
-				`SELECT COUNT(*) AS n FROM login_codes
-				 WHERE created_at > ?${column ? ` AND ${column} = ?` : ''}`
-			)
-				.bind(since, ...(column ? [value] : []))
-				.first<{ n: number }>()
-		)?.n ?? 0;
+	// How many codes were asked for lately: for this address, from this source, and by everyone.
+	// One query, as this runs on every request.
+	const counts = await env.DB.prepare(
+		`SELECT
+		   COALESCE(SUM(email = ?1 AND created_at > ?3), 0) AS email_gap,
+		   COALESCE(SUM(email = ?1 AND created_at > ?4), 0) AS email_hour,
+		   COALESCE(SUM(requester = ?2 AND created_at > ?4), 0) AS source_hour,
+		   COALESCE(SUM(requester = ?2), 0) AS source_day,
+		   COALESCE(SUM(created_at > ?4), 0) AS all_hour,
+		   COUNT(*) AS all_day
+		 FROM login_codes WHERE created_at > ?5`
+	)
+		.bind(email, requester, now - PER_EMAIL_GAP, now - HOUR, now - DAY)
+		.first<Record<string, number>>();
 	if (
-		(await count(now - PER_EMAIL_GAP, 'email', email)) > 0 ||
-		(await count(now - HOUR, 'email', email)) >= PER_EMAIL_HOUR ||
-		(await count(now - HOUR, 'requester', requester)) >= PER_SOURCE_HOUR ||
-		(await count(now - DAY, 'requester', requester)) >= PER_SOURCE_DAY ||
-		(await count(now - HOUR)) >= ALL_HOUR ||
-		(await count(now - DAY)) >= ALL_DAY
+		!counts ||
+		counts.email_gap > 0 ||
+		counts.email_hour >= PER_EMAIL_HOUR ||
+		counts.source_hour >= PER_SOURCE_HOUR ||
+		counts.source_day >= PER_SOURCE_DAY ||
+		counts.all_hour >= ALL_HOUR ||
+		counts.all_day >= ALL_DAY
 	) {
 		return error(429, 'too_many_requests');
 	}

@@ -1,13 +1,22 @@
 # Cloudflare Workers static asset headers.
 # Cross-origin isolation lets the label reader's WebAssembly use several threads. The app loads
 # nothing from other origins except CORS fetches (Open Food Facts), which isolation allows.
+# The page's own Content-Security-Policy is a <meta> in index.html (kit.csp in vite.config.ts);
+# framing can only be refused by a header, so it is here, with the other rules for every file.
+# The same headers are set in development and tests (PAGE_HEADERS in vite.config.ts).
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
 # The service worker and app shell must always be revalidated so a new version is found.
 /service-worker.js
   Cache-Control: no-cache
 /index.html
+  Cache-Control: no-cache
+/theme.js
   Cache-Control: no-cache
 /manifest.webmanifest
   Cache-Control: no-cache

@@ -1,6 +1,7 @@
 // Light, dark, or whatever the phone uses. The page gets a concrete data-theme ("light" or "dark")
 // so the stylesheet has one dark block; "system" is resolved here, and again when the phone
-// switches. src/app.html applies the saved choice the same way before the first paint.
+// switches. static/theme.js (loaded by src/app.html) applies the saved choice the same way before
+// the first paint.
 
 export type Theme = 'light' | 'dark' | 'system';
 

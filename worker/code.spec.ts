@@ -286,7 +286,7 @@ describe('entering a code', () => {
 		const { email, headers } = fresh();
 		// Signed in with a passkey, add an email; then the email signs in to the same account.
 		await request(email, { headers, cookie: account.cookie });
-		const added = await verify(email, codeFor(email));
+		const added = await verify(email, codeFor(email), account.cookie);
 		expect(added.body).toEqual({ added: true, email });
 		await ageCodes();
 		await request(email, { headers });
@@ -301,9 +301,52 @@ describe('adding an email to an account', () => {
 		const { done: account } = await register();
 		const { email, headers } = fresh();
 		await request(email, { headers, cookie: account.cookie });
-		const reply = await verify(email, codeFor(email));
+		const reply = await verify(email, codeFor(email), account.cookie);
 		expect(reply.body.added).toBe(true);
 		expect(reply.setCookie).toBeUndefined();
+	});
+
+	it('says in the email that it adds the address, not that it signs in', async () => {
+		const { done: account } = await register();
+		const { email, headers } = fresh();
+		await request(email, { headers, cookie: account.cookie });
+		const mail = capturedMail(email).at(-1)!;
+		expect(mail.subject).toMatch(/^Add this email to Trolay/);
+		expect(mail.text).toContain('add this email address to their account');
+		expect(mail.text).not.toContain('sign-in code');
+	});
+
+	it('only works for the account that asked', async () => {
+		const { done: asker } = await register();
+		const { done: other } = await register();
+		const { email, headers } = fresh();
+		await request(email, { headers, cookie: asker.cookie });
+		const code = codeFor(email);
+		// Signed out (the inbox's owner, say) or signed in to another account, the code is wrong.
+		expect((await verify(email, code)).body.error).toBe('code_invalid');
+		expect((await verify(email, code, other.cookie)).body.error).toBe('code_invalid');
+		const owner = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+		expect(owner).toBeNull();
+		expect((await verify(email, code, asker.cookie)).body).toEqual({ added: true, email });
+	});
+
+	it("doesn't cancel a code someone asked for to sign in", async () => {
+		// Someone asks for a code to sign in; a stranger then asks to add the same address.
+		const { email, headers } = fresh();
+		await request(email, { headers });
+		const signIn = codeFor(email);
+		await ageCodes();
+		const { done: stranger } = await register();
+		await request(email, { headers, cookie: stranger.cookie });
+		// Typing the stranger's code signs in nobody and adds nothing; their own code still works.
+		const strangers = codeFor(email);
+		if (strangers !== signIn) {
+			expect((await verify(email, strangers)).body.error).toBe('code_invalid');
+		}
+		const reply = await verify(email, signIn);
+		expect(reply.status).toBe(200);
+		expect(reply.body.created).toBe(true);
+		expect(reply.body.user.id).not.toBe(stranger.body.user.id);
 	});
 
 	it('is refused when another account already has that address', async () => {
@@ -313,7 +356,7 @@ describe('adding an email to an account', () => {
 		const { done: other } = await register();
 		await ageCodes();
 		await request(owner.email, { headers: owner.headers, cookie: other.cookie });
-		const reply = await verify(owner.email, codeFor(owner.email));
+		const reply = await verify(owner.email, codeFor(owner.email), other.cookie);
 		expect(reply.status).toBe(409);
 		expect(reply.body.error).toBe('email_in_use');
 	});

@@ -41,19 +41,34 @@ function newCode(): string {
 /** The id salts the hash, so two people with the same code have different hashes. */
 const hashOf = (id: string, code: string) => sha256(`${id}:${code}`);
 
-function emailFor(code: string) {
+/**
+ * The email with the code. A code that adds the address to an account says so: it must never read
+ * like a sign-in code, or someone signing in could be led to give their address to a stranger.
+ */
+function emailFor(code: string, adding: boolean) {
 	const minutes = CODE_LIFETIME / MINUTE;
 	const spaced = `${code.slice(0, 3)} ${code.slice(3)}`;
+	const expiry = `It works once and expires in ${minutes} minutes.`;
+	if (adding) {
+		const ask = 'Someone signed in to Trolay asked to add this email address to their account.';
+		const ignore = "If that wasn't you, ignore this email and the address won't be added.";
+		return {
+			subject: `Add this email to Trolay: code ${spaced}`,
+			text: `${ask} If that was you, type this code into Trolay: ${spaced}\n\n${expiry} ${ignore}`,
+			html: `<p>${ask} If that was you, type this code into Trolay:</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${spaced}</p><p>${expiry} ${ignore}</p>`
+		};
+	}
 	return {
 		subject: `Your Trolay code is ${spaced}`,
-		text: `Your Trolay sign-in code is ${spaced}\n\nType it into Trolay. It works once and expires in ${minutes} minutes. If you didn't ask for it, you can ignore this email.`,
-		html: `<p>Your Trolay sign-in code is</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${spaced}</p><p>Type it into Trolay. It works once and expires in ${minutes} minutes. If you didn't ask for it, you can ignore this email.</p>`
+		text: `Your Trolay sign-in code is ${spaced}\n\nType it into Trolay. ${expiry} If you didn't ask for it, you can ignore this email.`,
+		html: `<p>Your Trolay sign-in code is</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${spaced}</p><p>Type it into Trolay. ${expiry} If you didn't ask for it, you can ignore this email.</p>`
 	};
 }
 
 /**
  * Sends a sign-in code. The answer is the same whether or not the address has an account, so
- * this can't be used to find out who does. Signed in, the code adds the address to your account.
+ * this can't be used to find out who does. Signed in, the code adds the address to your account,
+ * and only works for you.
  */
 export async function codeRequest(request: Request, env: Env): Promise<Response> {
 	const email = normaliseEmail((await readJson(request)).email);
@@ -80,11 +95,12 @@ export async function codeRequest(request: Request, env: Env): Promise<Response>
 	const addingTo = (await sessionUser(request, env)) ?? null;
 	await env.DB.batch([
 		env.DB.prepare('DELETE FROM login_codes WHERE created_at < ?').bind(now - 24 * 60 * MINUTE),
-		// A new code replaces any earlier one for the address, so only the latest can be used.
-		env.DB.prepare('UPDATE login_codes SET used_at = ? WHERE email = ? AND used_at IS NULL').bind(
-			now,
-			email
-		),
+		// A new code replaces any earlier one for the address asked for the same way, so only the
+		// latest can be used. One account adding the address doesn't cancel a code to sign in with
+		// it, or another account's, or that could be used to swap a code someone was waiting for.
+		env.DB.prepare(
+			'UPDATE login_codes SET used_at = ? WHERE email = ? AND user_id IS ? AND used_at IS NULL'
+		).bind(now, email, addingTo),
 		env.DB.prepare(
 			`INSERT INTO login_codes (id, email, code_hash, user_id, requester, created_at, expires_at)
 			 VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -92,7 +108,7 @@ export async function codeRequest(request: Request, env: Env): Promise<Response>
 	]);
 
 	try {
-		await sendMail(env, { to: email, ...emailFor(code) });
+		await sendMail(env, { to: email, ...emailFor(code, addingTo !== null) });
 	} catch (cause) {
 		console.error(cause);
 		await env.DB.prepare('DELETE FROM login_codes WHERE id = ?').bind(id).run();
@@ -107,13 +123,16 @@ export async function codeVerify(request: Request, env: Env): Promise<Response> 
 	const email = normaliseEmail(body.email);
 	const code = normaliseCode(body.code);
 	const now = Date.now();
+	const signedIn = (await sessionUser(request, env)) ?? null;
 
+	// A code to sign in works for anyone who has it. A code to add the address to an account only
+	// works for that account: whoever else has it may only be the inbox's owner, who never asked.
 	const pending = await env.DB.prepare(
 		`SELECT id, code_hash FROM login_codes
-		 WHERE email = ? AND used_at IS NULL AND expires_at > ?
+		 WHERE email = ? AND used_at IS NULL AND expires_at > ? AND (user_id IS NULL OR user_id = ?)
 		 ORDER BY created_at DESC LIMIT 1`
 	)
-		.bind(email, now)
+		.bind(email, now, signedIn)
 		.first<{ id: string; code_hash: string }>();
 	// No code asked for, or it has run out: the same answer as a wrong one.
 	if (!pending) return error(400, 'code_invalid');
@@ -139,8 +158,7 @@ export async function codeVerify(request: Request, env: Env): Promise<Response> 
 	if (!used) return error(400, 'code_invalid');
 
 	if (used.user_id) {
-		// Adding an email. This does not sign anyone in: whoever holds the code is the inbox's
-		// owner, and may be nobody who holds this account.
+		// Adding an email, by the account that asked. This does not sign anyone in.
 		const added = await env.DB.prepare(
 			`UPDATE users SET email = ?, updated_at = ?
 			 WHERE id = ? AND deleted_at IS NULL

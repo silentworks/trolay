@@ -119,7 +119,7 @@ Work is tracked in the Linear project **Trolay**.
     and regaining signal, syncing at random) are checked against an answer worked out separately:
     for every field, the value of the newest edit made to it anywhere.
 - **Inviting a partner to a trip** (`worker/trips/invite.ts`, `src/lib/sharing/`, the shopping
-  screen's ⋮ menu → "Invite a partner", and `/join`). The owner makes a link for an open trip;
+  screen's ••• menu → "Invite a partner", and `/join`). The owner makes a link for an open trip;
   the trip is synced first so the server knows it. The link is `/join#token=…`, with the token in
   the fragment, so it stays out of server logs, and only its hash is stored. It works once, for one person,
   for a day, and making another replaces it. Whoever opens it signs in (the invite waits in this
@@ -170,7 +170,7 @@ test:e2e`); the Worker tests cover the door. Deploying creates the class through
   when the trip becomes shared, the owner marks the items they put in before signing in as theirs.
   A name is, for now, the part of the person's email before the `@`.
 - **Leaving a shared trip, or removing the partner** (`worker/trips/membership.ts`,
-  `src/lib/sync/letgo.ts`, the cart's ⋮ menu). The partner's menu has "Leave this trip" and the
+  `src/lib/sync/letgo.ts`, the cart's ••• menu). The partner's menu has "Leave this trip" and the
   owner's, once there is a partner, "Remove partner" (in place of "Invite a partner"); both ask
   first. Only an open trip can be left: a finished shared trip stays in both histories, and a
   partner can't delete the owner's trip, so on an empty cart they leave rather than "Leave

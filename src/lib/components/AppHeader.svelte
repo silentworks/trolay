@@ -13,9 +13,9 @@
 		title: string;
 		/** A smaller line under the title, such as a store's branch. */
 		subtitle?: string;
-		/** A round ← button on the left. */
+		/** A round ‹ button on the left. */
 		back?: { href: string; label: string };
-		/** Entries for the ⋮ menu on the right. */
+		/** Entries for the ••• menu on the right. */
 		menu?: MenuEntry[];
 		/** Makes the title a button, named by titleLabel. */
 		ontitle?: () => void;
@@ -67,7 +67,7 @@
 	{#if back}
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
 		<a class="round back" href={back.href} aria-label="Back to {back.label}">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6" /></svg>
 		</a>
 	{/if}
 
@@ -106,9 +106,9 @@
 					onclick={() => (open = !open)}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
-						<circle cx="12" cy="5" r="1.8" />
-						<circle cx="12" cy="12" r="1.8" />
-						<circle cx="12" cy="19" r="1.8" />
+						<circle cx="5.5" cy="12" r="1.6" />
+						<circle cx="12" cy="12" r="1.6" />
+						<circle cx="18.5" cy="12" r="1.6" />
 					</svg>
 				</button>
 				{#if open}
@@ -212,9 +212,11 @@
 		width: var(--tap);
 		height: var(--tap);
 		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 14px;
+		border: none;
+		border-radius: 50%;
 		background: var(--surface);
+		/* Just enough to lift it off the page, in either theme. */
+		box-shadow: 0 1px 3px rgb(17 24 39 / 0.08);
 		color: var(--text);
 	}
 
@@ -232,7 +234,7 @@
 	.history svg {
 		fill: none;
 		stroke: currentColor;
-		stroke-width: 2;
+		stroke-width: 1.75;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}

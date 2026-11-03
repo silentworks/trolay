@@ -78,8 +78,10 @@ export async function photo(
 	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
 	const key = photoKey(tripId, photoId);
 	const existing = await env.PHOTOS.head(key);
-	// A photo is its uploader's: the other member can see it, but not replace it.
-	if (existing && existing.customMetadata?.by !== userId) return error(403, 'not_your_photo');
+	// A photo is its uploader's: the other member can see it, but not replace it. One uploaded
+	// before uploaders were recorded names nobody, and either member may still replace it.
+	const by = existing?.customMetadata?.by;
+	if (by && by !== userId) return error(403, 'not_your_photo');
 	const held = await env.PHOTOS.list({ prefix: `trips/${tripId}/`, limit: MAX_PHOTOS_PER_TRIP });
 	// Replacing a photo of your own is fine; a new one must fit.
 	if (held.objects.length >= MAX_PHOTOS_PER_TRIP && !existing) {

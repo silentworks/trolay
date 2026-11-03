@@ -177,7 +177,9 @@ describe('photos of a shared trip', () => {
 		]);
 		expect((await put(trip, 'photo-1', alice, new Uint8Array([0xff, 0xd8, 0xff, 9]))).status).toBe(
 			201
-		);
+		); // One stored before uploaders were recorded can be replaced by either member.
+		await env.PHOTOS!.put(`trips/${trip}/old`, new Uint8Array(JPEG));
+		expect((await put(trip, 'old', bob)).status).toBe(201);
 	});
 
 	it('are not accepted once the trip has finished', async () => {

@@ -9,6 +9,8 @@ import { notifyTrips } from './live.ts';
 
 /** A photo is compressed to 1600 px on the long side, which is well under this. */
 const MAX_BYTES = 2 * 1024 * 1024;
+/** The most photos a trip may hold, so a member cannot fill the bucket. One per item and then some. */
+export const MAX_PHOTOS_PER_TRIP = 500;
 const ID = /^[\w-]{1,64}$/;
 const TYPES = new Set(['image/jpeg', 'image/webp', 'image/png']);
 
@@ -74,7 +76,13 @@ export async function photo(
 	if (bytes.byteLength > MAX_BYTES) return error(413, 'too_large');
 	if (!bytes.byteLength) return error(400, 'empty');
 	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
-	await env.PHOTOS.put(photoKey(tripId, photoId), bytes, { httpMetadata: { contentType: type } });
+	const key = photoKey(tripId, photoId);
+	const held = await env.PHOTOS.list({ prefix: `trips/${tripId}/`, limit: MAX_PHOTOS_PER_TRIP });
+	// Replacing a photo the trip already has is fine; a new one must fit.
+	if (held.objects.length >= MAX_PHOTOS_PER_TRIP && !(await env.PHOTOS.head(key))) {
+		return error(413, 'too_many_photos');
+	}
+	await env.PHOTOS.put(key, bytes, { httpMetadata: { contentType: type } });
 	// The partner's phone is told, and fetches it.
 	await notifyTrips(env, [tripId]);
 	return json({ ok: true }, 201);

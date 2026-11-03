@@ -111,8 +111,11 @@ export interface PushResult {
 	table: SyncTable;
 	id: string;
 	status: 'ok' | 'rejected';
-	/** Why a change was refused. `missing_parent` may resolve once the parent has been sent. */
-	reason?: 'invalid' | 'forbidden' | 'missing_parent';
+	/**
+	 * Why a change was refused. `missing_parent` may resolve once the parent has been sent;
+	 * `limit` means the account (or the trip) holds as many of these records as it may.
+	 */
+	reason?: 'invalid' | 'forbidden' | 'missing_parent' | 'limit';
 }
 
 /** A record as the server holds it now, every synced field present (null when unset). */

@@ -72,10 +72,17 @@ export interface CallOptions {
 	headers?: Record<string, string>;
 }
 
+let sources = 0;
+
 /** Calls the API in-process, the way the browser would, plus passkey helpers for tests. */
 export function testClient(env: Env) {
 	async function call(path: string, options: CallOptions = {}): Promise<Reply> {
-		const headers: Record<string, string> = { ...options.headers };
+		// Each call is from an address of its own, unless the test says, so that per-source limits
+		// only come into it in the tests about them.
+		const headers: Record<string, string> = {
+			'CF-Connecting-IP': `198.51.${(++sources >> 8) & 255}.${sources & 255}`,
+			...options.headers
+		};
 		if (options.origin !== null) headers.Origin = options.origin ?? ORIGIN;
 		if (options.cookie) headers.Cookie = options.cookie;
 		if (options.body !== undefined) headers['Content-Type'] = options.type ?? 'application/json';

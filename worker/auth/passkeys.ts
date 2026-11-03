@@ -10,9 +10,23 @@ import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
 import { endSession, sessionUser, startSession } from './session.ts';
 import { base64url, randomToken } from './tokens.ts';
+import { HOUR, source, withinLimits } from '../rate.ts';
 
 const CHALLENGE_LIFETIME = 5 * 60 * 1000;
 const RP_NAME = 'Trolay';
+/**
+ * Ceremonies a source may start an hour, and everyone together. Starting one needs no account,
+ * and each leaves a challenge row (and, finished, perhaps a new account), so there is a ceiling.
+ * Far more than anyone signing in needs, even behind one shared address.
+ */
+export const CEREMONIES_PER_SOURCE_HOUR = 100;
+export const CEREMONIES_PER_HOUR = 2000;
+
+const ceremonyAllowed = async (request: Request, env: Env) =>
+	withinLimits(env, [
+		{ key: `ceremony:${await source(request)}`, max: CEREMONIES_PER_SOURCE_HOUR, window: HOUR },
+		{ key: 'ceremony', max: CEREMONIES_PER_HOUR, window: HOUR }
+	]);
 
 // The options ask for user verification as `preferred`: use it when the authenticator can (a
 // fingerprint, a PIN), and carry on when it cannot. SimpleWebAuthn's checks default to requiring
@@ -94,6 +108,7 @@ function withCookie(response: Response, setCookie: string): Response {
  * starts a new account.
  */
 export async function registrationOptions(request: Request, env: Env): Promise<Response> {
+	if (!(await ceremonyAllowed(request, env))) return error(429, 'too_many_requests');
 	const existing = await sessionUser(request, env);
 	const userId = existing ?? crypto.randomUUID();
 	const { rpID } = relyingParty(request);
@@ -187,6 +202,7 @@ export async function registrationVerify(request: Request, env: Env): Promise<Re
 
 /** Step one of signing in: a challenge for any passkey this site made. */
 export async function loginOptions(request: Request, env: Env): Promise<Response> {
+	if (!(await ceremonyAllowed(request, env))) return error(429, 'too_many_requests');
 	const { rpID } = relyingParty(request);
 	const options = await generateAuthenticationOptions({ rpID, userVerification: 'preferred' });
 	const challengeId = await saveChallenge(env, options.challenge, 'login', null);

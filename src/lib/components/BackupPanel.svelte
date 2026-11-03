@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import { db, isLive } from '#lib/data/db.ts';
 	import {
@@ -62,11 +63,15 @@
 </script>
 
 <section class="backup" aria-labelledby="backup-heading">
-	<h2 id="backup-heading">Backup</h2>
-	<p class="hint">
-		Your stores, trips and items live only on this phone. Keep a backup file somewhere safe, or use
-		it to move to a new phone.
-	</p>
+	<div class="with-info">
+		<h2 id="backup-heading">Backup</h2>
+		<InfoTip title="Backups">
+			<p>
+				Your stores, trips and items live only on this phone. Keep a backup file somewhere safe, or
+				use it to move to a new phone.
+			</p>
+		</InfoTip>
+	</div>
 	<div class="actions">
 		<button class="btn" type="button" onclick={download}>Download backup</button>
 		<button class="btn" type="button" onclick={() => fileInput?.click()}>Restore a backup</button>
@@ -119,11 +124,12 @@
 	}
 
 	h2 {
+		margin: 0;
 		font-size: 1.15rem;
 	}
 
-	.hint {
-		color: var(--muted);
+	.with-info {
+		margin-bottom: 12px;
 	}
 
 	.actions {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { untrack } from 'svelte';
 	import type { Store } from '#lib/data/db.ts';
 	import type { StoreInput } from '#lib/data/stores.ts';
@@ -69,13 +70,18 @@
 	</div>
 
 	<div class="field">
-		<label for="{uid}-currency">Currency <span class="hint">(optional)</span></label>
+		<div class="with-info">
+			<label for="{uid}-currency">Currency <span class="hint">(optional)</span></label>
+			{#if store}
+				<InfoTip title="Currency">
+					<p>
+						Changing it changes how this store's past trips are shown too. The amounts stay the
+						same.
+					</p>
+				</InfoTip>
+			{/if}
+		</div>
 		<CurrencySelect id="{uid}-currency" bind:value={currency} />
-		{#if store}
-			<span class="hint">
-				Changing it changes how this store's past trips are shown too. The amounts stay the same.
-			</span>
-		{/if}
 	</div>
 
 	<div class="field">
@@ -84,15 +90,22 @@
 		{#if hint}<span class="hint">{hint}</span>{/if}
 	</div>
 
-	<label class="check">
-		<input type="checkbox" bind:checked={pricesIncludeTax} />
-		Shelf prices include sales tax
-	</label>
-	<p class="hint">
-		{pricesIncludeTax
-			? 'Prices on the shelf already include sales tax.'
-			: 'Sales tax is added at the till. Trolay adds it to your total so it matches the receipt.'}
-	</p>
+	<div class="with-info tax">
+		<label class="check">
+			<input type="checkbox" bind:checked={pricesIncludeTax} />
+			Shelf prices include sales tax
+		</label>
+		<InfoTip title="Shelf prices and sales tax">
+			<p>
+				Ticked, the prices on the shelf already include sales tax, and Trolay works out how much of
+				each is tax.
+			</p>
+			<p>
+				Unticked, sales tax is added at the till, as in the US and Canada. Trolay adds it to your
+				total so it matches the receipt.
+			</p>
+		</InfoTip>
+	</div>
 
 	<button class="btn btn-primary btn-block" type="submit" disabled={saving}>{submitLabel}</button>
 </form>

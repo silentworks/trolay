@@ -35,7 +35,7 @@ test.describe('on a US phone', () => {
 
 		await menu(page, 'Finish trip');
 		const finish = page.getByRole('dialog', { name: 'Finish trip' });
-		await finish.getByLabel('Receipt total ($)').fill('10.80');
+		await finish.getByLabel('Receipt total ($)', { exact: true }).fill('10.80');
 		await expect(finish).toContainText('✓ The receipt matches.');
 		await finish.getByRole('button', { name: 'Finish trip' }).click();
 		await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
@@ -56,9 +56,9 @@ test('a receipt higher by about the sales tax asks whether the till added it', a
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	// 20% (the UK rate this en-GB phone guessed) on 10.00.
-	await finish.getByLabel('Receipt total').fill('12.00');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('12.00');
 	await expect(finish).toContainText('Did the till add sales tax?');
-	await finish.getByLabel('Receipt total').fill('10.50');
+	await finish.getByLabel('Receipt total', { exact: true }).fill('10.50');
 	await expect(finish).toContainText('The till charged 0.50 more');
 	await expect(finish).not.toContainText('Did the till add sales tax?');
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
@@ -15,12 +16,20 @@
 	<AppHeader title="Account" back={{ href: resolve('/'), label: 'Trolley' }} />
 
 	{#if account.status === 'signedIn'}
-		<p class="status" role="status">You're signed in on this device.</p>
+		<div class="with-info">
+			<p class="status" role="status">You're signed in on this device.</p>
+			<InfoTip title="Your account">
+				<p>Sign in with a passkey on another device to use the same account there.</p>
+				<p>
+					Lost a phone? Signing out on all devices ends every session, this one too. What's on each
+					phone stays there.
+				</p>
+			</InfoTip>
+		</div>
 		{#if pendingInvite()}
 			<a class="btn btn-primary btn-block" href={resolve('/join')}>Continue joining the trip</a>
 		{/if}
 		<SyncStatus />
-		<p class="hint">Sign in with a passkey on another device to use the same account there.</p>
 		<div class="actions">
 			<button class="btn" type="button" disabled={account.busy} onclick={() => account.register()}>
 				Add a passkey on this device
@@ -37,10 +46,6 @@
 				Sign out on all devices
 			</button>
 		</div>
-		<p class="hint">
-			Lost a phone? Signing out on all devices ends every session, this one too. What's on each
-			phone stays there.
-		</p>
 	{:else if account.status === 'unknown' && account.maybeSignedIn}
 		<p class="hint">
 			You were signed in here, and there is no signal to check right now. Everything you do is kept

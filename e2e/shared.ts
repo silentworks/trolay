@@ -55,7 +55,7 @@ export async function menu(page: Page, entry: string) {
 export async function inviteLink(owner: Page): Promise<string> {
 	await menu(owner, 'Invite a partner');
 	const sheet = owner.getByRole('dialog', { name: 'Invite a partner' });
-	const link = sheet.getByLabel('Invite link');
+	const link = sheet.getByLabel('Invite link', { exact: true });
 	await expect(link).toHaveValue(/\/join#token=/);
 	const url = await link.inputValue();
 	await sheet.getByRole('button', { name: 'Close' }).click();

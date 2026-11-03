@@ -45,9 +45,11 @@ function text(value: string): string {
 
 /**
  * A barcode stays text: as a number Excel would show 5.01235E+12 and drop a UPC's leading zero.
- * ="…" is the form both Excel and Google Sheets read as text.
+ * ="…" is the form both Excel and Google Sheets read as text. Only digits go in that form: a
+ * barcode can be any text a partner's phone synced, and inside ="…" it would be a formula.
  */
-const barcode = (value: string | undefined) => (value ? `="${value}"` : '');
+const barcode = (value: string | undefined) =>
+	!value ? '' : /^\d+$/.test(value) ? `="${value}"` : text(value);
 
 export function tripsToCsv(trips: TripForExport[]): string {
 	const rows = [HEADER.map(text).join(',')];
@@ -56,7 +58,7 @@ export function tripsToCsv(trips: TripForExport[]): string {
 		const storeName = store
 			? [store.name, store.branch].filter(Boolean).join(' · ')
 			: 'Deleted store';
-		const currency = store?.currency ?? '';
+		const currency = text(store?.currency ?? '');
 		for (const item of [...items].sort((a, b) => a.createdAt - b.createdAt)) {
 			const line = lineTotals(item, taxRateBps);
 			rows.push(

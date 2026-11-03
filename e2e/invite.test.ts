@@ -72,7 +72,7 @@ test('a trip started under another account on this phone says why it cannot be s
 
 	// Then a different account signs in on the same phone. The first account's trip stays on the
 	// phone, but the server will not give it to someone else, so it can never be shared from here.
-	await phone.getByRole('button', { name: 'Sign out' }).click();
+	await phone.getByRole('button', { name: 'Sign out', exact: true }).click();
 	await phone.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(phone.getByText("You're signed in on this device.")).toBeVisible();
 	await expect(synced(phone)).toBeVisible();

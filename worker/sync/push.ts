@@ -159,6 +159,16 @@ async function applyChange(env: Env, userId: string, change: PushedChange): Prom
 			Object.entries(known).map(([field, { at }]) => [field, at])
 		);
 		for (const [field, incoming] of Object.entries(change.fields)) {
+			// Who added an item is only ever yourself: a phone may mark an item as its own account's
+			// while nobody is named, never as someone else's, nor take over another's. Anything else
+			// is ignored, and the row keeps what it has.
+			if (
+				field === 'addedBy' &&
+				((incoming.value !== null && incoming.value !== userId) ||
+					(existing?.added_by != null && existing.added_by !== userId))
+			) {
+				continue;
+			}
 			// The row's own value is already in its stored form, as the incoming one is made to be.
 			const current = known[field];
 			if (beats({ value: encode(specs[field], incoming.value), at: incoming.at }, current)) {

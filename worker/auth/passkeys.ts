@@ -8,7 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
-import { endSession, sessionUser, startSession } from './session.ts';
+import { endAllSessions, endSession, sessionUser, startSession } from './session.ts';
 import { base64url, randomToken } from './tokens.ts';
 import { HOUR, source, withinLimits } from '../rate.ts';
 
@@ -270,4 +270,9 @@ export async function me(request: Request, env: Env): Promise<Response> {
 
 export async function logout(request: Request, env: Env): Promise<Response> {
 	return withCookie(json({ ok: true }), await endSession(request, env));
+}
+
+/** Signs the account out on every device. */
+export async function logoutEverywhere(request: Request, env: Env): Promise<Response> {
+	return withCookie(json({ ok: true }), await endAllSessions(request, env));
 }

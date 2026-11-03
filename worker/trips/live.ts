@@ -37,7 +37,28 @@ export async function liveTrip(request: Request, env: Env): Promise<Response> {
 	}
 	const stub = room(env, tripId);
 	if (!stub) return error(503, 'live_unavailable');
-	return stub.fetch(new Request('https://room/connect', request));
+	// The room tags the socket with who it is, so it can let that person go if they leave the trip.
+	// Set here, over anything the phone sent: only this Worker reaches the room.
+	const headers = new Headers(request.headers);
+	headers.set(USER_HEADER, userId);
+	return stub.fetch(new Request('https://room/connect', { headers }));
+}
+
+export const USER_HEADER = 'X-Trolay-User';
+
+/**
+ * Tells the room someone is off the trip (they left, or the owner took them off): their phone is
+ * told to sync once, which says so, and its socket is closed. Best effort, like notifyTrips.
+ */
+export async function dropFromTrip(env: Env, tripId: string, userId: string): Promise<void> {
+	if (!env.TRIPS) return;
+	try {
+		await room(env, tripId)!.fetch(
+			new Request('https://room/left', { method: 'POST', body: JSON.stringify({ userId }) })
+		);
+	} catch (cause) {
+		console.warn('Could not tell the trip room someone left', cause);
+	}
 }
 
 /**

@@ -159,6 +159,14 @@ class Account {
 			this.setSignedIn(undefined);
 		});
 	}
+
+	/** Signs this account out on every device, this one included: for a lost or sold phone. */
+	signOutEverywhere(): Promise<void> {
+		return this.attempt(async () => {
+			await api('/api/auth/logout-everywhere', {});
+			this.setSignedIn(undefined);
+		});
+	}
 }
 
 export const account = new Account();

@@ -15,7 +15,7 @@ test('create an account with a passkey, stay signed in, sign out, sign in again'
 	await page.reload();
 	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 
-	await page.getByRole('button', { name: 'Sign out' }).click();
+	await page.getByRole('button', { name: 'Sign out', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
@@ -76,4 +76,20 @@ test('accounts use passkeys only: there is no email sign-in, signed out or in', 
 		expect(reply.status()).toBe(404);
 	}
 	expect((await page.request.get('/api/dev/outbox')).status()).toBe(404);
+});
+
+test('signing out on all devices signs this one out too, and the passkey still works', async ({
+	page
+}) => {
+	// That every other session ends as well is checked in the Worker's tests (worker/auth.spec.ts).
+	await withPasskeys(page);
+	await page.goto('/account');
+	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
+	await page.getByRole('button', { name: 'Sign out on all devices' }).click();
+	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
+	await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
+	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 });

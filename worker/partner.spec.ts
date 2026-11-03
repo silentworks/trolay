@@ -152,6 +152,49 @@ describe('a partner writes', () => {
 		expect(alicesView).toContain(added);
 	});
 
+	it('items as added by themselves, and never by anyone else', async () => {
+		const mine = await aTrip();
+		await share(mine.trip);
+		const me = async (cookie: string) =>
+			(await call('/api/auth/me', { cookie })).body.user.id as string;
+		const [aliceId, bobId] = [await me(alice), await me(bob)];
+		const item = (id: string, addedBy: string) => ({
+			table: 'items' as const,
+			id,
+			fields: fields({
+				tripId: mine.trip,
+				description: 'Bread',
+				unitPriceMinor: 99,
+				priceIncludesTax: true,
+				quantity: 1,
+				edited: false,
+				createdAt: T,
+				addedBy
+			})
+		});
+		const [honest, posing] = [uid('item'), uid('item')];
+		expect(statuses(await push(bob, [item(honest, bobId), item(posing, aliceId)]))).toEqual([
+			'ok',
+			'ok'
+		]);
+		// Nor can Bob relabel Alice's own item as his, or as anyone's.
+		await push(alice, [
+			{ table: 'items', id: mine.item, fields: fields({ addedBy: aliceId }, T + 1) }
+		]);
+		await push(bob, [
+			{ table: 'items', id: mine.item, fields: fields({ addedBy: bobId }, T + 2000) }
+		]);
+		const addedBy = async (id: string) =>
+			(
+				await env.DB.prepare('SELECT added_by FROM items WHERE id = ?')
+					.bind(id)
+					.first<{ added_by: string | null }>()
+			)?.added_by;
+		expect(await addedBy(honest)).toBe(bobId);
+		expect(await addedBy(posing)).toBeNull();
+		expect(await addedBy(mine.item)).toBe(aliceId);
+	});
+
 	it('nothing in the owner’s other trips, by id', async () => {
 		const other = await aTrip('Aldi');
 		const shared = await aTrip('Lidl');

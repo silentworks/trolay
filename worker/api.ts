@@ -1,5 +1,6 @@
 import {
 	logout,
+	logoutEverywhere,
 	loginOptions,
 	loginVerify,
 	me,
@@ -31,6 +32,7 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/login/options': { POST: loginOptions },
 	'/api/auth/login/verify': { POST: loginVerify },
 	'/api/auth/logout': { POST: logout },
+	'/api/auth/logout-everywhere': { POST: logoutEverywhere },
 	'/api/sync/push': { POST: push },
 	'/api/sync/pull': { GET: pull },
 	'/api/trips/invite': { POST: createInvite },

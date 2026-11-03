@@ -62,6 +62,18 @@ export async function sessionUser(request: Request, env: Env): Promise<string | 
 	return row?.user_id;
 }
 
+/**
+ * Ends every session of the signed-in account, this device's too (a lost phone, say); returns
+ * the Set-Cookie header value that clears this device's cookie.
+ */
+export async function endAllSessions(request: Request, env: Env): Promise<string> {
+	const userId = await sessionUser(request, env);
+	if (userId) {
+		await env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId).run();
+	}
+	return cookie(request, '', 0);
+}
+
 /** Ends this device's session; returns the Set-Cookie header value that clears the cookie. */
 export async function endSession(request: Request, env: Env): Promise<string> {
 	const token = tokenFrom(request);

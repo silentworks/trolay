@@ -5,6 +5,7 @@
 	import { getOpenTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { processPendingLookups } from '#lib/data/products.ts';
+	import { purgeDeletedPhotos } from '#lib/data/trips.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
 	import ToastHost from '#lib/components/ToastHost.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
@@ -30,6 +31,11 @@
 
 	// The look chosen in Settings; "match my phone" follows the phone as it switches.
 	$effect(() => applyTheme(settings.theme));
+
+	// The photos of trips deleted when the app last closed, too soon to have gone already.
+	$effect(() => {
+		purgeDeletedPhotos().catch((error: unknown) => console.warn('Purging photos:', error));
+	});
 
 	$effect(() => {
 		requestPersistentStorage().catch((error: unknown) =>

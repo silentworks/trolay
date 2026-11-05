@@ -229,22 +229,60 @@ export async function deleteTripPhotos(tripId: string): Promise<void> {
 }
 
 /**
- * Deletes a finished trip from history, with its items and any photos it kept. Like every delete
- * it is a tombstone, so it reaches the account; but a record cannot be un-deleted by the app, and
- * the photos go outright.
+ * Deletes a finished trip from history, with its items. Like every delete it is a tombstone, so it
+ * reaches the account, and restoreTrip can take it back. The photos it kept stay on the phone for
+ * that, until purgeDeletedPhotos removes them.
  */
 export async function deleteTrip(tripId: string): Promise<void> {
-	await db.transaction('rw', [db.trips, db.items, db.photos], async () => {
+	await db.transaction('rw', db.trips, db.items, () => tombstoneTrip(tripId, Date.now()));
+}
+
+/** Deletes the trip and its live items at `now`, which restoreTrip uses to tell them apart. */
+export async function tombstoneTrip(tripId: string, now: number): Promise<void> {
+	const trip = await db.trips.get(tripId);
+	if (!isLive(trip)) return;
+	if (trip.status !== 'finished') throw new Error('Finish or leave the current trip first.');
+	for (const item of await liveItems(tripId)) {
+		await db.items.update(item.id, { deletedAt: now, updatedAt: now });
+	}
+	await db.trips.update(tripId, { deletedAt: now, updatedAt: now });
+}
+
+/**
+ * Undoes deleteTrip: the trip comes back with the items deleted with it, and their photos if they
+ * are still here. Items deleted while shopping stay deleted.
+ */
+export async function restoreTrip(tripId: string): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, async () => {
 		const trip = await db.trips.get(tripId);
-		if (!isLive(trip)) return;
-		if (trip.status !== 'finished') throw new Error('Finish or leave the current trip first.');
-		const items = await liveItems(tripId);
+		if (!trip?.deletedAt) return;
+		const deletedAt = trip.deletedAt;
 		const now = Date.now();
-		await db.photos.bulkDelete(items.flatMap((item) => (item.photoId ? [item.photoId] : [])));
-		for (const item of items) {
-			await db.items.update(item.id, { photoId: undefined, deletedAt: now, updatedAt: now });
+		const items = await db.items.where('tripId').equals(tripId).toArray();
+		for (const item of items.filter((each) => each.deletedAt === deletedAt)) {
+			await db.items.update(item.id, { deletedAt: undefined, updatedAt: now });
 		}
-		await db.trips.update(tripId, { deletedAt: now, updatedAt: now });
+		await db.trips.update(tripId, { deletedAt: undefined, updatedAt: now });
+	});
+}
+
+/**
+ * Removes the photos of deleted trips from the phone, once they can no longer be undone: when the
+ * Undo has gone, and at the start in case the app was closed before then.
+ */
+export async function purgeDeletedPhotos(): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, db.photos, async () => {
+		const deleted = (await db.trips.toArray()).filter((trip) => trip.deletedAt);
+		const now = Date.now();
+		for (const trip of deleted) {
+			const items = await db.items.where('tripId').equals(trip.id).toArray();
+			const withPhotos = items.filter((item) => item.photoId);
+			if (!withPhotos.length) continue;
+			await db.photos.bulkDelete(withPhotos.map((item) => item.photoId!));
+			for (const item of withPhotos) {
+				await db.items.update(item.id, { photoId: undefined, updatedAt: now });
+			}
+		}
 	});
 }
 

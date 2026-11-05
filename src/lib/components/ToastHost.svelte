@@ -67,14 +67,8 @@
 			{/if}
 			<p role={shown.tone === 'error' ? 'alert' : 'status'}>{shown.message}</p>
 			{#if shown.action}
-				{@const action = shown.action}
-				<button
-					class="btn btn-ghost action"
-					type="button"
-					onclick={() => {
-						toast.dismiss();
-						action.run();
-					}}>{action.label}</button
+				<button class="btn btn-ghost action" type="button" onclick={() => toast.act()}
+					>{shown.action.label}</button
 				>
 			{/if}
 			<button

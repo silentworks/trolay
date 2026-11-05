@@ -11,11 +11,14 @@ export interface ToastInput {
 	message: string;
 	tone?: ToastTone;
 	action?: ToastAction;
+	/** Called once it has gone without its action being taken: timed out, closed or replaced. */
+	ondone?: () => void;
 }
 
-export interface ToastMessage extends Required<Omit<ToastInput, 'action'>> {
+export interface ToastMessage extends Required<Omit<ToastInput, 'action' | 'ondone'>> {
 	id: number;
 	action?: ToastAction;
+	ondone?: () => void;
 }
 
 /** Long enough to read: a little more for a long message, and twice as long for an error. */
@@ -48,10 +51,11 @@ class Toasts {
 	// Under a finger or the mouse, or holding focus: the timer waits.
 	private holds = new Set<Hold>();
 
-	show({ message, tone = 'neutral', action }: ToastInput): number {
+	show({ message, tone = 'neutral', action, ondone }: ToastInput): number {
 		const id = ++this.count;
 		this.stop();
-		this.current = { id, message, tone, action };
+		this.current?.ondone?.();
+		this.current = { id, message, tone, action, ondone };
 		this.remaining = durationFor(message, tone);
 		this.holds.clear();
 		this.run();
@@ -62,7 +66,16 @@ class Toasts {
 	dismiss(id?: number): void {
 		if (id !== undefined && this.current?.id !== id) return;
 		this.stop();
+		this.current?.ondone?.();
 		this.current = null;
+	}
+
+	/** Takes the toast's action, and takes the toast away. */
+	act(): void {
+		const action = this.current?.action;
+		this.stop();
+		this.current = null;
+		action?.run();
 	}
 
 	hold(reason: Hold): void {

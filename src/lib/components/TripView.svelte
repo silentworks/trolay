@@ -5,7 +5,15 @@
 	import type { Item } from '#lib/data/db.ts';
 	import { itemName, listTripItems } from '#lib/data/items.ts';
 	import { getStore } from '#lib/data/stores.ts';
-	import { deleteTrip, deleteTripPhotos, getTrip, receiptDifference } from '#lib/data/trips.ts';
+	import {
+		deleteTrip,
+		deleteTripPhotos,
+		getTrip,
+		purgeDeletedPhotos,
+		receiptDifference,
+		restoreTrip
+	} from '#lib/data/trips.ts';
+	import { toast } from '#lib/toast.svelte.ts';
 	import { exportTripCsv } from '#lib/export/history.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { formatMoney, lineTotals } from '#lib/money.ts';
@@ -64,6 +72,11 @@
 			}
 			await deleteTrip(tripId);
 			await goto(resolve('/history'));
+			toast.show({
+				message: 'Trip deleted',
+				action: { label: 'Undo', run: () => void restoreTrip(tripId) },
+				ondone: () => void purgeDeletedPhotos()
+			});
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -202,7 +215,7 @@
 <Sheet open={deleting} title="Delete this trip?" onclose={() => (deleting = false)}>
 	<p>
 		This trip and its {totals?.itemCount === 1 ? 'item' : `${totals?.itemCount ?? 0} items`}, with
-		any photos, will be deleted from your history. This can't be undone.
+		any photos, will be deleted from your history. You can undo this for a few seconds afterwards.
 	</p>
 	<button class="btn btn-danger btn-block" type="button" onclick={deleteThisTrip}>
 		Delete trip

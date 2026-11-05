@@ -9,12 +9,15 @@
 		addStore,
 		deleteStore,
 		listStores,
+		restoreStore,
 		updateStore,
 		type StoreInput
 	} from '#lib/data/stores.ts';
 	import { db, isLive } from '#lib/data/db.ts';
 	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
+	import { purgeDeletedPhotos } from '#lib/data/trips.ts';
+	import { toast } from '#lib/toast.svelte.ts';
 
 	const stores = new LiveQuery(() => listStores());
 	let editing = $state<Store | null>(null);
@@ -41,8 +44,14 @@
 			if ((await tripsSharedWithMe(trips.map((trip) => trip.id))).size) {
 				throw new Error('This store was shared with you, so only its owner can delete it.');
 			}
-			await deleteStore(deleting.id, withHistory);
+			const store = deleting;
+			await deleteStore(store.id, withHistory);
 			deleting = null;
+			toast.show({
+				message: `Deleted ${store.name}${store.branch ? ` · ${store.branch}` : ''}`,
+				action: { label: 'Undo', run: () => void restoreStore(store.id) },
+				ondone: () => void purgeDeletedPhotos()
+			});
 		} catch (error) {
 			problem = error instanceof Error ? error.message : String(error);
 		}

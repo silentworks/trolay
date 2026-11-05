@@ -345,3 +345,57 @@ test("a label photo taken on one phone shows on the partner's phone", async ({ b
 		.getByRole('button', { name: 'Photo of the label' });
 	await expect(photo.locator('img')).toBeVisible(READ_TIMEOUT);
 });
+
+test('a deleted trip keeps its photos for Undo, and lets them go once the toast has gone', async ({
+	page
+}) => {
+	await startTrip(page);
+	await snapLabel(page);
+	const review = page.getByRole('dialog', { name: 'Check the label' });
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+	await menu(page, 'Finish trip');
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	// Out from the app's total, so the photo is kept.
+	await finish.getByLabel('Receipt total', { exact: true }).fill('9.99');
+	await finish.getByRole('button', { name: 'Finish trip' }).click();
+	await expect(page.getByText('Trip saved. Photos kept')).toBeVisible();
+	const photos = () =>
+		page.evaluate(
+			() =>
+				new Promise<number>((done) => {
+					const open = indexedDB.open('trolay');
+					open.onsuccess = () => {
+						const count = open.result.transaction('photos').objectStore('photos').count();
+						count.onsuccess = () => done(count.result);
+					};
+				})
+		);
+	expect(await photos()).toBe(1);
+
+	const toast = page.getByRole('group', { name: 'Message' });
+	const deleteTrip = async () => {
+		await page.goto('/history');
+		await page.getByRole('link', { name: /Tesco/ }).click();
+		await page.getByRole('button', { name: 'Menu' }).click();
+		await page.getByRole('navigation', { name: 'Menu' }).getByText('Delete this trip').click();
+		await page
+			.getByRole('dialog', { name: 'Delete this trip?' })
+			.getByRole('button', { name: 'Delete trip' })
+			.click();
+		await expect(toast.getByRole('status')).toHaveText('Trip deleted');
+	};
+
+	await deleteTrip();
+	await toast.getByRole('button', { name: 'Undo' }).click();
+	await page.getByRole('link', { name: /Tesco/ }).click();
+	await page.getByRole('button', { name: `Photo of ${DESCRIPTION}` }).click();
+	await expect(
+		page.getByRole('dialog', { name: `Photo of ${DESCRIPTION}` }).getByRole('img')
+	).toBeVisible();
+	await page.getByRole('button', { name: 'Close photo' }).click();
+
+	await deleteTrip();
+	await toast.getByRole('button', { name: 'Dismiss' }).click();
+	await expect.poll(photos).toBe(0);
+});

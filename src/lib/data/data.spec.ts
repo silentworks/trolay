@@ -14,7 +14,7 @@ import {
 	setQuantity,
 	updateItem
 } from './items';
-import { addStore, deleteStore, listStores, updateStore } from './stores';
+import { addStore, deleteStore, listStores, restoreStore, updateStore } from './stores';
 import {
 	changeTripStore,
 	deleteTrip,
@@ -25,10 +25,12 @@ import {
 	getTrip,
 	listFinishedTrips,
 	looksLikeTaxAddedAtTill,
+	purgeDeletedPhotos,
 	receiptDifference,
 	setReceiptTotal,
 	setTripBudget,
 	setTripDiscount,
+	restoreTrip,
 	tripDiscount,
 	startTrip
 } from './trips';
@@ -39,6 +41,7 @@ beforeEach(async () => {
 });
 
 const milk = { description: 'Milk 2L', unitPriceMinor: 145, priceIncludesTax: true, quantity: 1 };
+const photo = () => ({ blob: new Blob(['full']), thumbBlob: new Blob(['thumb']) });
 
 describe('stores', () => {
 	it('defaults new stores to 20% VAT with VAT-inclusive labels', async () => {
@@ -269,8 +272,6 @@ describe('items', () => {
 });
 
 describe('finishing a trip', () => {
-	const photo = () => ({ blob: new Blob(['full']), thumbBlob: new Blob(['thumb']) });
-
 	async function tripWithPhotos() {
 		const store = await addStore({ name: 'Tesco' });
 		const trip = await startTrip(store.id);
@@ -510,6 +511,59 @@ describe('deleting stores and history', () => {
 		await aFinishedTrip(aldi.id);
 		await deleteStore(tesco.id, true);
 		expect((await listFinishedTrips()).map((t) => t.store?.name)).toEqual(['Aldi']);
+	});
+
+	it('restores a deleted trip with the items deleted with it, and its photos until they are purged', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const trip = await startTrip(store.id);
+		await addItem(trip.id, milk, { photo: photo() });
+		const dropped = await addItem(trip.id, { ...milk, description: 'Bread' });
+		await deleteItem(dropped.id);
+		await setReceiptTotal(trip.id, 100);
+		await finishTrip(trip.id);
+		expect(await db.photos.count()).toBe(1);
+
+		await deleteTrip(trip.id);
+		expect(await listFinishedTrips()).toEqual([]);
+		// The photo waits in case of an undo.
+		expect(await db.photos.count()).toBe(1);
+
+		await restoreTrip(trip.id);
+		expect((await listFinishedTrips()).map(({ trip }) => trip.id)).toEqual([trip.id]);
+		const items = await listTripItems(trip.id);
+		// The item deleted while shopping stays deleted.
+		expect(items.map((item) => item.description)).toEqual(['Milk 2L']);
+		expect(await getPhoto(items[0].photoId!)).toBeDefined();
+		// The undo is a change of its own, to be sent like any other.
+		expect((await db.trips.get(trip.id))?.pending).toHaveProperty('deletedAt');
+		expect((await db.items.get(items[0].id))?.pending).toHaveProperty('deletedAt');
+
+		// Photos of a trip that stays deleted go when purged; a live trip's stay.
+		await purgeDeletedPhotos();
+		expect(await db.photos.count()).toBe(1);
+		await deleteTrip(trip.id);
+		await purgeDeletedPhotos();
+		expect(await db.photos.count()).toBe(0);
+		expect((await db.items.get(items[0].id))?.photoId).toBeUndefined();
+	});
+
+	it('restores a deleted store with the history deleted with it, and no other', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const kept = await aFinishedTrip(store.id);
+		const before = await aFinishedTrip(store.id);
+		await deleteTrip(before.id);
+		await new Promise((done) => setTimeout(done, 2));
+
+		await deleteStore(store.id, true);
+		expect(await listStores()).toEqual([]);
+		expect(await listFinishedTrips()).toEqual([]);
+
+		await restoreStore(store.id);
+		expect((await listStores()).map((each) => each.name)).toEqual(['Tesco']);
+		// The trip deleted on its own before stays deleted.
+		expect((await listFinishedTrips()).map(({ trip }) => trip.id)).toEqual([kept.id]);
+		expect(await listTripItems(kept.id)).toHaveLength(1);
+		expect((await db.stores.get(store.id))?.pending).toHaveProperty('deletedAt');
 	});
 
 	it('will not delete the store of the open trip', async () => {

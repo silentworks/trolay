@@ -4,7 +4,12 @@
 	import BackupPanel from '#lib/components/BackupPanel.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
 	import { formatWhen } from '#lib/dates.ts';
-	import { deleteTrip, listFinishedTrips, receiptDifference } from '#lib/data/trips.ts';
+	import {
+		deleteTrip,
+		listFinishedTrips,
+		purgeDeletedPhotos,
+		receiptDifference
+	} from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { exportHistoryCsv } from '#lib/export/history.ts';
 	import { formatMoney } from '#lib/money.ts';
@@ -37,6 +42,8 @@
 			const ids = (history.current ?? []).map(({ trip }) => trip.id);
 			const theirs = await tripsSharedWithMe(ids);
 			for (const id of ids) if (!theirs.has(id)) await deleteTrip(id);
+			// Clearing everything has no undo, so the photos go now.
+			await purgeDeletedPhotos();
 			if (theirs.size) {
 				note = `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`;
 			}

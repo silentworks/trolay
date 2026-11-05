@@ -59,6 +59,7 @@
 		} catch {
 			// Clipboard access can be refused; the link is in the box to copy by hand.
 			(document.getElementById(`${uid}-link`) as HTMLInputElement | null)?.select();
+			toast.error("Couldn't copy the link. It's selected, so copy it by hand.");
 		}
 	}
 

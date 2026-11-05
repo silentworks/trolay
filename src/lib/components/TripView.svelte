@@ -40,7 +40,6 @@
 	let viewing = $state<Item>();
 	let confirming = $state(false);
 	let deleting = $state(false);
-	let problem = $state('');
 
 	const trip = $derived(view.current?.trip);
 	const totals = $derived(trip?.totals);
@@ -56,16 +55,14 @@
 	]);
 
 	async function exportCsv() {
-		problem = '';
 		try {
 			await exportTripCsv(tripId);
 		} catch (error) {
-			problem = error instanceof Error ? error.message : String(error);
+			toast.error(error);
 		}
 	}
 
 	async function deleteThisTrip() {
-		problem = '';
 		try {
 			if ((await tripsSharedWithMe([tripId])).size) {
 				throw new Error('This trip belongs to whoever invited you, so only they can delete it.');
@@ -78,15 +75,20 @@
 				ondone: () => void purgeDeletedPhotos()
 			});
 		} catch (error) {
-			problem = error instanceof Error ? error.message : String(error);
+			toast.error(error);
 		} finally {
 			deleting = false;
 		}
 	}
 
 	async function deletePhotos() {
-		await deleteTripPhotos(tripId);
-		confirming = false;
+		try {
+			await deleteTripPhotos(tripId);
+		} catch (error) {
+			toast.error(error);
+		} finally {
+			confirming = false;
+		}
 	}
 </script>
 
@@ -160,8 +162,6 @@
 				<button class="btn" type="button" onclick={() => (confirming = true)}>Delete photos</button>
 			</div>
 		{/if}
-
-		{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 
 		<h2>Items</h2>
 		<ul class="items" aria-label="Items bought">

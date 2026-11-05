@@ -83,4 +83,29 @@ test('a trip finished while shared stays in both histories', async ({ browser })
 			await expect(phone.getByRole('link', { name: /Tesco/ })).toBeVisible({ timeout: 1500 });
 		}).toPass({ timeout: 20_000 });
 	}
+
+	// Only the owner can delete it: the partner is told so in an error toast, read out as an alert.
+	const toast = partner.getByRole('group', { name: 'Message' });
+	await partner.getByRole('link', { name: /Tesco/ }).click();
+	await partner.getByRole('button', { name: 'Menu' }).click();
+	await partner.getByRole('navigation', { name: 'Menu' }).getByText('Delete this trip').click();
+	await partner
+		.getByRole('dialog', { name: 'Delete this trip?' })
+		.getByRole('button', { name: 'Delete trip' })
+		.click();
+	await expect(toast.getByRole('alert')).toHaveText(
+		'This trip belongs to whoever invited you, so only they can delete it.'
+	);
+	await expect(toast).toHaveAttribute('data-tone', 'error');
+	await expect(partner.getByRole('dialog', { name: 'Delete this trip?' })).toBeHidden();
+	await toast.getByRole('button', { name: 'Dismiss' }).click();
+
+	await partner.goto('/stores');
+	await partner.getByRole('button', { name: /Tesco/ }).click();
+	await partner.getByRole('button', { name: 'Delete store' }).click();
+	await partner.getByRole('button', { name: 'Delete store, keep history' }).click();
+	await expect(toast.getByRole('alert')).toHaveText(
+		'This store was shared with you, so only its owner can delete it.'
+	);
+	await expect(partner.getByRole('button', { name: /Tesco/ })).toBeVisible();
 });

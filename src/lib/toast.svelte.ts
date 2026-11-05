@@ -62,6 +62,14 @@ class Toasts {
 		return id;
 	}
 
+	/** Shows what went wrong, from a thrown error. */
+	error(cause: unknown): number {
+		return this.show({
+			message: cause instanceof Error ? cause.message : String(cause),
+			tone: 'error'
+		});
+	}
+
 	/** Takes the toast away; with an id, only if that one is still showing. */
 	dismiss(id?: number): void {
 		if (id !== undefined && this.current?.id !== id) return;

@@ -41,6 +41,8 @@ class Toasts {
 	current = $state.raw<ToastMessage | null>(null);
 	/** How far above the bottom of the screen it sits, in px, so a screen's dock stays in view. */
 	lift = $state(0);
+	/** How much of the bottom of the screen a banner takes up, in px; the toast goes above it. */
+	below = $state(0);
 	/** The hosts on the page, newest last; the newest draws the toast. */
 	hosts = $state<symbol[]>([]);
 

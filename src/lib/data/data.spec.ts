@@ -18,6 +18,7 @@ import { addStore, deleteStore, listStores, restoreStore, updateStore } from './
 import {
 	changeTripStore,
 	deleteTrip,
+	deleteTrips,
 	deleteTripPhotos,
 	finishTrip,
 	leaveTrip,
@@ -31,6 +32,7 @@ import {
 	setTripBudget,
 	setTripDiscount,
 	restoreTrip,
+	restoreTrips,
 	tripDiscount,
 	startTrip
 } from './trips';
@@ -545,6 +547,33 @@ describe('deleting stores and history', () => {
 		await purgeDeletedPhotos();
 		expect(await db.photos.count()).toBe(0);
 		expect((await db.items.get(items[0].id))?.photoId).toBeUndefined();
+	});
+
+	it('deletes the whole history together, and restores just that', async () => {
+		const store = await addStore({ name: 'Tesco' });
+		const before = await aFinishedTrip(store.id);
+		await deleteTrip(before.id);
+		const first = await aFinishedTrip(store.id);
+		const second = await aFinishedTrip(store.id);
+		const photoTrip = await startTrip(store.id);
+		await addItem(photoTrip.id, milk, { photo: photo() });
+		await setReceiptTotal(photoTrip.id, 100);
+		await finishTrip(photoTrip.id);
+
+		const ids = [first.id, second.id, photoTrip.id];
+		await deleteTrips(ids);
+		expect(await listFinishedTrips()).toEqual([]);
+		expect(
+			new Set(await Promise.all(ids.map(async (id) => (await db.trips.get(id))?.deletedAt))).size
+		).toBe(1);
+		expect(await db.photos.count()).toBe(1);
+
+		await restoreTrips(ids);
+		expect((await listFinishedTrips()).map(({ trip }) => trip.id).sort()).toEqual([...ids].sort());
+		expect(await listTripItems(first.id)).toHaveLength(1);
+		// One deleted before, on its own, stays deleted.
+		expect((await db.trips.get(before.id))?.deletedAt).toBeDefined();
+		expect(await db.photos.count()).toBe(1);
 	});
 
 	it('restores a deleted store with the history deleted with it, and no other', async () => {

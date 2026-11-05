@@ -237,6 +237,21 @@ export async function deleteTrip(tripId: string): Promise<void> {
 	await db.transaction('rw', db.trips, db.items, () => tombstoneTrip(tripId, Date.now()));
 }
 
+/** Deletes these finished trips together, at one moment, so restoreTrips can take them all back. */
+export async function deleteTrips(tripIds: string[]): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, async () => {
+		const now = Date.now();
+		for (const id of tripIds) await tombstoneTrip(id, now);
+	});
+}
+
+/** Undoes deleteTrips. */
+export async function restoreTrips(tripIds: string[]): Promise<void> {
+	await db.transaction('rw', db.trips, db.items, async () => {
+		for (const id of tripIds) await restoreTrip(id);
+	});
+}
+
 /** Deletes the trip and its live items at `now`, which restoreTrip uses to tell them apart. */
 export async function tombstoneTrip(tripId: string, now: number): Promise<void> {
 	const trip = await db.trips.get(tripId);

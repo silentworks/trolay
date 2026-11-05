@@ -56,3 +56,35 @@ test('all history is deleted at once, and a store with its history', async ({ pa
 	await page.goto('/history');
 	await expect(page.getByText('No finished trips yet')).toBeVisible();
 });
+
+const toastOf = (page: Page) => page.getByRole('group', { name: 'Message' });
+
+test('a deleted trip comes back with Undo', async ({ page }) => {
+	await finishedTripAt(page, 'Asda');
+	await page.goto('/history');
+	await page.getByRole('link', { name: /Asda/ }).click();
+	await page.getByRole('button', { name: 'Menu' }).click();
+	await page.getByRole('navigation', { name: 'Menu' }).getByText('Delete this trip').click();
+	const sheet = page.getByRole('dialog', { name: 'Delete this trip?' });
+	await expect(sheet).toContainText('You can undo this');
+	await sheet.getByRole('button', { name: 'Delete trip' }).click();
+	await expect(page.getByText('No finished trips yet')).toBeVisible();
+	await expect(toastOf(page).getByRole('status')).toHaveText('Trip deleted');
+	await toastOf(page).getByRole('button', { name: 'Undo' }).click();
+	await page.getByRole('link', { name: /Asda/ }).click();
+	await expect(page.getByText('Milk')).toBeVisible();
+});
+
+test('a deleted store comes back with Undo, with the history deleted with it', async ({ page }) => {
+	await finishedTripAt(page, 'Lidl');
+	await page.goto('/stores');
+	await page.getByRole('button', { name: /Lidl/ }).click();
+	await page.getByRole('button', { name: 'Delete store' }).click();
+	await page.getByRole('button', { name: 'Delete store and its history' }).click();
+	await expect(page.getByRole('button', { name: /Lidl/ })).toHaveCount(0);
+	await expect(toastOf(page).getByRole('status')).toHaveText('Deleted Lidl');
+	await toastOf(page).getByRole('button', { name: 'Undo' }).click();
+	await expect(page.getByRole('button', { name: /Lidl/ })).toBeVisible();
+	await page.goto('/history');
+	await expect(page.getByRole('link', { name: /Lidl/ })).toBeVisible();
+});

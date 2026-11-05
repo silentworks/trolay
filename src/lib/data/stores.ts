@@ -1,7 +1,7 @@
 import { isSupportedCurrency } from '#lib/currencies.ts';
 import { DEFAULT_TAX_BPS } from '#lib/money.ts';
 import { db, isLive, newId, type Store } from './db';
-import { deleteTrip } from './trips';
+import { restoreTrip, tombstoneTrip } from './trips';
 
 export interface StoreInput {
 	name: string;
@@ -74,15 +74,29 @@ export async function getStore(id: string): Promise<Store | undefined> {
  * `withHistory` is set. A store being shopped at right now can't go.
  */
 export async function deleteStore(id: string, withHistory = false): Promise<void> {
-	await db.transaction('rw', [db.stores, db.trips, db.items, db.photos], async () => {
+	await db.transaction('rw', [db.stores, db.trips, db.items], async () => {
 		const store = await db.stores.get(id);
 		if (!isLive(store)) return;
 		const trips = (await db.trips.where('storeId').equals(id).toArray()).filter(isLive);
 		if (trips.some((trip) => trip.status === 'open')) {
 			throw new Error('Finish or leave the current trip first.');
 		}
-		if (withHistory) for (const trip of trips) await deleteTrip(trip.id);
+		// One time for the store and its trips, so restoreStore brings back just these.
 		const now = Date.now();
+		if (withHistory) for (const trip of trips) await tombstoneTrip(trip.id, now);
 		await db.stores.update(id, { deletedAt: now, updatedAt: now });
+	});
+}
+
+/** Undoes deleteStore, with the history deleted with it. */
+export async function restoreStore(id: string): Promise<void> {
+	await db.transaction('rw', [db.stores, db.trips, db.items], async () => {
+		const store = await db.stores.get(id);
+		if (!store?.deletedAt) return;
+		const trips = await db.trips.where('storeId').equals(id).toArray();
+		for (const trip of trips.filter((each) => each.deletedAt === store.deletedAt)) {
+			await restoreTrip(trip.id);
+		}
+		await db.stores.update(id, { deletedAt: undefined, updatedAt: Date.now() });
 	});
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PhotoImage from './PhotoImage.svelte';
+	import ToastHost from './ToastHost.svelte';
 
 	interface Props {
 		/** The photo to show, or undefined when closed. */
@@ -17,11 +18,19 @@
 	});
 </script>
 
-<!-- Full-screen photo; Escape, the close button or a tap anywhere closes it. -->
-<dialog bind:this={dialog} aria-label={title} {onclose} onclick={() => dialog.close()}>
+<!-- Full-screen photo; Escape, the close button or a tap anywhere but a toast closes it. -->
+<dialog
+	bind:this={dialog}
+	aria-label={title}
+	{onclose}
+	onclick={(event) => {
+		if (!(event.target as Element).closest('[popover]')) dialog.close();
+	}}
+>
 	<button class="btn close" type="button" aria-label="Close photo">✕</button>
 	{#if photoId}
 		<PhotoImage {photoId} size="full" alt={title} />
+		<ToastHost inDialog />
 	{/if}
 </dialog>
 

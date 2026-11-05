@@ -24,6 +24,12 @@
 	--danger: #b42318;
 	--danger-bg: #fee4e2;
 	--danger-text: #8a1c12;
+	/* Toasts are the reverse of the page, so they stand out from it. */
+	--toast-bg: #111827;
+	--toast-text: #f6f8fc;
+	--toast-success: #93b4ff;
+	--toast-error-bg: #b42318;
+	--toast-error-text: #ffffff;
 
 	--radius: 14px;
 	--tap: 48px;
@@ -65,6 +71,11 @@
 	--danger: #f97066;
 	--danger-bg: #4a1410;
 	--danger-text: #fda29b;
+	--toast-bg: #e8ecf3;
+	--toast-text: #0b0f17;
+	--toast-success: #1d4ed8;
+	--toast-error-bg: #f97066;
+	--toast-error-text: #0b0f17;
 	--shadow: 0 -4px 16px rgb(0 0 0 / 0.4);
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import ToastHost from './ToastHost.svelte';
 
 	interface Props {
 		open: boolean;
@@ -36,6 +37,7 @@
 		</header>
 		{#if open}
 			{@render children()}
+			<ToastHost inDialog />
 		{/if}
 	</div>
 </dialog>

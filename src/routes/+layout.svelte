@@ -6,6 +6,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
+	import ToastHost from '#lib/components/ToastHost.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
@@ -81,3 +82,4 @@
 <InstallNudge />
 <UpdatePrompt />
 {@render children()}
+<ToastHost />

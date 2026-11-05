@@ -8,6 +8,7 @@
 		openRearCamera,
 		stopCamera
 	} from '#lib/capture/camera.ts';
+	import ToastHost from './ToastHost.svelte';
 
 	interface Props {
 		open: boolean;
@@ -228,6 +229,7 @@
 				onchange={picked}
 			/>
 		{/if}
+		<ToastHost inDialog />
 	{/if}
 </dialog>
 

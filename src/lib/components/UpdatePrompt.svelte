@@ -1,44 +1,23 @@
 <script lang="ts">
 	import { appUpdate } from '#lib/update.svelte.ts';
+	import Banner from './Banner.svelte';
 
 	$effect(() => appUpdate.watch());
 </script>
 
 {#if appUpdate.available}
-	<aside class="update" aria-label="App update">
-		<p role="status">A new version of Trolay is ready.</p>
-		<button class="btn btn-primary" type="button" onclick={() => appUpdate.apply()}>
-			Refresh to update
-		</button>
-		<button class="btn btn-ghost" type="button" onclick={() => appUpdate.dismiss()}>Later</button>
-	</aside>
+	<Banner label="App update">
+		{#snippet icon()}
+			<svg viewBox="0 0 24 24">
+				<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" />
+			</svg>
+		{/snippet}
+		A new version of Trolay is ready.
+		{#snippet actions()}
+			<button class="btn btn-primary" type="button" onclick={() => appUpdate.apply()}>
+				Refresh to update
+			</button>
+			<button class="btn btn-ghost" type="button" onclick={() => appUpdate.dismiss()}>Later</button>
+		{/snippet}
+	</Banner>
 {/if}
-
-<style>
-	.update {
-		position: fixed;
-		inset: calc(8px + env(safe-area-inset-top)) var(--gutter) auto;
-		z-index: 10;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-		max-width: 528px;
-		margin: 0 auto;
-		padding: 10px 12px;
-		border-radius: var(--radius);
-		background: var(--text);
-		color: var(--bg);
-		box-shadow: var(--shadow);
-	}
-
-	.update p {
-		flex: 1 1 100%;
-		margin: 0;
-		font-weight: 700;
-	}
-
-	.update .btn-ghost {
-		color: var(--bg);
-	}
-</style>

@@ -1,40 +1,43 @@
 <script lang="ts">
-	import { settings } from '#lib/settings.svelte.ts';
+	import { install } from '#lib/install.svelte.ts';
+	import { appUpdate } from '#lib/update.svelte.ts';
+	import Banner from './Banner.svelte';
+
+	// A few seconds in, so it doesn't greet the shopper before the app has.
+	const DELAY_MS = 4000;
 
 	// Safari can clear data for sites that are not on the Home Screen after 7 days without a
-	// visit, so iOS users get a one-time prompt to install the app.
-	const isIos =
-		/iphone|ipad|ipod/i.test(navigator.userAgent) ||
-		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-	const isInstalled =
-		matchMedia('(display-mode: standalone)').matches ||
-		(navigator as Navigator & { standalone?: boolean }).standalone === true;
+	// visit, so installing keeps the trolley safe as well as one tap away.
+	let ready = $state(false);
+	$effect(() => {
+		const timer = setTimeout(() => (ready = true), DELAY_MS);
+		return () => clearTimeout(timer);
+	});
 </script>
 
-{#if isIos && !isInstalled && !settings.installNudgeDismissed}
-	<aside class="nudge" aria-label="Install the app">
-		<p>
-			<strong>Install Trolay</strong> so your trolley stays saved: tap
-			<span aria-label="the Share button">Share</span>, then <em>Add to Home Screen</em>.
-		</p>
-		<button class="btn" type="button" onclick={() => settings.dismissInstallNudge()}>Got it</button>
-	</aside>
+{#if ready && install.offered && !appUpdate.available}
+	<Banner label="Install the app">
+		{#snippet icon()}
+			<svg viewBox="0 0 24 24">
+				<rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+				<path d="M12 7v7m-3-3 3 3 3-3M10.5 18.5h3" />
+			</svg>
+		{/snippet}
+		{#if install.canPrompt}
+			Install Trolay for quick access!
+		{:else}
+			Install Trolay for quick access: tap <span aria-label="the Share button">Share</span>, then
+			<em>Add to Home Screen</em>.
+		{/if}
+		{#snippet actions()}
+			{#if install.canPrompt}
+				<button class="btn btn-primary" type="button" onclick={() => install.prompt()}
+					>Install</button
+				>
+				<button class="btn btn-ghost" type="button" onclick={() => install.later()}>Later</button>
+			{:else}
+				<button class="btn" type="button" onclick={() => install.later()}>Got it</button>
+			{/if}
+		{/snippet}
+	</Banner>
 {/if}
-
-<style>
-	.nudge {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		max-width: 560px;
-		margin: calc(8px + env(safe-area-inset-top)) auto 0;
-		padding: 12px var(--gutter);
-		background: var(--surface-2);
-		border-radius: var(--radius);
-	}
-
-	.nudge p {
-		margin: 0;
-		flex: 1;
-	}
-</style>

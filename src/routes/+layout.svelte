@@ -85,7 +85,7 @@
 	});
 </script>
 
+{@render children()}
 <InstallNudge />
 <UpdatePrompt />
-{@render children()}
 <ToastHost />

@@ -2,7 +2,7 @@
 	import { toast, type ToastMessage } from '#lib/toast.svelte.ts';
 
 	interface Props {
-		/** Inside a modal dialog, which covers the screen's dock. */
+		/** Inside a modal dialog, which covers the screen's dock and any banner. */
 		inDialog?: boolean;
 	}
 
@@ -13,6 +13,8 @@
 	// What the card shows. It keeps the last toast while it slides away.
 	let shown = $state.raw<ToastMessage>();
 	const active = $derived(toast.isActive(host));
+	// Above the screen's dock, or a banner. Neither shows through a dialog's backdrop.
+	const raise = $derived(inDialog ? 0 : Math.max(toast.lift, toast.below));
 
 	$effect(() => {
 		const remove = toast.addHost(host);
@@ -44,7 +46,7 @@
 	popover="manual"
 	role="group"
 	aria-label="Message"
-	style:bottom={toast.lift && !inDialog ? `${toast.lift + 8}px` : undefined}
+	style:bottom={raise ? `${raise + 8}px` : undefined}
 	onpointerenter={() => toast.hold('pointer')}
 	onpointerleave={() => toast.release('pointer')}
 	onfocusin={() => toast.hold('focus')}

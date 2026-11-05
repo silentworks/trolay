@@ -216,7 +216,16 @@ test('the edit sheet shows the photo; tap for the full photo, and retake it', as
 	const camera = page.getByRole('dialog', { name: 'Snap a shelf label' });
 	await expect(camera.getByRole('button', { name: 'Take photo' })).toBeEnabled();
 	await camera.getByRole('button', { name: 'Take photo' }).click();
-	await expect(page.getByText('Photo updated')).toBeVisible();
+	const toast = page.getByRole('group', { name: 'Message' });
+	await expect(toast).toContainText('Photo updated');
+	// Shown over the sheet that is still open, and can be tapped there.
+	expect(
+		await toast.evaluate((element) => {
+			const box = element.getBoundingClientRect();
+			const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+			return !!hit && element.contains(hit);
+		})
+	).toBe(true);
 	await expect(thumb.locator('img')).not.toHaveAttribute('src', firstThumb!);
 });
 

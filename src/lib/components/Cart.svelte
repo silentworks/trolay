@@ -32,6 +32,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { InviteError, leaveSharedTrip, removeTripPartner } from '#lib/sharing/invites.ts';
 	import { letGoOfTrip } from '#lib/sync/letgo.ts';
+	import { toast, type ToastAction } from '#lib/toast.svelte.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
@@ -46,7 +47,6 @@
 	import PhotoViewer from './PhotoViewer.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreList from './StoreList.svelte';
-	import Toast from './Toast.svelte';
 	import TotalsFooter from './TotalsFooter.svelte';
 
 	interface Props {
@@ -96,8 +96,7 @@
 	let sheet = $state<SheetState | null>(null);
 	let camera = $state(false);
 	let viewing = $state<Item>();
-	let toast = $state<{ id: number; message: string; undoItemId?: string } | null>(null);
-	let toastCount = 0;
+	let dock = $state<HTMLDivElement>();
 
 	const trip = $derived(cart.current?.trip);
 	const store = $derived(cart.current?.store);
@@ -127,8 +126,20 @@
 		sheet = { kind: 'add', capture: new CaptureSession(photo, barcode) };
 	}
 
-	function show(message: string, undoItemId?: string) {
-		toast = { id: ++toastCount, message, undoItemId };
+	// Toasts sit just above the dock, so the totals stay in view.
+	$effect(() => {
+		if (!dock) return;
+		const target = dock;
+		const observer = new ResizeObserver(() => (toast.lift = target.offsetHeight));
+		observer.observe(target);
+		return () => {
+			observer.disconnect();
+			toast.lift = 0;
+		};
+	});
+
+	function show(message: string, action?: ToastAction) {
+		toast.show({ message, action });
 	}
 
 	async function run(action: () => Promise<void>) {
@@ -167,12 +178,11 @@
 		sheet = null;
 		run(async () => {
 			await deleteItem(item.id);
-			show(`Deleted ${itemName(item)}`, item.id);
+			show(`Deleted ${itemName(item)}`, { label: 'Undo', run: () => undo(item.id) });
 		});
 	}
 
 	function undo(itemId: string) {
-		toast = null;
 		run(() => restoreItem(itemId));
 	}
 
@@ -310,17 +320,7 @@
 			</div>
 		{/if}
 
-		<div class="dock">
-			{#if toast}
-				{#key toast.id}
-					<Toast
-						message={toast.message}
-						actionLabel={toast.undoItemId ? 'Undo' : undefined}
-						onaction={toast.undoItemId ? () => undo(toast!.undoItemId!) : undefined}
-						ondismiss={() => (toast = null)}
-					/>
-				{/key}
-			{/if}
+		<div class="dock" bind:this={dock}>
 			<TotalsFooter
 				{totals}
 				{discount}

@@ -49,9 +49,7 @@ test('snap a label: it is read into the review sheet, and edits can be reverted'
 	const review = await snapLabel(page);
 
 	await expect(review.getByRole('img', { name: 'The label you photographed' })).toBeVisible();
-	await expect(review.getByText('Read from the label. Check before adding.')).toBeVisible(
-		READ_TIMEOUT
-	);
+	await expect(review.getByText('Label read')).toBeVisible(READ_TIMEOUT);
 	await expect(review.getByLabel('Description')).toHaveValue(DESCRIPTION);
 	await expect(review.getByLabel('Unit price')).toHaveValue('1.99');
 	// £1.99 for 400 g is the 49.8p per 100 g printed on the label.
@@ -154,9 +152,7 @@ test('a name you gave the barcode before beats the label reading', async ({ page
 	await expect(sheet).toBeHidden();
 
 	const review = await snapLabel(page);
-	await expect(review.getByText('Read from the label. Check before adding.')).toBeVisible(
-		READ_TIMEOUT
-	);
+	await expect(review.getByText('Label read')).toBeVisible(READ_TIMEOUT);
 	await expect(review.getByLabel('Description')).toHaveValue('Chowder for Friday');
 	await expect(review.getByText('Name from your earlier shopping.')).toBeVisible();
 	await expect(review.getByLabel('Unit price')).toHaveValue('1.99');

@@ -24,6 +24,8 @@
 	--danger: #b42318;
 	--danger-bg: #fee4e2;
 	--danger-text: #8a1c12;
+	--success-bg: #dcf3e3;
+	--success-text: #166534;
 	/* Toasts are the reverse of the page, so they stand out from it. */
 	--toast-bg: #111827;
 	--toast-text: #f6f8fc;
@@ -71,6 +73,8 @@
 	--danger: #f97066;
 	--danger-bg: #4a1410;
 	--danger-text: #fda29b;
+	--success-bg: #12301d;
+	--success-text: #86efac;
 	--toast-bg: #e8ecf3;
 	--toast-text: #0b0f17;
 	--toast-success: #1d4ed8;

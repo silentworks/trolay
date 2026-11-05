@@ -246,7 +246,11 @@
 				{:else if capture.stage === 'failed'}
 					{capture.error}. Fill in the details below; the item can still be added.
 				{:else}
-					Read from the label. Check before adding.
+					<span class="chip">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+						Label read
+					</span>
+					<span>Check before adding.</span>
 				{/if}
 			</figcaption>
 		</figure>
@@ -272,48 +276,51 @@
 		</div>
 	{/if}
 
-	<div class="field" class:needs-check={unread.description && !description}>
-		<label for="{uid}-description">Description</label>
-		<!-- svelte-ignore a11y_autofocus -->
-		<input
-			id="{uid}-description"
-			class="input"
-			bind:value={description}
-			oninput={() => (touched.description = true)}
-			autocomplete="off"
-			autofocus={!item && !capture}
-			aria-describedby={unread.description && !description ? `${uid}-description-check` : undefined}
-		/>
-		{#if nameLookup && !touched.description}
-			<p class="lookup-hint" aria-live="polite">
-				{#if nameLookup === 'looking'}
-					Looking up the name…
-				{:else if nameLookup === 'own-item'}
-					Name from your earlier shopping.
-				{:else if nameLookup === 'openfoodfacts'}
-					Name from Open Food Facts.
-				{:else if !description}
-					No signal. Leave it blank and the name will be filled in when you're back online.
-				{/if}
-			</p>
-		{/if}
-		{#if unread.description && !description && nameLookup !== 'queued'}
-			<p class="check-hint" id="{uid}-description-check">Couldn't read this. Please type it.</p>
-		{/if}
-	</div>
+	<div class="rows">
+		<div class="line" class:needs-check={unread.description && !description}>
+			<label for="{uid}-description">Description</label>
+			<!-- svelte-ignore a11y_autofocus -->
+			<input
+				id="{uid}-description"
+				class="input value"
+				bind:value={description}
+				oninput={() => (touched.description = true)}
+				autocomplete="off"
+				autofocus={!item && !capture}
+				aria-describedby={unread.description && !description
+					? `${uid}-description-check`
+					: undefined}
+			/>
+			{#if nameLookup && !touched.description}
+				<p class="lookup-hint" aria-live="polite">
+					{#if nameLookup === 'looking'}
+						Looking up the name…
+					{:else if nameLookup === 'own-item'}
+						Name from your earlier shopping.
+					{:else if nameLookup === 'openfoodfacts'}
+						Name from Open Food Facts.
+					{:else if !description}
+						No signal. Leave it blank and the name will be filled in when you're back online.
+					{/if}
+				</p>
+			{/if}
+			{#if unread.description && !description && nameLookup !== 'queued'}
+				<p class="check-hint" id="{uid}-description-check">Couldn't read this. Please type it.</p>
+			{/if}
+		</div>
 
-	<div class="row">
-		<div class="field" class:needs-check={unread.price && !price}>
+		<div class="line" class:needs-check={unread.price && !price}>
 			<label for="{uid}-price">{amountLabel('Unit price', currency)}</label>
 			<input
 				id="{uid}-price"
-				class="input"
+				class="input value price"
 				bind:value={price}
 				oninput={() => {
 					touched.price = true;
 					priceChecked = false;
 				}}
 				inputmode="decimal"
+				placeholder={minorToInput(0)}
 				aria-invalid={price !== '' && unitPriceMinor === null}
 				aria-describedby={unread.price && !price ? `${uid}-price-check` : undefined}
 			/>
@@ -322,10 +329,13 @@
 			{:else if priceChecked}
 				<p class="checked-hint">✓ Matches the unit price on the label</p>
 			{/if}
+			{#if perUnit}
+				<p class="lookup-hint">Label unit price: {perUnit}</p>
+			{/if}
 		</div>
 
-		<div class="field">
-			<span class="label" id="{uid}-qty-label">Quantity</span>
+		<div class="line">
+			<span id="{uid}-qty-label">Quantity</span>
 			<div class="stepper" role="group" aria-labelledby="{uid}-qty-label">
 				<button
 					class="btn"
@@ -343,65 +353,79 @@
 				>
 			</div>
 		</div>
-	</div>
 
-	{#if perUnit}
-		<p class="checked-hint">Label unit price: {perUnit}</p>
-	{/if}
+		<div class="line">
+			<span aria-hidden="true">Tax</span>
+			<button
+				class="pill"
+				type="button"
+				role="switch"
+				aria-checked={priceIncludesTax}
+				aria-label="Price includes tax"
+				onclick={() => {
+					priceIncludesTax = !priceIncludesTax;
+					touched.vat = true;
+				}}
+			>
+				{priceIncludesTax ? 'Includes tax' : 'Excludes tax'}
+			</button>
+		</div>
 
-	<label class="check">
-		<input
-			type="checkbox"
-			bind:checked={offerOn}
-			onchange={() => (touched.offer = true)}
-			aria-controls="{uid}-offer"
-		/>
-		Multi-buy offer
-	</label>
-	{#if offerOn}
-		<div class="field" id="{uid}-offer">
-			<div class="offer" role="group" aria-label="Offer: items and price">
-				<input
-					class="input"
-					aria-label="Offer: number of items"
-					bind:value={offerQuantity}
-					oninput={() => (touched.offer = true)}
-					inputmode="numeric"
-					placeholder="2"
-				/>
-				<span>for {currencySymbol(currency)}</span>
-				<input
-					class="input"
-					aria-label="Offer: price for the items"
-					bind:value={offerPrice}
-					oninput={() => (touched.offer = true)}
-					inputmode="decimal"
-					placeholder="3.00"
-				/>
-			</div>
-			{#if offerRead && !touched.offer}
-				<p class="checked-hint">✓ Read from the label. Applies to each set of {offerQuantity}.</p>
+		<div class="line">
+			<span aria-hidden="true">Multi-buy</span>
+			<button
+				class="pill"
+				type="button"
+				role="switch"
+				aria-checked={offerOn}
+				aria-label="Multi-buy offer"
+				aria-controls="{uid}-offer"
+				onclick={() => {
+					offerOn = !offerOn;
+					touched.offer = true;
+				}}
+			>
+				{offerOn ? 'Offer on' : 'None'}
+			</button>
+			{#if offerOn}
+				<div class="offer" id="{uid}-offer" role="group" aria-label="Offer: items and price">
+					<input
+						class="input"
+						aria-label="Offer: number of items"
+						bind:value={offerQuantity}
+						oninput={() => (touched.offer = true)}
+						inputmode="numeric"
+						placeholder="2"
+					/>
+					<span>for {currencySymbol(currency)}</span>
+					<input
+						class="input"
+						aria-label="Offer: price for the items"
+						bind:value={offerPrice}
+						oninput={() => (touched.offer = true)}
+						inputmode="decimal"
+						placeholder="3.00"
+					/>
+				</div>
+				{#if offerRead && !touched.offer}
+					<p class="checked-hint">✓ Read from the label. Applies to each set of {offerQuantity}.</p>
+				{/if}
 			{/if}
 		</div>
-	{/if}
 
-	<label class="check">
-		<input type="checkbox" bind:checked={priceIncludesTax} onchange={() => (touched.vat = true)} />
-		Price includes tax
-	</label>
-
-	<div class="field">
-		<label for="{uid}-barcode">Barcode <span class="hint">(optional)</span></label>
-		<div class="barcode">
-			<input
-				id="{uid}-barcode"
-				class="input"
-				bind:value={barcode}
-				oninput={() => (touched.barcode = true)}
-				inputmode="numeric"
-				autocomplete="off"
-			/>
-			<button class="btn" type="button" onclick={() => (camera = 'barcode')}>Scan</button>
+		<div class="line">
+			<label for="{uid}-barcode">Barcode <span class="visually-hidden">(optional)</span></label>
+			<div class="barcode">
+				<input
+					id="{uid}-barcode"
+					class="input value"
+					bind:value={barcode}
+					oninput={() => (touched.barcode = true)}
+					inputmode="numeric"
+					autocomplete="off"
+				/>
+				<button class="btn" type="button" onclick={() => (camera = 'barcode')}>Scan</button>
+			</div>
 		</div>
 	</div>
 
@@ -450,13 +474,6 @@
 />
 
 <style>
-	.offer {
-		display: grid;
-		grid-template-columns: 5rem auto 1fr;
-		align-items: center;
-		gap: 8px;
-	}
-
 	.photo {
 		margin: 0 0 12px;
 	}
@@ -510,6 +527,109 @@
 		}
 	}
 
+	/* Label on the left, value on the right, a hairline between rows. */
+	.rows {
+		margin-bottom: 16px;
+		border-top: 1px solid var(--border);
+	}
+
+	.line {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: center;
+		column-gap: 12px;
+		min-height: 60px;
+		padding: 6px 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.line > label,
+	.line > span {
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.line > :nth-child(2) {
+		justify-self: end;
+	}
+
+	/* Hints, and the offer's boxes, run under the row. */
+	.line > p,
+	.line > .offer {
+		grid-column: 1 / -1;
+		justify-self: stretch;
+		text-align: right;
+	}
+
+	.line > p {
+		margin-top: 2px;
+	}
+
+	/* The value reads as text, and shows as a box only while it is being typed in. */
+	.value {
+		border-color: transparent;
+		background: transparent;
+		padding: 0 8px;
+		text-align: right;
+		font-weight: 700;
+		text-overflow: ellipsis;
+	}
+
+	.value:hover,
+	.value:focus {
+		border-color: var(--control-border);
+	}
+
+	.price {
+		max-width: 9rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.pill {
+		min-height: 36px;
+		padding: 0 14px;
+		border: none;
+		border-radius: 10px;
+		background: var(--surface-2);
+		color: var(--muted);
+		font-weight: 700;
+	}
+
+	.pill[aria-checked='true'] {
+		background: var(--accent-soft);
+		color: var(--accent-soft-text);
+	}
+
+	.offer {
+		display: grid;
+		grid-template-columns: 4rem auto 6rem;
+		justify-content: end;
+		align-items: center;
+		gap: 8px;
+		margin: 4px 0;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		border-radius: 999px;
+		background: var(--success-bg);
+		color: var(--success-text);
+		font-weight: 600;
+	}
+
+	.chip svg {
+		width: 16px;
+		height: 16px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2.25;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
 	/* A field the label reader couldn't read: left empty and flagged for the shopper. */
 	.needs-check .input {
 		border-color: var(--warning-text);
@@ -547,15 +667,9 @@
 
 	.barcode {
 		display: grid;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: minmax(0, 12rem) auto;
+		align-items: center;
 		gap: 8px;
-	}
-
-	.row {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		align-items: start;
-		gap: 12px;
 	}
 
 	.stepper {

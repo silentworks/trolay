@@ -372,3 +372,12 @@ test('the header shows the store with its branch underneath, and the menu opens 
 	await menu(page, 'Stores');
 	await expect(page.getByRole('heading', { name: 'Stores' })).toBeVisible();
 });
+
+test('adding by hand opens with the description ready to type in', async ({ page }) => {
+	await startTripAtNewStore(page, 'Tesco');
+	await page.getByRole('button', { name: 'Add by hand' }).click();
+	const sheet = page.getByRole('dialog', { name: 'Add item' });
+	await expect(sheet.getByLabel('Description')).toBeFocused();
+	await page.keyboard.type('Bread');
+	await expect(sheet.getByLabel('Description')).toHaveValue('Bread');
+});

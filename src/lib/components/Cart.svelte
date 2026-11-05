@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flushSync } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { warmUpBarcodes } from '#lib/capture/barcode.ts';
 	import { warmUpOcr } from '#lib/capture/ocr/browser.ts';
@@ -343,7 +344,11 @@
 					type="button"
 					aria-label="Add by hand"
 					title="Add by hand"
-					onclick={() => (sheet = { kind: 'add' })}
+					onclick={() => {
+						// Opened within the tap, so the description's autofocus also brings up a
+						// phone's keyboard: iOS only does that for focus moved during a tap.
+						flushSync(() => (sheet = { kind: 'add' }));
+					}}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<rect x="3" y="6" width="18" height="12" rx="2" />

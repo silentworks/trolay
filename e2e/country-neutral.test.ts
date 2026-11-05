@@ -70,7 +70,9 @@ test('no screen speaks of pounds, pence or VAT for a store with no currency', as
 	await expectNeutral(page, 'finish');
 	await finish.getByLabel('Receipt total', { exact: true }).fill('2.50');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
-	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
+	await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		'Trip saved'
+	);
 
 	await page.goto('/history');
 	await expect(page.getByRole('list', { name: 'Past trips' })).toContainText('2.50');

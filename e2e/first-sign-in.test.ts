@@ -67,7 +67,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 		buffer: Buffer.from(JSON.stringify(longHistory(run)))
 	});
 	await a.getByRole('button', { name: 'Replace with the backup' }).click();
-	await expect(a.getByText('Backup restored.')).toBeVisible();
+	await expect(a.getByText('Backup restored')).toBeVisible();
 
 	// Signing in uploads it. Slowed a little, so the progress can be seen.
 	await a.route('**/api/sync/push', async (route) => {

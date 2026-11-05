@@ -23,7 +23,9 @@ async function shop(page: Page, store: string, currency: string, symbol: string,
 	await finish.getByLabel(`Receipt total (${symbol})`).fill(price);
 	await expect(finish).toContainText('✓ The receipt matches.');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
-	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
+	await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		'Trip saved'
+	);
 }
 
 test("each store's trips show its own currency, in the cart, history and the trip page", async ({

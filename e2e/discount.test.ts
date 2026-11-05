@@ -56,7 +56,9 @@ test('a discount comes off the trolley total, the receipt check and the history'
 	await expect(finish).toContainText('✓ The receipt matches.');
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
 
-	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
+	await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		'Trip saved'
+	);
 	await page.goto('/history');
 	const trip = page.getByRole('list', { name: 'Past trips' }).getByRole('link');
 	await expect(trip).toContainText('5.40');

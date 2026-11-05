@@ -298,12 +298,15 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 	await expect(finish.getByText('The 1 label photo will be kept as evidence')).toBeVisible();
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
-	await expect(page.getByRole('status')).toHaveText(
-		'Trip saved. Its photos are kept because the receipt did not match. See it in History'
+	await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		"Trip saved. Photos kept: the receipt didn't match"
 	);
 
 	// The kept photo shows in History until it is deleted.
-	await page.getByRole('link', { name: 'See it in History' }).click();
+	await page
+		.getByRole('group', { name: 'Message' })
+		.getByRole('button', { name: 'History' })
+		.click();
 	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Receipt +4.72');
 	await expect(page.getByRole('link', { name: /Tesco/ })).toContainText('Photos kept');
 	await page.getByRole('link', { name: /Tesco/ }).click();

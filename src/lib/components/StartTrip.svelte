@@ -12,7 +12,7 @@
 	import StoreList from './StoreList.svelte';
 
 	interface Props {
-		/** Said once on arrival, e.g. that the last trip was saved. */
+		/** Said once on arrival, e.g. that the owner of a shared trip ended it. */
 		notice?: string;
 	}
 
@@ -64,9 +64,7 @@
 	<h2 class="question">Where are you shopping?</h2>
 
 	{#if notice}
-		<p class="notice" role="status">
-			{notice} <a href={resolve('/history')}>See it in History</a>
-		</p>
+		<p class="notice" role="status">{notice}</p>
 	{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 

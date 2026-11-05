@@ -7,6 +7,9 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
+	import { toast } from '#lib/toast.svelte.ts';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 
 	const openTrip = new LiveQuery(() => getOpenTrip());
 	// A phone that has never had a store or a trip, deleted ones included. Stores synced from an
@@ -17,13 +20,15 @@
 	let notice = $state<string>();
 
 	function finished(photosKept: boolean) {
-		notice = photosKept
-			? 'Trip saved. Its photos are kept because the receipt did not match.'
-			: 'Trip saved.';
+		toast.show({
+			message: photosKept ? "Trip saved. Photos kept: the receipt didn't match" : 'Trip saved',
+			tone: 'success',
+			action: { label: 'History', run: () => void goto(resolve('/history')) }
+		});
 	}
 
 	function left(message?: string) {
-		notice = message ?? 'You left the store. Nothing was saved.';
+		toast.show({ message: message ?? 'You left the store. Nothing was saved.' });
 	}
 
 	$effect(() => {

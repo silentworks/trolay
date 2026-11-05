@@ -4,6 +4,7 @@
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { createInviteLink, explainMissingTrip, InviteError } from '#lib/sharing/invites.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
+	import { toast } from '#lib/toast.svelte.ts';
 
 	interface Props {
 		tripId: string;
@@ -15,13 +16,11 @@
 	let link = $state<string>();
 	let error = $state<string>();
 	let busy = $state(false);
-	let copied = $state(false);
 	const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 	async function make() {
 		busy = true;
 		error = undefined;
-		copied = false;
 		try {
 			// Right after the app opens, who is signed in may still be being asked.
 			if (account.status === 'unknown') await account.refresh();
@@ -56,7 +55,7 @@
 		if (!link) return;
 		try {
 			await navigator.clipboard.writeText(link);
-			copied = true;
+			toast.show({ message: 'Link copied', tone: 'success' });
 		} catch {
 			// Clipboard access can be refused; the link is in the box to copy by hand.
 			(document.getElementById(`${uid}-link`) as HTMLInputElement | null)?.select();
@@ -108,7 +107,6 @@
 				Copy link
 			</button>
 		</div>
-		{#if copied}<p class="copied" role="status">Link copied.</p>{/if}
 		<button class="btn btn-block again" type="button" disabled={busy} onclick={make}>
 			Make a new link
 		</button>
@@ -130,11 +128,6 @@
 	.actions {
 		display: grid;
 		gap: 8px;
-	}
-
-	.copied {
-		font-weight: 700;
-		color: var(--accent);
 	}
 
 	.again {

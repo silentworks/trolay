@@ -178,11 +178,16 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	await expect(finish.getByLabel('Receipt total', { exact: true })).toHaveValue('3.89');
 
 	await finish.getByRole('button', { name: 'Finish trip' }).click();
-	await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
+	await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		'Trip saved'
+	);
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 
 	// History lists it; the trip opens read-only with its items and the receipt check.
-	await page.getByRole('link', { name: 'See it in History' }).click();
+	await page
+		.getByRole('group', { name: 'Message' })
+		.getByRole('button', { name: 'History' })
+		.click();
 	const trips = page.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
 	await expect(trips.getByRole('link')).toContainText('Asda');
@@ -309,7 +314,9 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	const confirm = fresh.getByRole('dialog', { name: 'Restore this backup?' });
 	await expect(confirm).toContainText('has 1 store, 2 trips and 2 items');
 	await confirm.getByRole('button', { name: 'Replace with the backup' }).click();
-	await expect(fresh.getByRole('status')).toHaveText('Backup restored.');
+	await expect(fresh.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+		'Backup restored'
+	);
 
 	const trips = fresh.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);

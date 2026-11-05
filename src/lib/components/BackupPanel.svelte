@@ -11,23 +11,24 @@
 		type BackupSummary
 	} from '#lib/export/backup.ts';
 	import { localDate, saveFile } from '#lib/export/download.ts';
+	import { toast } from '#lib/toast.svelte.ts';
 	import Sheet from './Sheet.svelte';
 
 	let fileInput = $state<HTMLInputElement>();
 	// Raw, not deeply reactive: IndexedDB cannot store the proxies $state wraps objects in.
 	let pending = $state.raw<{ backup: Backup; summary: BackupSummary; current: number }>();
-	let message = $state<{ text: string; error?: boolean }>();
+	let problem = $state<string>();
 	let busy = $state(false);
 
 	const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 	async function download() {
-		message = undefined;
+		problem = undefined;
 		try {
 			const backup = await createBackup();
 			saveFile(`trolay-backup-${localDate()}.json`, JSON.stringify(backup), 'application/json');
 		} catch (error) {
-			message = { text: `The backup could not be made: ${String(error)}`, error: true };
+			problem = `The backup could not be made: ${String(error)}`;
 		}
 	}
 
@@ -36,13 +37,13 @@
 		const file = input.files?.[0];
 		input.value = '';
 		if (!file) return;
-		message = undefined;
+		problem = undefined;
 		try {
 			const backup = readBackup(await file.text());
 			const current = (await db.trips.toArray()).filter(isLive).length;
 			pending = { backup, summary: summarise(backup), current };
 		} catch (error) {
-			message = { text: error instanceof Error ? error.message : String(error), error: true };
+			problem = error instanceof Error ? error.message : String(error);
 		}
 	}
 
@@ -51,10 +52,10 @@
 		busy = true;
 		try {
 			await restoreBackup(pending.backup);
-			message = { text: 'Backup restored.' };
+			toast.show({ message: 'Backup restored', tone: 'success' });
 			pending = undefined;
 		} catch (error) {
-			message = { text: `Nothing was changed: ${String(error)}`, error: true };
+			problem = `Nothing was changed: ${String(error)}`;
 			pending = undefined;
 		} finally {
 			busy = false;
@@ -76,11 +77,7 @@
 		<button class="btn" type="button" onclick={download}>Download backup</button>
 		<button class="btn" type="button" onclick={() => fileInput?.click()}>Restore a backup</button>
 	</div>
-	{#if message}
-		<p class={message.error ? 'error' : 'done'} role={message.error ? 'alert' : 'status'}>
-			{message.text}
-		</p>
-	{/if}
+	{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 	<input
 		bind:this={fileInput}
 		class="visually-hidden"
@@ -136,11 +133,6 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 8px;
-	}
-
-	.done {
-		color: var(--accent);
-		font-weight: 700;
 	}
 
 	.warning {

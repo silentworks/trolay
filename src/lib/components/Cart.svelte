@@ -146,7 +146,7 @@
 		try {
 			await action();
 		} catch (e) {
-			show(e instanceof Error ? e.message : String(e));
+			toast.error(e);
 		}
 	}
 
@@ -226,7 +226,7 @@
 		try {
 			await leaveSharedTrip(tripId);
 		} catch (cause) {
-			show(cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.');
+			toast.error(cause instanceof InviteError ? cause : 'Something went wrong. Try again.');
 			return;
 		}
 		// The trip stays with its owner; this phone lets go of its copy.
@@ -243,7 +243,7 @@
 			await members.refresh(tripId);
 			show('Your partner is off the trip. What they added stays.');
 		} catch (cause) {
-			show(cause instanceof InviteError ? cause.message : 'Something went wrong. Try again.');
+			toast.error(cause instanceof InviteError ? cause : 'Something went wrong. Try again.');
 		}
 	}
 

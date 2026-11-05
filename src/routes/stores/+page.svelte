@@ -23,7 +23,6 @@
 	let editing = $state<Store | null>(null);
 	let adding = $state(false);
 	let deleting = $state<Store | null>(null);
-	let problem = $state('');
 
 	async function saveEdit(input: StoreInput) {
 		if (!editing) return;
@@ -38,7 +37,6 @@
 
 	async function remove(withHistory: boolean) {
 		if (!deleting) return;
-		problem = '';
 		try {
 			const trips = (await db.trips.where('storeId').equals(deleting.id).toArray()).filter(isLive);
 			if ((await tripsSharedWithMe(trips.map((trip) => trip.id))).size) {
@@ -53,7 +51,8 @@
 				ondone: () => void purgeDeletedPhotos()
 			});
 		} catch (error) {
-			problem = error instanceof Error ? error.message : String(error);
+			deleting = null;
+			toast.error(error);
 		}
 	}
 </script>
@@ -86,7 +85,6 @@
 			class="btn btn-danger btn-block remove"
 			type="button"
 			onclick={() => {
-				problem = '';
 				deleting = editing;
 				editing = null;
 			}}
@@ -102,7 +100,6 @@
 			Delete {deleting.name}{deleting.branch ? ` · ${deleting.branch}` : ''}? Past trips there stay
 			in History as "Deleted store" unless you delete them too.
 		</p>
-		{#if problem}<p class="error" role="alert">{problem}</p>{/if}
 		<div class="choices">
 			<button class="btn btn-danger btn-block" type="button" onclick={() => remove(false)}>
 				Delete store, keep history

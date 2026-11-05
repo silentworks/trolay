@@ -14,11 +14,10 @@
 	import { exportHistoryCsv } from '#lib/export/history.ts';
 	import { formatMoney } from '#lib/money.ts';
 	import { tripsSharedWithMe } from '#lib/sharing/ownership.ts';
+	import { toast } from '#lib/toast.svelte.ts';
 
 	const history = new LiveQuery(() => listFinishedTrips());
-	let problem = $state('');
 	let clearing = $state(false);
-	let note = $state('');
 
 	const menu: MenuEntry[] = [
 		{ label: 'Export all as CSV', onclick: exportAll },
@@ -26,18 +25,15 @@
 	];
 
 	async function exportAll() {
-		problem = '';
 		try {
 			await exportHistoryCsv();
 		} catch (error) {
-			problem = error instanceof Error ? error.message : String(error);
+			toast.error(error);
 		}
 	}
 
 	/** Clears the history of the trips that are this account's own; a partner's are left. */
 	async function clearAll() {
-		problem = '';
-		note = '';
 		try {
 			const ids = (history.current ?? []).map(({ trip }) => trip.id);
 			const theirs = await tripsSharedWithMe(ids);
@@ -45,10 +41,12 @@
 			// Clearing everything has no undo, so the photos go now.
 			await purgeDeletedPhotos();
 			if (theirs.size) {
-				note = `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`;
+				toast.show({
+					message: `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`
+				});
 			}
 		} catch (error) {
-			problem = error instanceof Error ? error.message : String(error);
+			toast.error(error);
 		} finally {
 			clearing = false;
 		}
@@ -109,9 +107,6 @@
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
 	{/if}
-
-	{#if problem}<p class="error" role="alert">{problem}</p>{/if}
-	{#if note}<p class="hint" role="status">{note}</p>{/if}
 
 	<BackupPanel />
 </div>

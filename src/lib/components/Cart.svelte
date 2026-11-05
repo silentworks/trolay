@@ -32,7 +32,7 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { InviteError, leaveSharedTrip, removeTripPartner } from '#lib/sharing/invites.ts';
 	import { letGoOfTrip } from '#lib/sync/letgo.ts';
-	import { toast, type ToastAction } from '#lib/toast.svelte.ts';
+	import { toast, type ToastAction, type ToastTone } from '#lib/toast.svelte.ts';
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
@@ -138,8 +138,8 @@
 		};
 	});
 
-	function show(message: string, action?: ToastAction) {
-		toast.show({ message, action });
+	function show(message: string, action?: ToastAction, tone?: ToastTone) {
+		toast.show({ message, action, tone });
 	}
 
 	async function run(action: () => Promise<void>) {
@@ -171,7 +171,7 @@
 		await setItemPhoto(item.id, await compressPhoto(source));
 		const updated = await db.items.get(item.id);
 		if (updated && sheet?.kind === 'edit') sheet = { kind: 'edit', item: updated };
-		show('Photo updated');
+		show('Photo updated', undefined, 'success');
 	}
 
 	function remove(item: Item) {

@@ -38,7 +38,9 @@ test.describe('on a US phone', () => {
 		await finish.getByLabel('Receipt total ($)', { exact: true }).fill('10.80');
 		await expect(finish).toContainText('✓ The receipt matches.');
 		await finish.getByRole('button', { name: 'Finish trip' }).click();
-		await expect(page.getByRole('status')).toHaveText('Trip saved. See it in History');
+		await expect(page.getByRole('group', { name: 'Message' }).getByRole('status')).toHaveText(
+			'Trip saved'
+		);
 	});
 });
 

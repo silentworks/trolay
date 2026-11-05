@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { menu, ownerWithTrip } from './shared';
 
 // A phone's width.
 test.use({ viewport: { width: 360, height: 740 } });
@@ -69,4 +70,20 @@ test('a new toast replaces the one showing', async ({ page }) => {
 	await expect(toastOf(page)).toHaveCount(1);
 	await expect(toastOf(page).getByRole('status')).toContainText('only be changed');
 	await expect(toastOf(page).getByRole('button', { name: 'Undo' })).toHaveCount(0);
+});
+
+test('copying the invite link says so in a success toast over the sheet', async ({ browser }) => {
+	const owner = await ownerWithTrip(browser);
+	await owner.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+	await menu(owner, 'Invite a partner');
+	const sheet = owner.getByRole('dialog', { name: 'Invite a partner' });
+	await expect(sheet.getByLabel('Invite link', { exact: true })).toHaveValue(/\/join#token=/);
+	await sheet.getByRole('button', { name: 'Copy link' }).click();
+	const toast = toastOf(owner);
+	await expect(toast.getByRole('status')).toHaveText('Link copied');
+	await expect(toast).toHaveAttribute('data-tone', 'success');
+	// Tappable while the sheet is open.
+	await toast.getByRole('button', { name: 'Dismiss' }).click();
+	await expect(toast).toBeHidden();
+	await expect(sheet).toBeVisible();
 });

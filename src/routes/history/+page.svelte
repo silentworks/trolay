@@ -5,10 +5,11 @@
 	import Sheet from '#lib/components/Sheet.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import {
-		deleteTrip,
+		deleteTrips,
 		listFinishedTrips,
 		purgeDeletedPhotos,
-		receiptDifference
+		receiptDifference,
+		restoreTrips
 	} from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { exportHistoryCsv } from '#lib/export/history.ts';
@@ -32,19 +33,28 @@
 		}
 	}
 
-	/** Clears the history of the trips that are this account's own; a partner's are left. */
+	/**
+	 * Clears the history of the trips that are this account's own; a partner's are left. It can be
+	 * undone from the toast, and the photos stay until then.
+	 */
 	async function clearAll() {
 		try {
 			const ids = (history.current ?? []).map(({ trip }) => trip.id);
 			const theirs = await tripsSharedWithMe(ids);
-			for (const id of ids) if (!theirs.has(id)) await deleteTrip(id);
-			// Clearing everything has no undo, so the photos go now.
-			await purgeDeletedPhotos();
-			if (theirs.size) {
-				toast.show({
-					message: `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`
-				});
+			const mine = ids.filter((id) => !theirs.has(id));
+			await deleteTrips(mine);
+			const kept = theirs.size
+				? `${theirs.size} shared with you by someone else stay${theirs.size === 1 ? 's' : ''}: only the owner can delete ${theirs.size === 1 ? 'it' : 'them'}.`
+				: '';
+			if (!mine.length) {
+				toast.show({ message: kept });
+				return;
 			}
+			toast.show({
+				message: ['History deleted.', kept].filter(Boolean).join(' '),
+				action: { label: 'Undo', run: () => void restoreTrips(mine) },
+				ondone: () => void purgeDeletedPhotos()
+			});
 		} catch (error) {
 			toast.error(error);
 		} finally {
@@ -113,8 +123,8 @@
 
 <Sheet open={clearing} title="Delete all history?" onclose={() => (clearing = false)}>
 	<p>
-		Every finished trip, with its items and photos, will be deleted. Your stores stay. This can't be
-		undone: export a CSV first if you want to keep a copy.
+		Every finished trip, with its items and photos, will be deleted. Your stores stay. You can undo
+		this for a few seconds afterwards; export a CSV first if you want to keep a copy.
 	</p>
 	<button class="btn btn-danger btn-block" type="button" onclick={clearAll}>
 		Delete all history

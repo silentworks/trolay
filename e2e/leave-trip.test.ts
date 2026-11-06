@@ -51,7 +51,9 @@ test('an owner removes the partner, whose phone lets go of the trip', async ({ b
 			name: 'Remove partner'
 		})
 		.click();
-	await expect(owner.getByRole('status')).toContainText('Your partner is off the trip');
+	await expect(
+		owner.getByRole('status').filter({ hasText: 'Your partner is off the trip' })
+	).toBeVisible();
 
 	// The partner's phone is told, and says so.
 	await expect(partner.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible({

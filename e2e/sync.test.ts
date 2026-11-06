@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { BASE } from './global-setup';
 import { copyPasskeys, withPasskeys } from './passkeys';
+import { ownerWithTrip } from './shared';
 
 async function addItem(page: Page, description: string, price: string) {
 	await page.getByRole('button', { name: 'Add by hand' }).click();
@@ -75,4 +76,29 @@ test('changes made with no signal wait, and are sent when it returns', async ({ 
 	// A browser sends this when the signal returns; Playwright's offline mode does not.
 	await page.evaluate(() => window.dispatchEvent(new Event('online')));
 	await expect(synced(page)).toBeVisible();
+});
+
+test('the header’s sync icon turns while syncing, shows a tick, then rests', async ({
+	browser
+}) => {
+	const page = await ownerWithTrip(browser);
+	const icon = page.getByRole('link', { name: 'Sync details' });
+	await expect(icon).toBeVisible();
+	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
+
+	await addItem(page, 'Bread', '0.95');
+	await expect(icon).toHaveAttribute('data-phase', 'spin');
+	await expect(icon).toHaveAttribute('data-phase', 'done', { timeout: 10_000 });
+	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
+	await expect(icon).toHaveAttribute('data-phase', 'rest', { timeout: 5000 });
+
+	// A tap shows the details on the Account page.
+	await icon.click();
+	await expect(page).toHaveURL(/\/account$/);
+});
+
+test('signed out, there is no sync icon', async ({ page }) => {
+	await page.goto('/');
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Sync details' })).toHaveCount(0);
 });

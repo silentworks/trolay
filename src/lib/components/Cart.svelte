@@ -292,6 +292,7 @@
 			titleLabel="Store: {store.name}"
 			history={resolve('/history')}
 			start
+			sync
 			{menu}
 		/>
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SyncIndicator from './SyncIndicator.svelte';
+
 	export interface MenuEntry {
 		label: string;
 		href?: string;
@@ -24,6 +26,8 @@
 		history?: string;
 		/** Title on the left, larger, as on the trolley; centred otherwise. */
 		start?: boolean;
+		/** The sync icon beside the title, while signed in. */
+		sync?: boolean;
 	}
 
 	let {
@@ -34,7 +38,8 @@
 		ontitle,
 		titleLabel,
 		history,
-		start = false
+		start = false,
+		sync = false
 	}: Props = $props();
 
 	const menuId = $props.id();
@@ -71,17 +76,20 @@
 		</a>
 	{/if}
 
-	{#if ontitle}
-		<button class="title" type="button" onclick={ontitle} aria-label={titleLabel}>
-			<span class="name">{title}</span>
-			{#if subtitle}<span class="sub">{subtitle}</span>{/if}
-		</button>
-	{:else}
-		<div class="title">
-			<h1 class="name">{title}</h1>
-			{#if subtitle}<p class="sub">{subtitle}</p>{/if}
-		</div>
-	{/if}
+	<div class="heading">
+		{#if ontitle}
+			<button class="title" type="button" onclick={ontitle} aria-label={titleLabel}>
+				<span class="name">{title}</span>
+				{#if subtitle}<span class="sub">{subtitle}</span>{/if}
+			</button>
+		{:else}
+			<div class="title">
+				<h1 class="name">{title}</h1>
+				{#if subtitle}<p class="sub">{subtitle}</p>{/if}
+			</div>
+		{/if}
+		{#if sync}<SyncIndicator />{/if}
+	</div>
 
 	{#if history || menu}
 		<div class="side">
@@ -177,8 +185,21 @@
 		justify-content: end;
 	}
 
-	.title {
+	/* The title, and the sync icon beside it. */
+	.heading {
 		grid-area: title;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+	}
+
+	.bar.start .heading {
+		justify-content: start;
+	}
+
+	.title {
 		min-width: 0;
 		display: grid;
 		justify-items: center;

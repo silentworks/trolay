@@ -6,7 +6,6 @@
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import { minorToInput, parsePounds } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
-	import SyncStatus from './SyncStatus.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
@@ -53,6 +52,7 @@
 <div class="page">
 	<AppHeader
 		title="Trolay"
+		sync
 		menu={[
 			{ label: 'History', href: resolve('/history') },
 			{ label: 'Stores', href: resolve('/stores') },
@@ -60,7 +60,6 @@
 			{ label: 'Settings', href: resolve('/settings') }
 		]}
 	/>
-	<SyncStatus />
 	<h2 class="question">Where are you shopping?</h2>
 
 	{#if notice}

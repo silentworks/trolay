@@ -54,7 +54,7 @@
 		if (page.url.pathname !== resolve('/')) await goto(resolve('/'));
 		const row = await rowOf(itemId);
 		if (!row) return;
-		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const still = document.documentElement.dataset.motion === 'reduce';
 		row.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
 		row.querySelector<HTMLElement>('button.main')?.focus({ preventScroll: true });
 		const content = row.querySelector<HTMLElement>('.content') ?? row;

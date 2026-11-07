@@ -1,4 +1,11 @@
-import { ACCENT_KEY, readAccent, type Accent } from '#lib/appearance.ts';
+import {
+	ACCENT_KEY,
+	readAccent,
+	readTextSize,
+	TEXT_SIZE_KEY,
+	type Accent,
+	type TextSize
+} from '#lib/appearance.ts';
 import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
 
 // Per-device preferences. Storage can be unavailable (private browsing, blocked site data),
@@ -29,6 +36,8 @@ class Settings {
 	/** Light unless the shopper chose dark, or to match the phone. */
 	theme = $state<Theme>(readTheme(read(THEME_KEY)));
 	accent = $state<Accent>(readAccent(read(ACCENT_KEY)));
+	/** A percentage of the default text size. */
+	textSize = $state<TextSize>(readTextSize(read(TEXT_SIZE_KEY)));
 	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
@@ -47,6 +56,11 @@ class Settings {
 	setAccent(accent: Accent): void {
 		this.accent = accent;
 		write(ACCENT_KEY, accent);
+	}
+
+	setTextSize(size: TextSize): void {
+		this.textSize = size;
+		write(TEXT_SIZE_KEY, String(size));
 	}
 
 	markOnboarded(): void {

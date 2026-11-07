@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { ACCENTS } from '#lib/appearance.ts';
+	import { ACCENTS, TEXT_SIZES } from '#lib/appearance.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import SettingsSection from '#lib/components/SettingsSection.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
@@ -83,6 +83,31 @@
 						<span class="visually-hidden">{accent.label}</span>
 					</label>
 				{/each}
+			</div>
+		{/snippet}
+	</SettingsSection>
+	<SettingsSection title="Text size" lead="Adjust the size of text across the app.">
+		{#snippet children(ids)}
+			<div class="size">
+				<span class="small" aria-hidden="true">A</span>
+				<input
+					type="range"
+					min="0"
+					max={TEXT_SIZES.length - 1}
+					step="1"
+					value={TEXT_SIZES.indexOf(settings.textSize)}
+					oninput={(event) => settings.setTextSize(TEXT_SIZES[event.currentTarget.valueAsNumber])}
+					aria-labelledby={ids.title}
+					aria-describedby={ids.lead}
+					aria-valuetext="{settings.textSize}%"
+				/>
+				<span class="large" aria-hidden="true">A</span>
+			</div>
+			<!-- How an item in the trolley reads at this size. -->
+			<div class="sample" aria-hidden="true">
+				<span class="sample-name">Semi-skimmed milk</span>
+				<span class="sample-price">1.45</span>
+				<span class="sample-meta">1.45 each · incl. tax</span>
 			</div>
 		{/snippet}
 	</SettingsSection>
@@ -180,6 +205,61 @@
 
 	.swatch .pick {
 		border-radius: 50%;
+	}
+
+	.size {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 12px;
+		min-height: var(--tap);
+	}
+
+	.size input {
+		width: 100%;
+		margin: 0;
+		accent-color: var(--accent);
+	}
+
+	.small,
+	.large {
+		font-weight: 700;
+		color: var(--muted);
+		line-height: 1;
+	}
+
+	/* Fixed, unlike everything else, so the ends of the slider stay the same. */
+	.small {
+		font-size: 13px;
+	}
+
+	.large {
+		font-size: 24px;
+	}
+
+	.sample {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		column-gap: 12px;
+		margin-top: 12px;
+		padding: 12px 14px;
+		border-radius: 12px;
+		background: var(--surface-2);
+	}
+
+	.sample-name {
+		font-weight: 700;
+	}
+
+	.sample-price {
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.sample-meta {
+		grid-column: 1 / -1;
+		color: var(--muted);
+		font-size: 0.85rem;
 	}
 
 	svg {

@@ -23,3 +23,18 @@ export function readAccent(value: string | null): Accent {
 export function applyAccent(accent: Accent): void {
 	document.documentElement.dataset.accent = accent;
 }
+
+/** Text sizes, as a percentage of the default. */
+export const TEXT_SIZES = [90, 100, 110, 120, 135] as const;
+export type TextSize = (typeof TEXT_SIZES)[number];
+
+export const TEXT_SIZE_KEY = 'trolley.textSize';
+
+export function readTextSize(value: string | null): TextSize {
+	return TEXT_SIZES.find((size) => String(size) === value) ?? 100;
+}
+
+/** Scales the root font size, and with it everything sized in rem. */
+export function applyTextSize(size: TextSize): void {
+	document.documentElement.style.setProperty('--text-scale', String(size / 100));
+}

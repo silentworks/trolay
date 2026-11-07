@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { ACCENTS } from '#lib/appearance.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
+	import SettingsSection from '#lib/components/SettingsSection.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import type { Theme } from '#lib/theme.ts';
 
@@ -20,50 +22,70 @@
 <div class="page">
 	<AppHeader title="Appearance" back={{ href: resolve('/settings'), label: 'Settings' }} />
 
-	<section class="section" aria-labelledby="{uid}-theme">
-		<h2 id="{uid}-theme">Theme</h2>
-		<p class="lead" id="{uid}-theme-lead">Choose how Trolay looks and feels.</p>
-		<div
-			class="looks"
-			role="radiogroup"
-			aria-labelledby="{uid}-theme"
-			aria-describedby="{uid}-theme-lead"
-		>
+	<SettingsSection title="Theme" lead="Choose how Trolay looks and feels.">
+		{#snippet children(ids)}
+			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.lead}>
+				{#each looks as look (look.value)}
+					<label class="look">
+						<input
+							class="pick"
+							type="radio"
+							name="theme"
+							value={look.value}
+							checked={settings.theme === look.value}
+							onchange={() => settings.setTheme(look.value)}
+							aria-describedby={look.hint ? `${uid}-${look.value}-hint` : undefined}
+						/>
+						<svg viewBox="0 0 24 24" aria-hidden="true">
+							{#if look.value === 'light'}
+								<circle cx="12" cy="12" r="4" />
+								<path
+									d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"
+								/>
+							{:else if look.value === 'dark'}
+								<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+							{:else}
+								<rect x="3" y="4" width="18" height="12.5" rx="2" />
+								<path d="M8.5 20.5h7M12 16.5v4" />
+							{/if}
+						</svg>
+						<span>{look.label}</span>
+					</label>
+				{/each}
+			</div>
+			<!-- Read out with the System card, outside its label so it isn't part of its name. -->
 			{#each looks as look (look.value)}
-				<label class="look">
-					<input
-						class="pick"
-						type="radio"
-						name="theme"
-						value={look.value}
-						checked={settings.theme === look.value}
-						onchange={() => settings.setTheme(look.value)}
-						aria-describedby={look.hint ? `${uid}-${look.value}-hint` : undefined}
-					/>
-					<svg viewBox="0 0 24 24" aria-hidden="true">
-						{#if look.value === 'light'}
-							<circle cx="12" cy="12" r="4" />
-							<path
-								d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"
-							/>
-						{:else if look.value === 'dark'}
-							<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
-						{:else}
-							<rect x="3" y="4" width="18" height="12.5" rx="2" />
-							<path d="M8.5 20.5h7M12 16.5v4" />
-						{/if}
-					</svg>
-					<span>{look.label}</span>
-				</label>
+				{#if look.hint}
+					<span class="visually-hidden" id="{uid}-{look.value}-hint">{look.hint}</span>
+				{/if}
 			{/each}
-		</div>
-		<!-- Read out with the System card, outside its label so it isn't part of its name. -->
-		{#each looks as look (look.value)}
-			{#if look.hint}
-				<span class="visually-hidden" id="{uid}-{look.value}-hint">{look.hint}</span>
-			{/if}
-		{/each}
-	</section>
+		{/snippet}
+	</SettingsSection>
+
+	<SettingsSection title="Accent colour" lead="Choose a colour that matches your style.">
+		{#snippet children(ids)}
+			<div
+				class="swatches"
+				role="radiogroup"
+				aria-labelledby={ids.title}
+				aria-describedby={ids.lead}
+			>
+				{#each ACCENTS as accent (accent.value)}
+					<label class="swatch" style:--light={accent.light} style:--dark={accent.dark}>
+						<input
+							class="pick"
+							type="radio"
+							name="accent"
+							value={accent.value}
+							checked={settings.accent === accent.value}
+							onchange={() => settings.setAccent(accent.value)}
+						/>
+						<span class="visually-hidden">{accent.label}</span>
+					</label>
+				{/each}
+			</div>
+		{/snippet}
+	</SettingsSection>
 	<p class="note">Kept on this phone.</p>
 </div>
 
@@ -74,30 +96,10 @@
 		padding: 0 var(--gutter) var(--gutter);
 	}
 
-	.section {
-		padding: 16px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--surface);
-	}
-
-	h2 {
-		margin: 0;
-		font-size: 1.05rem;
-	}
-
-	.lead,
-	.note {
-		color: var(--muted);
-		font-size: 0.88rem;
-	}
-
-	.lead {
-		margin: 2px 0 14px;
-	}
-
 	.note {
 		margin: 8px 4px 0;
+		color: var(--muted);
+		font-size: 0.88rem;
 	}
 
 	/* Three cards of the same width, each an icon over its label. */
@@ -137,9 +139,47 @@
 	}
 
 	/* The radio is hidden, so its focus ring shows on the card. */
-	.look:has(:focus-visible) {
+	.look:has(:focus-visible),
+	.swatch:has(:focus-visible) {
 		outline: 3px solid var(--focus);
 		outline-offset: 2px;
+	}
+
+	/* Round swatches, each its colour as it looks in this theme; the chosen one has a ring. */
+	/* One row: six columns, at least 44px each down to a 360px-wide phone. */
+	.swatches {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 6px;
+		padding: 6px 0;
+	}
+
+	.swatch {
+		position: relative;
+		justify-self: center;
+		width: 100%;
+		max-width: var(--tap);
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: var(--light);
+	}
+
+	:global([data-theme='dark']) .swatch {
+		background: var(--dark);
+	}
+
+	.swatch:has(:checked) {
+		box-shadow:
+			0 0 0 3px var(--surface),
+			0 0 0 6px var(--text);
+	}
+
+	.swatch:has(:focus-visible) {
+		outline-offset: 8px;
+	}
+
+	.swatch .pick {
+		border-radius: 50%;
 	}
 
 	svg {

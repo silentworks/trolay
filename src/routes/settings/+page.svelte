@@ -13,7 +13,7 @@
 		value?: string;
 	}
 
-	const LOOKS: Record<Theme, string> = { light: 'Light', dark: 'Dark', system: 'Match my phone' };
+	const LOOKS: Record<Theme, string> = { light: 'Light', dark: 'Dark', system: 'System' };
 
 	const signedIn = $derived(
 		account.status === 'signedIn'

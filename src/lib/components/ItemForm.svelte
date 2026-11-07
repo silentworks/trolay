@@ -276,13 +276,13 @@
 		</div>
 	{/if}
 
-	<div class="rows">
-		<div class="line" class:needs-check={unread.description && !description}>
+	<div class="form-rows">
+		<div class="form-row" class:needs-check={unread.description && !description}>
 			<label for="{uid}-description">Description</label>
 			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				id="{uid}-description"
-				class="input value"
+				class="input form-value"
 				bind:value={description}
 				oninput={() => (touched.description = true)}
 				autocomplete="off"
@@ -309,11 +309,11 @@
 			{/if}
 		</div>
 
-		<div class="line" class:needs-check={unread.price && !price}>
+		<div class="form-row" class:needs-check={unread.price && !price}>
 			<label for="{uid}-price">{amountLabel('Unit price', currency)}</label>
 			<input
 				id="{uid}-price"
-				class="input value price"
+				class="input form-value price"
 				bind:value={price}
 				oninput={() => {
 					touched.price = true;
@@ -334,7 +334,7 @@
 			{/if}
 		</div>
 
-		<div class="line">
+		<div class="form-row">
 			<span id="{uid}-qty-label">Quantity</span>
 			<div class="stepper" role="group" aria-labelledby="{uid}-qty-label">
 				<button
@@ -354,10 +354,10 @@
 			</div>
 		</div>
 
-		<div class="line">
+		<div class="form-row">
 			<span aria-hidden="true">Tax</span>
 			<button
-				class="pill"
+				class="toggle-pill"
 				type="button"
 				role="switch"
 				aria-checked={priceIncludesTax}
@@ -371,10 +371,10 @@
 			</button>
 		</div>
 
-		<div class="line">
+		<div class="form-row">
 			<span aria-hidden="true">Multi-buy</span>
 			<button
-				class="pill"
+				class="toggle-pill"
 				type="button"
 				role="switch"
 				aria-checked={offerOn}
@@ -413,12 +413,12 @@
 			{/if}
 		</div>
 
-		<div class="line">
+		<div class="form-row">
 			<label for="{uid}-barcode">Barcode <span class="visually-hidden">(optional)</span></label>
 			<div class="barcode">
 				<input
 					id="{uid}-barcode"
-					class="input value"
+					class="input form-value"
 					bind:value={barcode}
 					oninput={() => (touched.barcode = true)}
 					inputmode="numeric"
@@ -527,80 +527,15 @@
 		}
 	}
 
-	/* Label on the left, value on the right, a hairline between rows. */
-	.rows {
-		margin-bottom: 16px;
-		border-top: 1px solid var(--border);
-	}
-
-	.line {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		align-items: center;
-		column-gap: 12px;
-		min-height: 60px;
-		padding: 6px 0;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.line > label,
-	.line > span {
-		color: var(--muted);
-		white-space: nowrap;
-	}
-
-	.line > :nth-child(2) {
-		justify-self: end;
-	}
-
-	/* Hints, and the offer's boxes, run under the row. */
-	.line > p,
-	.line > .offer {
-		grid-column: 1 / -1;
-		justify-self: stretch;
-		text-align: right;
-	}
-
-	.line > p {
-		margin-top: 2px;
-	}
-
-	/* The value reads as text, and shows as a box only while it is being typed in. */
-	.value {
-		border-color: transparent;
-		background: transparent;
-		padding: 0 8px;
-		text-align: right;
-		font-weight: 700;
-		text-overflow: ellipsis;
-	}
-
-	.value:hover,
-	.value:focus {
-		border-color: var(--control-border);
-	}
-
 	.price {
 		max-width: 9rem;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.pill {
-		min-height: 36px;
-		padding: 0 14px;
-		border: none;
-		border-radius: 10px;
-		background: var(--surface-2);
-		color: var(--muted);
-		font-weight: 700;
-	}
-
-	.pill[aria-checked='true'] {
-		background: var(--accent-soft);
-		color: var(--accent-soft-text);
-	}
-
+	/* The offer's boxes run under the row, like its hints. */
 	.offer {
+		grid-column: 1 / -1;
+		justify-self: stretch;
 		display: grid;
 		grid-template-columns: 4rem auto 6rem;
 		justify-content: end;
@@ -637,20 +572,17 @@
 	}
 
 	.lookup-hint {
-		margin: 0;
 		color: var(--muted);
 		font-size: 0.9rem;
 	}
 
 	.checked-hint {
-		margin: 0;
 		color: var(--accent);
 		font-size: 0.9rem;
 		font-weight: 600;
 	}
 
 	.check-hint {
-		margin: 0;
 		color: var(--warning-text);
 		font-size: 0.9rem;
 		font-weight: 600;

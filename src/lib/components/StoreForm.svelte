@@ -51,69 +51,102 @@
 <form onsubmit={submit} novalidate>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 
-	<div class="field">
-		<label for="{uid}-name">Store name</label>
-		<!-- svelte-ignore a11y_autofocus -->
-		<input
-			id="{uid}-name"
-			class="input"
-			bind:value={name}
-			required
-			autocomplete="off"
-			autofocus={!store}
-		/>
-	</div>
+	<div class="form-rows">
+		<div class="form-row">
+			<label for="{uid}-name">Store name</label>
+			<!-- svelte-ignore a11y_autofocus -->
+			<input
+				id="{uid}-name"
+				class="input form-value"
+				bind:value={name}
+				required
+				autocomplete="off"
+				autofocus={!store}
+			/>
+		</div>
 
-	<div class="field">
-		<label for="{uid}-branch">Branch or location <span class="hint">(optional)</span></label>
-		<input id="{uid}-branch" class="input" bind:value={branch} autocomplete="off" />
-	</div>
+		<div class="form-row">
+			<label for="{uid}-branch"
+				>Branch or location <span class="visually-hidden">(optional)</span></label
+			>
+			<input id="{uid}-branch" class="input form-value" bind:value={branch} autocomplete="off" />
+		</div>
 
-	<div class="field">
-		<div class="with-info">
-			<label for="{uid}-currency">Currency <span class="hint">(optional)</span></label>
-			{#if store}
-				<InfoTip title="Currency">
+		<div class="form-row">
+			<div class="with-info">
+				<label for="{uid}-currency">Currency <span class="visually-hidden">(optional)</span></label>
+				{#if store}
+					<InfoTip title="Currency">
+						<p>
+							Changing it changes how this store's past trips are shown too. The amounts stay the
+							same.
+						</p>
+					</InfoTip>
+				{/if}
+			</div>
+			<CurrencySelect id="{uid}-currency" class="form-value currency" bind:value={currency} />
+		</div>
+
+		<div class="form-row">
+			<label for="{uid}-rate">Sales tax rate (%)</label>
+			<input
+				id="{uid}-rate"
+				class="input form-value rate"
+				bind:value={rate}
+				inputmode="decimal"
+				aria-describedby={hint ? `${uid}-rate-hint` : undefined}
+			/>
+			{#if hint}<p class="hint" id="{uid}-rate-hint">{hint}</p>{/if}
+		</div>
+
+		<div class="form-row">
+			<div class="with-info">
+				<span aria-hidden="true">Shelf prices</span>
+				<InfoTip title="Shelf prices and sales tax">
 					<p>
-						Changing it changes how this store's past trips are shown too. The amounts stay the
-						same.
+						<strong>Include tax:</strong> the prices on the shelf already include sales tax, and Trolay
+						works out how much of each is tax.
+					</p>
+					<p>
+						<strong>Tax at the till:</strong> sales tax is added when you pay, as in the US and Canada.
+						Trolay adds it to your total so it matches the receipt.
 					</p>
 				</InfoTip>
-			{/if}
+			</div>
+			<button
+				class="toggle-pill"
+				type="button"
+				role="switch"
+				aria-checked={pricesIncludeTax}
+				aria-label="Shelf prices include sales tax"
+				onclick={() => (pricesIncludeTax = !pricesIncludeTax)}
+			>
+				{pricesIncludeTax ? 'Include tax' : 'Tax at the till'}
+			</button>
 		</div>
-		<CurrencySelect id="{uid}-currency" bind:value={currency} />
-	</div>
-
-	<div class="field">
-		<label for="{uid}-rate">Sales tax rate (%)</label>
-		<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
-		{#if hint}<span class="hint">{hint}</span>{/if}
-	</div>
-
-	<div class="with-info tax">
-		<label class="check">
-			<input type="checkbox" bind:checked={pricesIncludeTax} />
-			Shelf prices include sales tax
-		</label>
-		<InfoTip title="Shelf prices and sales tax">
-			<p>
-				Ticked, the prices on the shelf already include sales tax, and Trolay works out how much of
-				each is tax.
-			</p>
-			<p>
-				Unticked, sales tax is added at the till, as in the US and Canada. Trolay adds it to your
-				total so it matches the receipt.
-			</p>
-		</InfoTip>
 	</div>
 
 	<button class="btn btn-primary btn-block" type="submit" disabled={saving}>{submitLabel}</button>
 </form>
 
 <style>
+	.form-row > .with-info {
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.rate {
+		max-width: 7rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* A select's own text sits at the start; line it up with the other values. */
+	.form-row :global(.currency) {
+		text-align-last: right;
+	}
+
 	.hint {
 		color: var(--muted);
 		font-size: 0.9rem;
-		margin: 0 0 16px;
 	}
 </style>

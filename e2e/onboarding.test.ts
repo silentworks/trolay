@@ -63,7 +63,7 @@ test('skipping the guide leads to the start screen, and it does not come back', 
 	await expect(page.getByRole('heading', { name: 'Welcome to Trolay' })).toHaveCount(0);
 });
 
-test('the guide can be opened again from Account, and only explains during a trip', async ({
+test('the guide can be opened again from Settings, and only explains during a trip', async ({
 	page
 }) => {
 	await page.goto('/');
@@ -73,8 +73,8 @@ test('the guide can be opened again from Account, and only explains during a tri
 	await page.getByRole('button', { name: 'Add store and start trip' }).click();
 	await expect(page.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
 
-	await page.goto('/account');
-	await page.getByRole('link', { name: 'Show the getting started guide' }).click();
+	await page.goto('/settings');
+	await page.getByRole('link', { name: 'Getting started guide' }).click();
 	await expect(page.getByText('Step 1 of 2')).toBeVisible();
 	await page.getByRole('button', { name: 'Get started' }).click();
 	await expect(page.getByRole('heading', { name: 'How a trip works' })).toBeVisible();

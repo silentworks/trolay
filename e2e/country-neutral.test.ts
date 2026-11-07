@@ -85,6 +85,6 @@ test('no screen speaks of pounds, pence or VAT for a store with no currency', as
 	await expectNeutral(page, 'stores');
 	await page.getByRole('button', { name: /Corner Shop/ }).click();
 	await expectNeutral(page, 'edit store');
-	await page.goto('/account');
+	await page.goto('/settings/account');
 	await expectNeutral(page, 'account');
 });

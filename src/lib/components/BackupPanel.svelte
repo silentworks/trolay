@@ -114,12 +114,6 @@
 </Sheet>
 
 <style>
-	.backup {
-		margin-top: 32px;
-		padding-top: 16px;
-		border-top: 1px solid var(--border);
-	}
-
 	h2 {
 		margin: 0;
 		font-size: 1.15rem;
@@ -131,7 +125,6 @@
 
 	.actions {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
 		gap: 8px;
 	}
 

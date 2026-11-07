@@ -42,7 +42,7 @@
 {#if syncEngine.status !== 'off'}
 	<a
 		class="sync"
-		href={resolve('/account')}
+		href={resolve('/settings/account')}
 		data-phase={phase}
 		data-status={syncEngine.status}
 		aria-label="Sync details"

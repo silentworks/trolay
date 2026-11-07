@@ -12,6 +12,7 @@ test('opens in light mode, and keeps the look chosen in Settings', async ({ page
 	expect(await theme(page)).toBe('light');
 
 	await menu(page, 'Settings');
+	await page.getByRole('link', { name: /^Appearance/ }).click();
 	await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
 	await page.getByRole('radio', { name: 'Dark', exact: true }).check();
 	expect(await theme(page)).toBe('dark');

@@ -47,7 +47,7 @@ test('the page refuses framing, and nothing the app does breaks its content poli
 	await expect(page.getByRole('region', { name: 'Trolley total' })).toContainText('1.20');
 
 	await withPasskeys(page);
-	await page.goto('/account');
+	await page.goto('/settings/account');
 	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(page.getByText("You're signed in on this device.")).toBeVisible();
 	await expect(page.getByText(/synced/i).first()).toBeVisible();

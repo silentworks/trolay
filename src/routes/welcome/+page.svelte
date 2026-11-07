@@ -5,7 +5,7 @@
 	import { getOpenTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 
-	// The getting started guide, opened again from Account. With a trip open it only explains;
+	// The getting started guide, opened again from Settings. With a trip open it only explains;
 	// otherwise finishing it adds a store and starts a trip, as on first run.
 	const openTrip = new LiveQuery(() => getOpenTrip());
 </script>

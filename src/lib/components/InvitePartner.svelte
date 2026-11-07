@@ -25,7 +25,7 @@
 			// Right after the app opens, who is signed in may still be being asked.
 			if (account.status === 'unknown') await account.refresh();
 			if (account.status !== 'signedIn') {
-				error = 'Sign in on the Account page to share this trip.';
+				error = 'Sign in from Settings to share this trip.';
 				return;
 			}
 			// The trip has to be on the server before anyone can be let into it.

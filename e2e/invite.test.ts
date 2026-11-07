@@ -26,11 +26,11 @@ test('an owner invites a partner by link, who signs in and joins; a second partn
 	await partner.getByRole('link', { name: 'Go to the trip' }).click();
 	await expect(partner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
 	await addItem(partner, 'Bread', '0.95');
-	// Each phone syncs on the Account page; the owner looks until Bread has come across.
-	await partner.goto('/account');
+	// Each phone syncs on the Account & sync page; the owner looks until Bread has come across.
+	await partner.goto('/settings/account');
 	await expect(synced(partner)).toBeVisible();
 	await expect(async () => {
-		await owner.goto('/account');
+		await owner.goto('/settings/account');
 		await expect(synced(owner)).toBeVisible();
 		await owner.goto('/');
 		await expect(owner.getByText('Bread')).toBeVisible({ timeout: 2000 });
@@ -56,7 +56,7 @@ test('inviting needs an account', async ({ page }) => {
 	await page.getByRole('button', { name: 'Add store and start trip' }).click();
 	await page.getByRole('button', { name: 'Menu' }).click();
 	await page.getByRole('navigation', { name: 'Menu' }).getByText('Invite a partner').click();
-	await expect(page.getByRole('status')).toContainText('Sign in on the Account page');
+	await expect(page.getByRole('status')).toContainText('Sign in from Settings');
 });
 
 test('a trip started under another account on this phone says why it cannot be shared', async ({
@@ -66,7 +66,7 @@ test('a trip started under another account on this phone says why it cannot be s
 	const phone = await ownerWithTrip(browser);
 	await addItem(phone, 'Milk', '1.45');
 	await expect(async () => {
-		await phone.goto('/account');
+		await phone.goto('/settings/account');
 		await expect(synced(phone)).toBeVisible();
 	}).toPass();
 

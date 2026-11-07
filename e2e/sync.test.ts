@@ -24,14 +24,14 @@ test('what one phone does appears on the other, and back', async ({ browser }) =
 	await a.getByRole('button', { name: 'Add store and start trip' }).click();
 	await addItem(a, 'Milk', '1.50');
 
-	await a.goto('/account');
+	await a.goto('/settings/account');
 	await a.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(synced(a)).toBeVisible();
 
 	// Phone B: the same passkey, a different phone with nothing on it.
 	const b = await (await browser.newContext({ baseURL: BASE })).newPage();
 	await copyPasskeys(passkeysA, await withPasskeys(b));
-	await b.goto('/account');
+	await b.goto('/settings/account');
 	await b.getByRole('button', { name: 'Sign in with a passkey' }).click();
 	await expect(synced(b)).toBeVisible();
 
@@ -42,7 +42,7 @@ test('what one phone does appears on the other, and back', async ({ browser }) =
 
 	// B adds an item, and A has it after it next looks.
 	await addItem(b, 'Bread', '0.95');
-	await b.goto('/account');
+	await b.goto('/settings/account');
 	await expect(synced(b)).toBeVisible();
 	await a.goto('/');
 	await expect(a.getByText('Bread')).toBeVisible();
@@ -58,7 +58,7 @@ test('changes made with no signal wait, and are sent when it returns', async ({ 
 	await page.getByLabel('Store name').fill('Aldi');
 	await page.getByRole('button', { name: 'Add store and start trip' }).click();
 	await expect(page.getByRole('button', { name: 'Store: Aldi' })).toBeVisible();
-	await page.goto('/account');
+	await page.goto('/settings/account');
 	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(synced(page)).toBeVisible();
 
@@ -67,7 +67,7 @@ test('changes made with no signal wait, and are sent when it returns', async ({ 
 	await addItem(page, 'Eggs', '2.10');
 	await context.setOffline(true);
 	await addItem(page, 'Butter', '1.80');
-	await page.goto('/account');
+	await page.goto('/settings/account');
 	await expect(
 		page.getByRole('status').filter({ hasText: /waiting to sync|Offline/ })
 	).toBeVisible();
@@ -92,9 +92,9 @@ test('the header’s sync icon turns while syncing, shows a tick, then rests', a
 	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
 	await expect(icon).toHaveAttribute('data-phase', 'rest', { timeout: 5000 });
 
-	// A tap shows the details on the Account page.
+	// A tap shows the details on the Account & sync page.
 	await icon.click();
-	await expect(page).toHaveURL(/\/account$/);
+	await expect(page).toHaveURL(/\/settings\/account$/);
 });
 
 test('signed out, there is no sync icon', async ({ page }) => {

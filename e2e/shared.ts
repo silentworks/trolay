@@ -14,7 +14,7 @@ export async function newPhone(browser: Browser, options: BrowserContextOptions 
 
 /** Makes an account on the phone with a passkey. */
 export async function signUp(page: Page) {
-	await page.goto('/account');
+	await page.goto('/settings/account');
 	await page.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(synced(page)).toBeVisible();
 }

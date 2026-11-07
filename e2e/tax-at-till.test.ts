@@ -42,6 +42,18 @@ test.describe('on a US phone', () => {
 			'Trip saved'
 		);
 	});
+
+	test('a new store from the store sheet has its till adding sales tax', async ({ page }) => {
+		await page.goto('/stores');
+		await page.getByRole('button', { name: /^No stores yet/ }).click();
+		const sheet = page.getByRole('dialog', { name: 'New store' });
+		await expect(
+			sheet.getByRole('switch', { name: 'Shelf prices include sales tax' })
+		).not.toBeChecked();
+		await expect(sheet.getByRole('switch', { name: 'Shelf prices include sales tax' })).toHaveText(
+			'Tax at the till'
+		);
+	});
 });
 
 test('a receipt higher by about the sales tax asks whether the till added it', async ({ page }) => {

@@ -43,3 +43,24 @@ test('the Stores page shows the same card with no stores, and adds one', async (
 	await expect(page.getByRole('button', { name: /Aldi/ })).toBeVisible();
 	await expect(card).toHaveCount(0);
 });
+
+test('the store sheet sets whether shelf prices include tax with a switch', async ({ page }) => {
+	await page.goto('/stores');
+	await page.getByRole('button', { name: /^No stores yet/ }).click();
+	const sheet = page.getByRole('dialog', { name: 'New store' });
+	await expect(sheet.getByLabel('Store name')).toBeFocused();
+	const tax = sheet.getByRole('switch', { name: 'Shelf prices include sales tax' });
+	// Guessed from the phone's region (en-GB in these tests).
+	await expect(tax).toBeChecked();
+	await expect(tax).toHaveText('Include tax');
+	await tax.click();
+	await expect(tax).not.toBeChecked();
+	await expect(tax).toHaveText('Tax at the till');
+	await sheet.getByLabel('Store name').fill('Costco');
+	await sheet.getByRole('button', { name: 'Add store' }).click();
+
+	await page.getByRole('button', { name: /Costco/ }).click();
+	await expect(
+		page.getByRole('dialog').getByRole('switch', { name: 'Shelf prices include sales tax' })
+	).not.toBeChecked();
+});

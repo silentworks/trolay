@@ -136,7 +136,9 @@
 		overflow: visible;
 		font-size: 0.95rem;
 		line-height: 1.45;
+		/* Not what the label it sits beside has: it is a paragraph of its own. */
 		text-align: left;
+		white-space: normal;
 	}
 
 	/* The arrow, pointing at the button. */

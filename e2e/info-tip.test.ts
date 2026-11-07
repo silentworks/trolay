@@ -61,7 +61,8 @@ test('only one explanation is open at a time', async ({ page }) => {
 	await form.getByRole('button', { name: 'About currency' }).click();
 	const currency = page.getByRole('note').filter({ hasText: 'Currency' });
 	await expect(currency).toContainText('past trips are shown too');
-	await form.getByRole('button', { name: 'About shelf prices and sales tax' }).click();
+	// From the keyboard: in the store sheet's rows the open card covers the next ⓘ.
+	await form.getByRole('button', { name: 'About shelf prices and sales tax' }).press('Enter');
 	await expect(
 		page.getByRole('note').filter({ hasText: 'Shelf prices and sales tax' })
 	).toBeVisible();

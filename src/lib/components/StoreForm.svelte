@@ -20,11 +20,12 @@
 	const initial = untrack(() => store);
 	let name = $state(initial?.name ?? '');
 	let branch = $state(initial?.branch ?? '');
-	// A new store's rate is guessed from the phone's region; with no good guess it starts at 0%.
+	// A new store's rate, and whether shelf prices include it, are guessed from the phone's region;
+	// with no good guess it starts at 0%, with tax in the shelf price.
 	const guess = initial ? undefined : regionTax();
 	const hint = initial ? undefined : rateHint(guess);
 	let rate = $state(formatPercent(initial?.taxRateBps ?? guess?.rateBps ?? 0));
-	let pricesIncludeTax = $state(initial?.pricesIncludeTax ?? true);
+	let pricesIncludeTax = $state(initial?.pricesIncludeTax ?? !guess?.addedAtTill);
 	let currency = $state(initial?.currency ?? '');
 	let error = $state('');
 	let saving = $state(false);

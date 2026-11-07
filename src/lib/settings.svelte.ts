@@ -1,9 +1,12 @@
 import {
 	ACCENT_KEY,
+	DENSITY_KEY,
 	readAccent,
+	readDensity,
 	readTextSize,
 	TEXT_SIZE_KEY,
 	type Accent,
+	type Density,
 	type TextSize
 } from '#lib/appearance.ts';
 import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
@@ -38,6 +41,7 @@ class Settings {
 	accent = $state<Accent>(readAccent(read(ACCENT_KEY)));
 	/** A percentage of the default text size. */
 	textSize = $state<TextSize>(readTextSize(read(TEXT_SIZE_KEY)));
+	density = $state<Density>(readDensity(read(DENSITY_KEY)));
 	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
@@ -61,6 +65,11 @@ class Settings {
 	setTextSize(size: TextSize): void {
 		this.textSize = size;
 		write(TEXT_SIZE_KEY, String(size));
+	}
+
+	setDensity(density: Density): void {
+		this.density = density;
+		write(DENSITY_KEY, density);
 	}
 
 	markOnboarded(): void {

@@ -38,3 +38,22 @@ export function readTextSize(value: string | null): TextSize {
 export function applyTextSize(size: TextSize): void {
 	document.documentElement.style.setProperty('--text-scale', String(size / 100));
 }
+
+export type Density = 'comfortable' | 'compact' | 'spacious';
+
+export const DENSITY_KEY = 'trolley.density';
+
+export const DENSITIES: { value: Density; label: string }[] = [
+	{ value: 'compact', label: 'Compact' },
+	{ value: 'comfortable', label: 'Comfortable' },
+	{ value: 'spacious', label: 'Spacious' }
+];
+
+export function readDensity(value: string | null): Density {
+	return value === 'compact' || value === 'spacious' ? value : 'comfortable';
+}
+
+/** Scales the spacing tokens in app.css; taps stay at least 44px whatever the density. */
+export function applyDensity(density: Density): void {
+	document.documentElement.dataset.density = density;
+}

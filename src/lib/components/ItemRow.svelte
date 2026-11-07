@@ -152,8 +152,8 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		min-height: 72px;
-		padding: 8px 0 8px 4px;
+		min-height: calc(48px + 24px * var(--density));
+		padding: var(--space-2) 0 var(--space-2) 4px;
 		background: var(--bg);
 		touch-action: pan-y;
 		transition: transform 0.15s ease-out;

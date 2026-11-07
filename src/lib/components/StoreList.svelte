@@ -38,14 +38,14 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		gap: 8px;
+		gap: var(--space-2);
 	}
 
 	button {
 		display: grid;
 		width: 100%;
-		min-height: 64px;
-		padding: 12px 16px;
+		min-height: calc(var(--tap) + 16px * var(--density));
+		padding: var(--space-3) 16px;
 		text-align: left;
 		border: 1px solid var(--border);
 		border-radius: var(--radius);

@@ -18,6 +18,8 @@
 	if (dark) document.querySelector('meta[name="theme-color"]').content = '#0b0f17';
 	const accent = saved('trolley.accent');
 	if (/^(blue|purple|green|orange|pink|teal)$/.test(accent || '')) root.dataset.accent = accent;
+	const density = saved('trolley.density');
+	if (/^(compact|spacious)$/.test(density || '')) root.dataset.density = density;
 	const textSize = saved('trolley.textSize');
 	if (/^(90|110|120|135)$/.test(textSize || '')) {
 		root.style.setProperty('--text-scale', String(Number(textSize) / 100));

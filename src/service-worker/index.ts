@@ -1,6 +1,7 @@
 import { self } from '$app/service-worker';
 import { assets, immutable } from '$app/manifest';
 import { version } from '$app/env';
+import { CHANGELOG } from '#lib/changelog.ts';
 
 // Precaches the app shell so the app works with no signal after its first load. Each build
 // gets its own cache; the old one is removed once the new worker takes over.
@@ -50,6 +51,8 @@ self.addEventListener('install', (event) => {
 // the app never reloads under them mid-shop.
 self.addEventListener('message', (event) => {
 	if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+	// The page asks a waiting version what's new in it, before the shopper updates.
+	if (event.data?.type === 'CHANGELOG') event.ports[0]?.postMessage(CHANGELOG);
 });
 
 self.addEventListener('activate', (event) => {

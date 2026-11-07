@@ -3,6 +3,8 @@
 // place, so the app offers "Refresh to update" and reloads only when they tap it. Dismissed, the
 // new version takes over the next time the app is opened from scratch.
 
+import { CHANGELOG, entriesAfter, type ChangelogEntry } from './changelog.ts';
+
 class AppUpdate {
 	/** A new version is installed and waiting. */
 	available = $state(false);
@@ -66,6 +68,25 @@ class AppUpdate {
 
 	dismiss(): void {
 		this.available = false;
+	}
+
+	/**
+	 * What's new in the waiting version: its changelog entries newer than this version's. Empty
+	 * when it has none, or doesn't answer (a version from before it could).
+	 */
+	async changes(): Promise<ChangelogEntry[]> {
+		const worker = this.#waiting;
+		if (!worker) return [];
+		const theirs = await new Promise<ChangelogEntry[]>((done) => {
+			const channel = new MessageChannel();
+			const timer = setTimeout(() => done([]), 3000);
+			channel.port1.onmessage = (event) => {
+				clearTimeout(timer);
+				done(Array.isArray(event.data) ? (event.data as ChangelogEntry[]) : []);
+			};
+			worker.postMessage({ type: 'CHANGELOG' }, [channel.port2]);
+		});
+		return entriesAfter(CHANGELOG[0]?.version ?? '', theirs);
 	}
 }
 

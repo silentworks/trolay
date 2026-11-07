@@ -1,20 +1,13 @@
 <script lang="ts">
 	import { version } from '$app/env';
 	import { resolve } from '$app/paths';
+	import { shortVersion } from '#lib/changelog.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 
-	// SvelteKit names each build by the time it was made, so the version reads as a date too:
-	// shown short (2026.11.07), with the full build number under it.
-	const madeAt = /^\d+$/.test(version) ? new Date(Number(version)) : undefined;
-	const short = madeAt
-		? [
-				madeAt.getUTCFullYear(),
-				String(madeAt.getUTCMonth() + 1).padStart(2, '0'),
-				String(madeAt.getUTCDate()).padStart(2, '0')
-			].join('.')
-		: version;
-	const built = madeAt ? formatWhen(madeAt.getTime()) : undefined;
+	// The version reads as a date: shown short (2026.11.07), with the full build number under it.
+	const short = shortVersion(version);
+	const built = short !== version ? formatWhen(Number(version)) : undefined;
 </script>
 
 <svelte:head>
@@ -39,6 +32,11 @@
 			</div>
 		{/if}
 	</dl>
+
+	<a class="news" href={resolve('/settings/about/changelog')}>
+		What's new
+		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+	</a>
 
 	<p>
 		Your stores, trips and items are kept on this phone. When you're signed in, they also sync
@@ -83,6 +81,31 @@
 		color: var(--muted);
 		text-align: right;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.news {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: var(--tap);
+		margin-top: 12px;
+		padding: 8px 16px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--surface);
+		color: inherit;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.news svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: var(--muted);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 
 	.build {

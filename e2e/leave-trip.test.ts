@@ -79,7 +79,7 @@ test('a trip finished while shared stays in both histories', async ({ browser })
 
 	for (const phone of [owner, partner]) {
 		await expect(async () => {
-			await phone.goto('/account');
+			await phone.goto('/settings/account');
 			await expect(synced(phone)).toBeVisible();
 			await phone.goto('/history');
 			await expect(phone.getByRole('link', { name: /Tesco/ })).toBeVisible({ timeout: 1500 });

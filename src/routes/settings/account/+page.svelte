@@ -10,10 +10,10 @@
 	onMount(() => void account.refresh());
 </script>
 
-<svelte:head><title>Account · Trolay</title></svelte:head>
+<svelte:head><title>Account & sync · Trolay</title></svelte:head>
 
 <div class="page">
-	<AppHeader title="Account" back={{ href: resolve('/'), label: 'Trolley' }} />
+	<AppHeader title="Account & sync" back={{ href: resolve('/settings'), label: 'Settings' }} />
 
 	{#if account.status === 'signedIn'}
 		<div class="with-info">
@@ -74,10 +74,6 @@
 	{/if}
 
 	{#if account.error}<p class="error" role="alert">{account.error}</p>{/if}
-
-	<a class="btn btn-ghost btn-block guide" href={resolve('/welcome')}
-		>Show the getting started guide</a
-	>
 </div>
 
 <style>
@@ -94,10 +90,6 @@
 	.status {
 		font-weight: 700;
 		color: var(--accent);
-	}
-
-	.guide {
-		margin-top: 28px;
 	}
 
 	.actions {

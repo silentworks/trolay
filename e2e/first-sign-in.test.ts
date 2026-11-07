@@ -60,7 +60,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 	const passkeysA = await withPasskeys(a);
 
 	// Phone A has months of history, made before it ever signed in.
-	await a.goto('/history');
+	await a.goto('/settings/backup');
 	await a.locator('input[type=file]').setInputFiles({
 		name: 'trolay-backup.json',
 		mimeType: 'application/json',
@@ -74,7 +74,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 		await new Promise((resolve) => setTimeout(resolve, 500));
 		await route.continue();
 	});
-	await a.goto('/account');
+	await a.goto('/settings/account');
 	await a.getByRole('button', { name: 'Create an account with a passkey' }).click();
 	await expect(a.getByRole('status').filter({ hasText: /Uploading \d+ of 122/ })).toBeVisible();
 	// (The requests are slowed, so the whole upload takes a few seconds.)
@@ -89,7 +89,7 @@ test('a long history on the phone is uploaded on first sign-in, with progress; a
 	await b.getByRole('button', { name: 'Add store and start trip' }).click();
 	await expect(b.getByRole('button', { name: 'Store: Lidl' })).toBeVisible();
 
-	await b.goto('/account');
+	await b.goto('/settings/account');
 	await b.getByRole('button', { name: 'Sign in with a passkey' }).click();
 	await expect(synced(b)).toBeVisible();
 

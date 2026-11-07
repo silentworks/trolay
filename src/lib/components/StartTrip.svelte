@@ -56,7 +56,6 @@
 		menu={[
 			{ label: 'History', href: resolve('/history') },
 			{ label: 'Stores', href: resolve('/stores') },
-			{ label: 'Account', href: resolve('/account') },
 			{ label: 'Settings', href: resolve('/settings') }
 		]}
 	/>

@@ -10,7 +10,7 @@ export interface SyncState {
 
 const plural = (n: number) => `${n} change${n === 1 ? '' : 's'}`;
 
-/** What syncing is doing, in words: for the Account page, and read out by the header's icon. */
+/** What syncing is doing, in words: for the Account & sync page, and read out by the header's icon. */
 export function syncMessage({ status, pending, stuck, started, sent }: SyncState): string {
 	switch (status) {
 		case 'syncing':

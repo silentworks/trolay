@@ -88,7 +88,7 @@
 			Sign in to Trolay to accept. Your invite waits here while you do, and you can come back to
 			this page afterwards.
 		</p>
-		<a class="btn btn-primary btn-block next" href={resolve('/account')}>Sign in</a>
+		<a class="btn btn-primary btn-block next" href={resolve('/settings/account')}>Sign in</a>
 	{/if}
 
 	{#if error}<p class="error" role="alert">{error}</p>{/if}

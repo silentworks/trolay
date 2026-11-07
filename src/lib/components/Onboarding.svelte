@@ -18,7 +18,7 @@
 
 	interface Props {
 		/**
-		 * A trip is already open (the guide was opened again from Account): only the explaining
+		 * A trip is already open (the guide was opened again from Settings): only the explaining
 		 * steps are shown, and nothing is created.
 		 */
 		explainOnly?: boolean;
@@ -122,7 +122,6 @@
 		menu={[
 			{ label: 'History', href: resolve('/history') },
 			{ label: 'Stores', href: resolve('/stores') },
-			{ label: 'Account', href: resolve('/account') },
 			{ label: 'Settings', href: resolve('/settings') }
 		]}
 	/>
@@ -143,7 +142,7 @@
 			<p class="hint">
 				Everything stays on this phone, and you don't need an account. If you sign in, your stores
 				and history sync between your phones, and you can share a trip with someone shopping with
-				you. You can sign in any time from Account in the ••• menu.
+				you. You can sign in any time from Settings in the ••• menu.
 			</p>
 		{:else if step === 'store'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Where are you shopping?</h2>

@@ -284,7 +284,7 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	await page.getByRole('button', { name: /^Lidl/ }).click();
 	await addItem(page, 'Eggs', '2.10');
 
-	await page.goto('/history');
+	await page.goto('/settings/backup');
 	const backup = await downloaded(page, () =>
 		page.getByRole('button', { name: 'Download backup' }).click()
 	);
@@ -295,6 +295,7 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	const fresh = await phone.newPage();
 	await fresh.goto('/history');
 	await expect(fresh.getByText('No finished trips yet.')).toBeVisible();
+	await fresh.goto('/settings/backup');
 
 	// Something that is not a backup is refused, and nothing changes.
 	await fresh
@@ -318,6 +319,7 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 		'Backup restored'
 	);
 
+	await fresh.goto('/history');
 	const trips = fresh.getByRole('list', { name: 'Past trips' });
 	await expect(trips.getByRole('link')).toHaveCount(1);
 	await expect(trips.getByRole('link')).toContainText('✓ Receipt matched');

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import AppHeader, { type MenuEntry } from '#lib/components/AppHeader.svelte';
-	import BackupPanel from '#lib/components/BackupPanel.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import {
@@ -117,8 +116,6 @@
 			<p class="hint">No finished trips yet. Finish a trip and it appears here.</p>
 		{/if}
 	{/if}
-
-	<BackupPanel />
 </div>
 
 <Sheet open={clearing} title="Delete all history?" onclose={() => (clearing = false)}>

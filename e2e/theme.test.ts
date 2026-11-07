@@ -20,7 +20,7 @@ test('opens in light mode, and keeps the look chosen in Settings', async ({ page
 	expect(await theme(page)).toBe('dark');
 
 	// Matching the phone follows it as it switches.
-	await page.getByRole('radio', { name: /^Match my phone/ }).check();
+	await page.getByRole('radio', { name: 'System' }).check();
 	expect(await theme(page)).toBe('dark');
 	await page.emulateMedia({ colorScheme: 'light' });
 	await expect.poll(() => theme(page)).toBe('light');
@@ -32,4 +32,20 @@ test('opens in light mode, and keeps the look chosen in Settings', async ({ page
 	await page.reload();
 	expect(await theme(page)).toBe('light');
 	await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f6f8fc');
+});
+
+test('the theme cards are a radio group that the arrow keys move through', async ({ page }) => {
+	await page.goto('/settings/appearance');
+	const group = page.getByRole('radiogroup', { name: 'Theme' });
+	await expect(group).toHaveAccessibleDescription('Choose how Trolay looks and feels.');
+	await expect(group.getByRole('radio', { name: 'System' })).toHaveAccessibleDescription(
+		"Light or dark as your phone's setting is."
+	);
+
+	await group.getByRole('radio', { name: 'Light', exact: true }).focus();
+	await page.keyboard.press('ArrowRight');
+	await expect(group.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
+	expect(await theme(page)).toBe('dark');
+	await page.keyboard.press('ArrowRight');
+	await expect(group.getByRole('radio', { name: 'System' })).toBeChecked();
 });

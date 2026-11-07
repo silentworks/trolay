@@ -73,11 +73,9 @@ test('the Appearance row shows the look chosen', async ({ page }) => {
 	await expect(page.getByRole('link', { name: /^Appearance/ })).toHaveText('Appearance Dark');
 
 	await page.getByRole('link', { name: /^Appearance/ }).click();
-	await page.getByRole('radio', { name: /^Match my phone/ }).check();
+	await page.getByRole('radio', { name: 'System' }).check();
 	await page.getByRole('link', { name: 'Back to Settings' }).click();
-	await expect(page.getByRole('link', { name: /^Appearance/ })).toHaveText(
-		'Appearance Match my phone'
-	);
+	await expect(page.getByRole('link', { name: /^Appearance/ })).toHaveText('Appearance System');
 });
 
 test('backups are made from Settings, not History', async ({ page }) => {

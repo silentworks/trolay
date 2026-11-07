@@ -30,3 +30,16 @@ test('with no stores, a card says so and adds the first store', async ({ page })
 	await expect(noStores(page)).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Add a new store' })).toBeVisible();
 });
+
+test('the Stores page shows the same card with no stores, and adds one', async ({ page }) => {
+	await page.goto('/stores');
+	const card = page.getByRole('button', {
+		name: 'No stores yet. Add the stores you shop at, with their sales tax.'
+	});
+	await card.click();
+	const sheet = page.getByRole('dialog', { name: 'New store' });
+	await sheet.getByLabel('Store name').fill('Aldi');
+	await sheet.getByRole('button', { name: 'Add store' }).click();
+	await expect(page.getByRole('button', { name: /Aldi/ })).toBeVisible();
+	await expect(card).toHaveCount(0);
+});

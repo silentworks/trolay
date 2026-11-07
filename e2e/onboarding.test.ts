@@ -56,7 +56,7 @@ test('skipping the guide leads to the start screen, and it does not come back', 
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Add a new store' })).toBeVisible();
 	await page.goto('/stores');
-	await expect(page.getByText('No stores yet.')).toBeVisible();
+	await expect(page.getByText('No stores yet')).toBeVisible();
 
 	await page.goto('/');
 	await expect(page.getByRole('button', { name: 'Add a new store' })).toBeVisible();

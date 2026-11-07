@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
+	import NoStores from '#lib/components/NoStores.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
 	import StoreForm from '#lib/components/StoreForm.svelte';
 	import StoreList from '#lib/components/StoreList.svelte';
@@ -69,7 +70,10 @@
 			<p class="hint">Tap a store to edit its name, branch, currency or sales tax.</p>
 			<StoreList stores={stores.current} onpick={(store) => (editing = store)} />
 		{:else}
-			<p class="hint">No stores yet.</p>
+			<NoStores
+				line="Add the stores you shop at, with their sales tax."
+				onadd={() => (adding = true)}
+			/>
 		{/if}
 	{/if}
 

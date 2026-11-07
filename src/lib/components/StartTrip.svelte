@@ -5,6 +5,7 @@
 	import { startTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
 	import AppHeader from './AppHeader.svelte';
+	import NoStores from './NoStores.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
@@ -59,24 +60,10 @@
 			<h2 class="section">Your stores</h2>
 			<StoreList stores={stores.current} onpick={(store: Store) => begin(store.id)} />
 		{:else}
-			<!-- The whole card adds the first store, named as one sentence after the other. -->
-			<button
-				class="empty"
-				type="button"
-				aria-label="No stores yet. Add the store you're in to start your first trip."
-				onclick={() => (addingStore = true)}
-			>
-				<span class="icon">
-					<svg viewBox="0 0 24 24" aria-hidden="true">
-						<path d="M4 9.5 5.5 4h13L20 9.5" />
-						<path d="M4 9.5a2.67 2.67 0 0 0 5.33 0 2.67 2.67 0 0 0 5.34 0 2.67 2.67 0 0 0 5.33 0" />
-						<path d="M5.5 12.5V20h13v-7.5" />
-						<path d="M10 20v-4.5h4V20" />
-					</svg>
-				</span>
-				<span class="title">No stores yet</span>
-				<span class="line">Add the store you're in to start your first trip.</span>
-			</button>
+			<NoStores
+				line="Add the store you're in to start your first trip."
+				onadd={() => (addingStore = true)}
+			/>
 		{/if}
 	{/if}
 
@@ -115,51 +102,6 @@
 		font-size: 1rem;
 		color: var(--muted);
 		margin: 8px 0;
-	}
-
-	/* No stores yet: a dashed card, all one button, that opens the New store sheet. */
-	.empty {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		width: 100%;
-		margin-top: 8px;
-		padding: 28px 20px;
-		border: 2px dashed var(--control-border);
-		border-radius: var(--radius);
-		background: var(--surface);
-		color: var(--muted);
-		font: inherit;
-		text-align: center;
-		cursor: pointer;
-	}
-
-	.empty .icon {
-		display: grid;
-		place-items: center;
-		width: 56px;
-		height: 56px;
-		margin-bottom: 6px;
-		border-radius: 50%;
-		background: var(--accent-soft);
-		color: var(--accent-soft-text);
-	}
-
-	.empty svg {
-		width: 28px;
-		height: 28px;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 2;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-	}
-
-	.empty .title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--text);
 	}
 
 	/* The primary action sits in the bottom third, within thumb reach. */

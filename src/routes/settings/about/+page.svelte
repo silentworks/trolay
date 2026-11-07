@@ -4,8 +4,17 @@
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 
-	// SvelteKit names each build by the time it was made, so the version reads as a date too.
-	const built = /^\d+$/.test(version) ? formatWhen(Number(version)) : undefined;
+	// SvelteKit names each build by the time it was made, so the version reads as a date too:
+	// shown short (2026.11.07), with the full build number under it.
+	const madeAt = /^\d+$/.test(version) ? new Date(Number(version)) : undefined;
+	const short = madeAt
+		? [
+				madeAt.getUTCFullYear(),
+				String(madeAt.getUTCMonth() + 1).padStart(2, '0'),
+				String(madeAt.getUTCDate()).padStart(2, '0')
+			].join('.')
+		: version;
+	const built = madeAt ? formatWhen(madeAt.getTime()) : undefined;
 </script>
 
 <svelte:head>
@@ -18,7 +27,10 @@
 	<dl class="card">
 		<div>
 			<dt>Version</dt>
-			<dd>{version}</dd>
+			<dd>
+				{short}
+				{#if short !== version}<span class="build">{version}</span>{/if}
+			</dd>
 		</div>
 		{#if built}
 			<div>
@@ -55,7 +67,7 @@
 		gap: 12px;
 		min-height: var(--tap);
 		align-items: center;
-		padding: 0 16px;
+		padding: 8px 16px;
 	}
 
 	.card div + div {
@@ -71,5 +83,10 @@
 		color: var(--muted);
 		text-align: right;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.build {
+		display: block;
+		font-size: 0.78rem;
 	}
 </style>

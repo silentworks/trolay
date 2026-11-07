@@ -6,7 +6,7 @@ test('a shared trip says who added each item, and one that is not shared says no
 }) => {
 	const owner = await ownerWithTrip(browser);
 	await addItem(owner, 'Milk', '1.45');
-	await expect(owner.getByText('Milk')).toBeVisible();
+	await expect(owner.getByText('Milk', { exact: true })).toBeVisible();
 	// Not shared yet: nothing extra on the row.
 	await expect(owner.getByText(/Added by/)).toHaveCount(0);
 

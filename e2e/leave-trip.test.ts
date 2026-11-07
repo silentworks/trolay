@@ -8,7 +8,7 @@ test('a partner leaves the trip; it stays with the owner, who can invite again',
 	await addItem(owner, 'Milk', '1.45');
 	const partner = await joinedPartner(browser, await inviteLink(owner));
 	await addItem(partner, 'Bread', '0.95');
-	await expect(owner.getByText('Bread')).toBeVisible({ timeout: 15_000 });
+	await expect(owner.getByText('Bread', { exact: true })).toBeVisible({ timeout: 15_000 });
 	// Shared: the owner's menu offers to remove the partner, not to invite one.
 	await owner.getByRole('button', { name: 'Menu' }).click();
 	await expect(
@@ -27,7 +27,7 @@ test('a partner leaves the trip; it stays with the owner, who can invite again',
 	await expect(partner.getByText('You left the trip at Tesco')).toBeVisible();
 
 	// The owner still has the trip and what the partner added, and is back to being alone on it.
-	await expect(owner.getByText('Bread')).toBeVisible();
+	await expect(owner.getByText('Bread', { exact: true })).toBeVisible();
 	await expect(async () => {
 		await owner.getByRole('button', { name: 'Menu' }).click();
 		await expect(
@@ -40,7 +40,7 @@ test('an owner removes the partner, whose phone lets go of the trip', async ({ b
 	const owner = await ownerWithTrip(browser);
 	await addItem(owner, 'Milk', '1.45');
 	const partner = await joinedPartner(browser, await inviteLink(owner));
-	await expect(partner.getByText('Milk')).toBeVisible();
+	await expect(partner.getByText('Milk', { exact: true })).toBeVisible();
 	await partner.waitForTimeout(1000);
 	await expect(async () => {
 		await menu(owner, 'Remove partner');
@@ -69,7 +69,7 @@ test('a trip finished while shared stays in both histories', async ({ browser })
 	const owner = await ownerWithTrip(browser);
 	await addItem(owner, 'Milk', '1.45');
 	const partner = await joinedPartner(browser, await inviteLink(owner));
-	await expect(partner.getByText('Milk')).toBeVisible();
+	await expect(partner.getByText('Milk', { exact: true })).toBeVisible();
 
 	await menu(owner, 'Finish trip');
 	const finish = owner.getByRole('dialog', { name: 'Finish trip' });

@@ -19,6 +19,14 @@ export class SignedOutError extends Error {}
 
 type Record_ = Record<string, unknown> & Pending & { id: string; updatedAt: number };
 
+/** An item new to this phone, brought by a pull, so the shopper can be told someone added it. */
+export interface ArrivedItem {
+	id: string;
+	tripId: string;
+	description: string;
+	addedBy?: string;
+}
+
 /** What a push sent for one record, so only that is cleared once the server has it. */
 interface Sent {
 	change: PushedChange;
@@ -40,7 +48,12 @@ export class SyncCore {
 		private readonly db: TrolleyDB,
 		private readonly send: Fetcher = (path, init) => fetch(path, init),
 		/** Told the names of the stores of open trips that this account was taken off. */
-		private readonly onLetGo: (stores: string[]) => void = () => {}
+		private readonly onLetGo: (stores: string[]) => void = () => {},
+		/**
+		 * Told of items new to this phone after a pull. Not after the first pull for an account,
+		 * nor for a trip the pull brought too (just joined): those bring everything at once.
+		 */
+		private readonly onArrived: (items: ArrivedItem[]) => void = () => {}
 	) {}
 
 	private table(name: SyncTable) {
@@ -260,9 +273,23 @@ export class SyncCore {
 
 	async pull(): Promise<void> {
 		let since = ((await this.db.syncState.get(CURSOR))?.value as number | undefined) ?? 0;
+		const first = since === 0;
+		const arrived: ArrivedItem[] = [];
+		const newTrips = new Set<string>();
 		for (;;) {
 			const page = await this.request<PullResponse>(`/api/sync/pull?since=${since}`);
-			await this.apply(page.records);
+			for (const { table, id, fields } of await this.apply(page.records)) {
+				if (fields.deletedAt != null) continue;
+				if (table === 'trips') newTrips.add(id);
+				if (table === 'items') {
+					arrived.push({
+						id,
+						tripId: fields.tripId as string,
+						description: (fields.description as string | undefined) ?? '',
+						addedBy: (fields.addedBy as string | null | undefined) ?? undefined
+					});
+				}
+			}
 			const dropped: string[] = [];
 			for (const trip of page.left ?? []) {
 				const store = await letGoOfTrip(this.db, trip);
@@ -271,21 +298,26 @@ export class SyncCore {
 			if (dropped.length) this.onLetGo(dropped);
 			since = page.cursor;
 			await this.db.syncState.put({ key: CURSOR, value: since });
-			if (!page.more) return;
+			if (!page.more) break;
 		}
+		const told = first ? [] : arrived.filter((item) => !newTrips.has(item.tripId));
+		if (told.length) this.onArrived(told);
 	}
 
 	/**
 	 * Writes the server's records here. For each field the server's value is taken, except where
 	 * this phone has an edit it has not sent yet: that is kept, and the server settles it when it
-	 * is sent (the newer change wins, and the next pull brings the winner back).
+	 * is sent (the newer change wins, and the next pull brings the winner back). Returns the
+	 * records that were new to this phone.
 	 */
-	private async apply(records: PullResponse['records']): Promise<void> {
+	private async apply(records: PullResponse['records']): Promise<PullResponse['records']> {
+		const added: PullResponse['records'] = [];
 		await this.db.transaction('rw', this.db.stores, this.db.trips, this.db.items, async (tx) => {
 			markRemote(tx);
 			for (const remote of records) {
 				const table = this.table(remote.table);
 				const local = await table.get(remote.id);
+				if (!local) added.push(remote);
 				const next: Record_ = local ?? { id: remote.id, updatedAt: remote.updatedAt };
 				for (const [field, value] of Object.entries(remote.fields)) {
 					if (local?.pending && field in local.pending) continue;
@@ -298,5 +330,6 @@ export class SyncCore {
 				await table.put(next);
 			}
 		});
+		return added;
 	}
 }

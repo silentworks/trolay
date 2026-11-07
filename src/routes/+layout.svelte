@@ -13,7 +13,7 @@
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import { applyAccent, applyDensity, applyTextSize } from '#lib/appearance.ts';
+	import { applyAccent, applyAnimations, applyDensity, applyTextSize } from '#lib/appearance.ts';
 	import { applyTheme } from '#lib/theme.ts';
 	import { LiveTrip } from '#lib/sync/live.ts';
 	import type { LayoutProps } from './$types';
@@ -37,6 +37,7 @@
 	$effect(() => applyAccent(settings.accent));
 	$effect(() => applyTextSize(settings.textSize));
 	$effect(() => applyDensity(settings.density));
+	$effect(() => applyAnimations(settings.animations));
 
 	// The photos of trips deleted when the app last closed, too soon to have gone already.
 	$effect(() => {

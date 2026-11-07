@@ -57,3 +57,36 @@ export function readDensity(value: string | null): Density {
 export function applyDensity(density: Density): void {
 	document.documentElement.dataset.density = density;
 }
+
+export const ANIMATIONS_KEY = 'trolley.animations';
+
+/** On or off as the shopper chose; null when they haven't, and the phone's setting is followed. */
+export function readAnimations(value: string | null): boolean | null {
+	return value === 'on' ? true : value === 'off' ? false : null;
+}
+
+const prefersLessMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/** Whether the phone asks for less motion; `onchange` is told when that changes. */
+export function watchPhoneMotion(onchange: (reduce: boolean) => void): () => void {
+	const media = prefersLessMotion();
+	const update = () => onchange(media.matches);
+	update();
+	media.addEventListener('change', update);
+	return () => media.removeEventListener('change', update);
+}
+
+/**
+ * Sets data-motion on the page, "reduce" or "full", which app.css and the components follow; with
+ * no choice made, it follows the phone, as it switches.
+ */
+export function applyAnimations(on: boolean | null): () => void {
+	const media = prefersLessMotion();
+	const apply = () => {
+		document.documentElement.dataset.motion = (on ?? !media.matches) ? 'full' : 'reduce';
+	};
+	apply();
+	if (on !== null) return () => {};
+	media.addEventListener('change', apply);
+	return () => media.removeEventListener('change', apply);
+}

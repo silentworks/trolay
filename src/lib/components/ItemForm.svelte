@@ -521,10 +521,9 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
+	/* Animations off (src/lib/appearance.ts). */
+	:global(:root[data-motion='reduce']) .spinner {
+		animation: none;
 	}
 
 	.price {

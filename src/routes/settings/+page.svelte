@@ -118,7 +118,7 @@
 	}
 
 	.group {
-		margin: 20px 4px 6px;
+		margin: calc(20px * var(--density)) 4px calc(6px * var(--density));
 		color: var(--muted);
 		font-size: 0.85rem;
 		font-weight: 600;
@@ -150,7 +150,7 @@
 		align-items: center;
 		gap: 12px;
 		min-height: var(--tap);
-		padding: 10px 10px 10px 16px;
+		padding: calc(10px * var(--density)) 10px calc(10px * var(--density)) 16px;
 		color: var(--text);
 		text-decoration: none;
 	}

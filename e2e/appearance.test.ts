@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { BASE } from './global-setup';
 
 const root = (page: Page, name: string) =>
 	page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
@@ -103,4 +104,72 @@ test.describe('at the largest text size on a narrow phone', () => {
 			expect(await overflowing(page), path).toEqual([]);
 		}
 	});
+});
+
+/** The heights of the visible buttons and links shorter than a 44px tap, with their names. */
+const shortTaps = (page: Page) =>
+	page.evaluate(() =>
+		[...document.querySelectorAll<HTMLElement>('button, a[href], [role="switch"]')]
+			.filter((el) => el.checkVisibility() && !el.closest('[inert], .visually-hidden'))
+			.map((el) => ({ el, height: el.getBoundingClientRect().height }))
+			.filter(({ height }) => height > 0 && height < 44)
+			.map(
+				({ el, height }) => `${el.textContent?.trim() || el.getAttribute('aria-label')}: ${height}`
+			)
+	);
+
+test('the density spaces lists and sheets closer or further apart, and is kept', async ({
+	page,
+	browser
+}) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: /^No stores yet/ }).click();
+	await page.getByLabel('Store name').fill('Tesco');
+	await page.getByRole('button', { name: 'Add store and start trip' }).click();
+	await page.getByRole('button', { name: 'Add by hand' }).click();
+	await page.getByLabel('Description').fill('Milk');
+	await page.getByLabel('Unit price').fill('1.45');
+	await page.getByRole('button', { name: 'Add to cart' }).click();
+	const row = page.getByRole('listitem').filter({ hasText: 'Milk' });
+	const height = async () => (await row.boundingBox())!.height;
+	const comfortable = await height();
+
+	await page.goto('/settings/appearance');
+	const densities = page.getByRole('radiogroup', { name: 'Interface density' });
+	await expect(densities.getByRole('radio', { name: 'Comfortable' })).toBeChecked();
+	await densities.getByRole('radio', { name: 'Compact' }).check();
+	await page.goto('/');
+	const compact = await height();
+	expect(compact).toBeLessThan(comfortable);
+	// Smaller spaces, never smaller taps.
+	expect(await shortTaps(page)).toEqual([]);
+	// The start screen, on a phone with no trip open.
+	const fresh = await browser.newContext({
+		baseURL: BASE,
+		storageState: {
+			cookies: [],
+			origins: [
+				{
+					origin: BASE,
+					localStorage: [
+						{ name: 'trolley.onboarded', value: 'true' },
+						{ name: 'trolley.whatsNewSeen', value: '9999.12.31' },
+						{ name: 'trolley.density', value: 'compact' }
+					]
+				}
+			]
+		}
+	});
+	const start = await fresh.newPage();
+	await start.goto('/');
+	await expect(start.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+	expect(await shortTaps(start)).toEqual([]);
+	await fresh.close();
+
+	await page.goto('/settings/appearance');
+	await densities.getByRole('radio', { name: 'Spacious' }).check();
+	await page.reload();
+	await expect(densities.getByRole('radio', { name: 'Spacious' })).toBeChecked();
+	await page.goto('/');
+	expect(await height()).toBeGreaterThan(comfortable);
 });

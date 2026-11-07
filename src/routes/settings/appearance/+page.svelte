@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { ACCENTS, TEXT_SIZES } from '#lib/appearance.ts';
+	import { ACCENTS, DENSITIES, TEXT_SIZES } from '#lib/appearance.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import SettingsSection from '#lib/components/SettingsSection.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
@@ -111,6 +111,34 @@
 			</div>
 		{/snippet}
 	</SettingsSection>
+	<SettingsSection
+		title="Interface density"
+		lead="Control spacing for a more compact or spacious view."
+	>
+		{#snippet children(ids)}
+			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.lead}>
+				{#each DENSITIES as density, i (density.value)}
+					<label class="look">
+						<input
+							class="pick"
+							type="radio"
+							name="density"
+							value={density.value}
+							checked={settings.density === density.value}
+							onchange={() => settings.setDensity(density.value)}
+						/>
+						<!-- Three lines, closer together or further apart. -->
+						<svg viewBox="0 0 24 24" aria-hidden="true">
+							{#each [-1, 0, 1] as line (line)}
+								<path d="M5 {12 + line * (i + 2) * 1.6}h14" />
+							{/each}
+						</svg>
+						<span>{density.label}</span>
+					</label>
+				{/each}
+			</div>
+		{/snippet}
+	</SettingsSection>
 	<p class="note">Kept on this phone.</p>
 </div>
 
@@ -139,12 +167,30 @@
 		display: grid;
 		justify-items: center;
 		gap: 8px;
-		padding: 16px 8px 12px;
+		padding: 16px 4px 12px;
 		border-radius: 12px;
 		background: var(--surface-2);
 		color: var(--muted);
+		font-size: 0.94rem;
 		font-weight: 600;
 		cursor: pointer;
+	}
+
+	/* Too narrow for three side by side (a small phone, or large text): one under another, each
+	   with its icon beside its label. In em, so it follows the text size. */
+	@container (width < 19em) {
+		.looks {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 8px;
+		}
+
+		.look {
+			grid-auto-flow: column;
+			justify-content: start;
+			align-items: center;
+			gap: 12px;
+			padding: var(--space-3) 16px;
+		}
 	}
 
 	/* The radio is invisible and covers the card, so a tap anywhere on it picks it. */

@@ -158,8 +158,8 @@
 		grid-template-areas: 'back title more';
 		align-items: center;
 		gap: 8px;
-		margin: 0 calc(-1 * var(--gutter)) 12px;
-		padding: calc(8px + env(safe-area-inset-top)) var(--gutter) 8px;
+		margin: 0 calc(-1 * var(--gutter)) var(--space-3);
+		padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--gutter) var(--space-2);
 		background: var(--bg);
 	}
 

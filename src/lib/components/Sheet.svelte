@@ -60,7 +60,7 @@
 	}
 
 	.sheet {
-		padding: 8px var(--gutter) calc(var(--gutter) + env(safe-area-inset-bottom));
+		padding: var(--space-2) var(--gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
 	}
 
 	header {
@@ -68,7 +68,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
-		margin-bottom: 12px;
+		margin-bottom: var(--space-3);
 	}
 
 	h2 {

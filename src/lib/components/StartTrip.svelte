@@ -4,8 +4,8 @@
 	import { addStore, listStores, type StoreInput } from '#lib/data/stores.ts';
 	import { startTrip } from '#lib/data/trips.ts';
 	import { LiveQuery } from '#lib/live.svelte.ts';
-	import { minorToInput, parsePounds } from '#lib/money.ts';
 	import AppHeader from './AppHeader.svelte';
+	import NoStores from './NoStores.svelte';
 	import Sheet from './Sheet.svelte';
 	import StoreForm from './StoreForm.svelte';
 	import StoreList from './StoreList.svelte';
@@ -18,25 +18,13 @@
 	let { notice }: Props = $props();
 
 	const stores = new LiveQuery(() => listStores());
-	let budget = $state('');
 	let error = $state('');
 	let addingStore = $state(false);
 
-	function readBudget(): number | undefined | null {
-		if (!budget.trim()) return undefined;
-		const minor = parsePounds(budget);
-		return minor && minor > 0 ? minor : null;
-	}
-
 	async function begin(storeId: string) {
-		const budgetMinor = readBudget();
-		if (budgetMinor === null) {
-			error = `Enter a budget like 50 or ${minorToInput(4250)}, or leave it empty.`;
-			return;
-		}
 		error = '';
 		try {
-			await startTrip(storeId, budgetMinor);
+			await startTrip(storeId);
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		}
@@ -67,23 +55,15 @@
 	{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 
-	<div class="field">
-		<label for="trip-budget">Budget for this trip <span class="hint">(optional)</span></label>
-		<input
-			id="trip-budget"
-			class="input"
-			bind:value={budget}
-			inputmode="decimal"
-			aria-invalid={readBudget() === null}
-		/>
-	</div>
-
 	{#if stores.loaded}
 		{#if stores.current?.length}
 			<h2 class="section">Your stores</h2>
 			<StoreList stores={stores.current} onpick={(store: Store) => begin(store.id)} />
 		{:else}
-			<p class="empty">Add the store you're in to start your first trip.</p>
+			<NoStores
+				line="Add the store you're in to start your first trip."
+				onadd={() => (addingStore = true)}
+			/>
 		{/if}
 	{/if}
 
@@ -122,15 +102,6 @@
 		font-size: 1rem;
 		color: var(--muted);
 		margin: 8px 0;
-	}
-
-	.empty {
-		color: var(--muted);
-	}
-
-	.hint {
-		color: var(--muted);
-		font-weight: 400;
 	}
 
 	/* The primary action sits in the bottom third, within thumb reach. */

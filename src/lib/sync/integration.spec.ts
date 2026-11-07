@@ -5,7 +5,7 @@ import { handleApi } from '../../../worker/api.ts';
 import { createTestEnv, ORIGIN, testClient, type TestEnv } from '../../../worker/testing.ts';
 import { TrolleyDB } from '#lib/data/db.ts';
 import { markRemote } from './pending.ts';
-import { SignedOutError, SyncCore, type Fetcher } from './core.ts';
+import { SignedOutError, SyncCore, type ArrivedItem, type Fetcher } from './core.ts';
 
 // Two phones, each with its own IndexedDB, syncing through the real Worker and a real local D1.
 
@@ -541,5 +541,74 @@ describe('signing in on a phone that already has data', () => {
 			expect(await b.trips.get(ids.trip)).toBeDefined();
 			expect(await b.items.get(ids.item)).toBeDefined();
 		});
+	});
+});
+
+describe('telling of items added on another phone', () => {
+	let told: ArrivedItem[][];
+	let phone: SyncCore;
+	beforeEach(() => {
+		told = [];
+		phone = new SyncCore(
+			b,
+			toServer(() => cookie),
+			undefined,
+			(items) => told.push(items)
+		);
+	});
+
+	it('says nothing on the first sync, which brings everything at once', async () => {
+		await aTripOn(a);
+		await phoneA.run();
+		await phone.run();
+		expect(await b.items.get(ids.item)).toBeDefined();
+		expect(told).toEqual([]);
+	});
+
+	it('tells of a new item on a trip already here, once, and not of edits or its own', async () => {
+		await aTripOn(a);
+		await phoneA.run();
+		await phone.run();
+
+		await a.items.add({
+			...item(ids.trip, `${ids.item}-bread`),
+			description: 'Bread',
+			addedBy: userId
+		});
+		await edit(a, 'items', ids.item, { quantity: 2 });
+		await b.items.add({ ...item(ids.trip, `${ids.item}-eggs`), description: 'Eggs' });
+		await phoneA.run();
+		await phone.run();
+		expect(told).toEqual([
+			[{ id: `${ids.item}-bread`, tripId: ids.trip, description: 'Bread', addedBy: userId }]
+		]);
+
+		await phone.run();
+		expect(told).toHaveLength(1);
+	});
+
+	it('says nothing of the items of a trip that came with them, as on joining one', async () => {
+		await a.stores.add(store());
+		await phoneA.run();
+		await phone.run();
+
+		await a.trips.add(trip());
+		await a.items.add(item());
+		await phoneA.run();
+		await phone.run();
+		expect(await b.items.get(ids.item)).toBeDefined();
+		expect(told).toEqual([]);
+	});
+
+	it('says nothing of an item deleted before it got here', async () => {
+		await aTripOn(a);
+		await phoneA.run();
+		await phone.run();
+
+		await a.items.add(item(ids.trip, `${ids.item}-gone`));
+		await edit(a, 'items', `${ids.item}-gone`, { deletedAt: tick() });
+		await phoneA.run();
+		await phone.run();
+		expect(told).toEqual([]);
 	});
 });

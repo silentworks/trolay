@@ -57,7 +57,12 @@
 	}
 </script>
 
-<li class="row" class:swiping={offset < 0} class:deleting={offset <= -SWIPE_DELETE_PX}>
+<li
+	class="row"
+	data-item={item.id}
+	class:swiping={offset < 0}
+	class:deleting={offset <= -SWIPE_DELETE_PX}
+>
 	<div class="swipe-hint" aria-hidden="true">Delete</div>
 	<!-- Swiping is a shortcut; the delete button is the accessible way to remove an item. -->
 	<div

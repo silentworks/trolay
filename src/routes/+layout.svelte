@@ -7,6 +7,7 @@
 	import { processPendingLookups } from '#lib/data/products.ts';
 	import { purgeDeletedPhotos } from '#lib/data/trips.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
+	import PartnerAdded from '#lib/components/PartnerAdded.svelte';
 	import ToastHost from '#lib/components/ToastHost.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
@@ -87,5 +88,6 @@
 
 {@render children()}
 <InstallNudge />
+<PartnerAdded />
 <UpdatePrompt />
 <ToastHost />

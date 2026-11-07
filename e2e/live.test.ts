@@ -15,10 +15,10 @@ test('a change on one phone appears on the other within two seconds, and back', 
 	// Both phones are now on the trip. Give each a moment to open its connection.
 	await partner.waitForTimeout(1000);
 	await addItem(partner, 'Bread', '0.95');
-	await expect(owner.getByText('Bread')).toBeVisible(LIVE);
+	await expect(owner.getByText('Bread', { exact: true })).toBeVisible(LIVE);
 
 	await addItem(owner, 'Milk', '1.45');
-	await expect(partner.getByText('Milk')).toBeVisible(LIVE);
+	await expect(partner.getByText('Milk', { exact: true })).toBeVisible(LIVE);
 });
 
 test('a phone that lost its connection catches up when it is back', async ({ browser }) => {
@@ -28,9 +28,9 @@ test('a phone that lost its connection catches up when it is back', async ({ bro
 
 	await partner.context().setOffline(true);
 	await addItem(owner, 'Eggs', '2.10');
-	await expect(partner.getByText('Eggs')).toHaveCount(0);
+	await expect(partner.getByText('Eggs', { exact: true })).toHaveCount(0);
 
 	await partner.context().setOffline(false);
 	// It reconnects (after its pause) and syncs, without anyone touching it.
-	await expect(partner.getByText('Eggs')).toBeVisible({ timeout: 15_000 });
+	await expect(partner.getByText('Eggs', { exact: true })).toBeVisible({ timeout: 15_000 });
 });

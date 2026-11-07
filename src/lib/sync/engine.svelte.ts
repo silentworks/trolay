@@ -1,7 +1,7 @@
 import { liveQuery } from 'dexie';
 import { account } from '#lib/auth/account.svelte.ts';
 import { db } from '#lib/data/db.ts';
-import { SignedOutError, SyncCore } from './core.ts';
+import { SignedOutError, SyncCore, type ArrivedItem } from './core.ts';
 import { PhotoSync } from './photos.ts';
 
 export type SyncStatus = 'off' | 'synced' | 'pending' | 'syncing' | 'offline' | 'error';
@@ -19,7 +19,18 @@ const RETRY_MS = 10_000;
 class SyncEngine {
 	/** The store of a trip this phone was just taken off, for saying so; cleared once shown. */
 	removedFrom = $state<string>();
-	private readonly core = new SyncCore(db, undefined, (stores) => (this.removedFrom = stores[0]));
+	/**
+	 * Items new to this phone from the last round, for saying who added them; taken (and cleared)
+	 * by whoever says so. A round's arrivals come together, so several are told as one.
+	 */
+	arrived = $state.raw<ArrivedItem[]>([]);
+	private arriving: ArrivedItem[] = [];
+	private readonly core = new SyncCore(
+		db,
+		undefined,
+		(stores) => (this.removedFrom = stores[0]),
+		(items) => this.arriving.push(...items)
+	);
 	private readonly photos = new PhotoSync(db);
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	private again = false;
@@ -134,6 +145,7 @@ class SyncEngine {
 	private async rounds(userId: string): Promise<void> {
 		try {
 			await this.core.adopt(userId);
+			this.arriving = [];
 			do {
 				this.again = false;
 				this.started = await this.core.pendingCount();
@@ -144,6 +156,7 @@ class SyncEngine {
 			this.stuck = (await this.core.pendingCount()) > 0;
 			this.online = true;
 			this.lastSyncedAt = Date.now();
+			if (this.arriving.length) this.arrived = [...this.arrived, ...this.arriving];
 		} catch (error) {
 			if (error instanceof SignedOutError) account.sessionEnded();
 			// A failed fetch (no signal) throws a TypeError; anything else is the server's trouble.

@@ -1,7 +1,9 @@
 import {
 	ACCENT_KEY,
+	ANIMATIONS_KEY,
 	DENSITY_KEY,
 	readAccent,
+	readAnimations,
 	readDensity,
 	readTextSize,
 	TEXT_SIZE_KEY,
@@ -42,6 +44,8 @@ class Settings {
 	/** A percentage of the default text size. */
 	textSize = $state<TextSize>(readTextSize(read(TEXT_SIZE_KEY)));
 	density = $state<Density>(readDensity(read(DENSITY_KEY)));
+	/** Animations on or off; null follows the phone's reduced-motion setting. */
+	animations = $state<boolean | null>(readAnimations(read(ANIMATIONS_KEY)));
 	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
@@ -70,6 +74,11 @@ class Settings {
 	setDensity(density: Density): void {
 		this.density = density;
 		write(DENSITY_KEY, density);
+	}
+
+	setAnimations(on: boolean): void {
+		this.animations = on;
+		write(ANIMATIONS_KEY, on ? 'on' : 'off');
 	}
 
 	markOnboarded(): void {

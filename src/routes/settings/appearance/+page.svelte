@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { ACCENTS, DENSITIES, TEXT_SIZES } from '#lib/appearance.ts';
+	import { ACCENTS, DENSITIES, TEXT_SIZES, watchPhoneMotion } from '#lib/appearance.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import SettingsSection from '#lib/components/SettingsSection.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import type { Theme } from '#lib/theme.ts';
 
 	const uid = $props.id();
+
+	// Animations follow the phone until the shopper chooses.
+	let phoneReduces = $state(false);
+	$effect(() => watchPhoneMotion((reduce) => (phoneReduces = reduce)));
+	const animationsOn = $derived(settings.animations ?? !phoneReduces);
 
 	const looks: { value: Theme; label: string; hint?: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -139,6 +144,26 @@
 			</div>
 		{/snippet}
 	</SettingsSection>
+	<SettingsSection title="Animations" lead="Enable smooth transitions and animations.">
+		{#snippet control(ids)}
+			<button
+				class="switch"
+				type="button"
+				role="switch"
+				aria-checked={animationsOn}
+				aria-labelledby={ids.title}
+				aria-describedby="{ids.lead}{settings.animations === null && phoneReduces
+					? ` ${uid}-motion-hint`
+					: ''}"
+				onclick={() => settings.setAnimations(!animationsOn)}
+			>
+				<span class="knob"></span>
+			</button>
+		{/snippet}
+		{#if settings.animations === null && phoneReduces}
+			<p class="hint" id="{uid}-motion-hint">Following your phone's setting.</p>
+		{/if}
+	</SettingsSection>
 	<p class="note">Kept on this phone.</p>
 </div>
 
@@ -251,6 +276,52 @@
 
 	.swatch .pick {
 		border-radius: 50%;
+	}
+
+	/* An on/off switch: a track with a knob that sits right when on. */
+	.switch {
+		position: relative;
+		flex: none;
+		width: 56px;
+		height: var(--tap);
+		padding: 0;
+		border: none;
+		background: transparent;
+	}
+
+	.switch::before {
+		content: '';
+		position: absolute;
+		inset: 8px 0;
+		border-radius: 999px;
+		background: var(--control-border);
+		transition: background-color 0.2s;
+	}
+
+	.switch[aria-checked='true']::before {
+		background: var(--accent);
+	}
+
+	.knob {
+		position: absolute;
+		top: 11px;
+		left: 3px;
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		background: #fff;
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+		transition: translate 0.2s ease;
+	}
+
+	.switch[aria-checked='true'] .knob {
+		translate: 24px 0;
+	}
+
+	.hint {
+		margin: 0;
+		color: var(--muted);
+		font-size: 0.88rem;
 	}
 
 	.size {

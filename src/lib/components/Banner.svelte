@@ -68,10 +68,9 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.banner {
-			animation: none;
-		}
+	/* Animations off (src/lib/appearance.ts). */
+	:global(:root[data-motion='reduce']) .banner {
+		animation: none;
 	}
 
 	.icon {

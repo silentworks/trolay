@@ -18,6 +18,12 @@
 	if (dark) document.querySelector('meta[name="theme-color"]').content = '#0b0f17';
 	const accent = saved('trolley.accent');
 	if (/^(blue|purple|green|orange|pink|teal)$/.test(accent || '')) root.dataset.accent = accent;
+	// Animations off, or not chosen and the phone asking for less motion.
+	const animations = saved('trolley.animations');
+	const still =
+		animations === 'off' ||
+		(animations !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+	root.dataset.motion = still ? 'reduce' : 'full';
 	const density = saved('trolley.density');
 	if (/^(compact|spacious)$/.test(density || '')) root.dataset.density = density;
 	const textSize = saved('trolley.textSize');

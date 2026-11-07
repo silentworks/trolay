@@ -13,7 +13,7 @@
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import { applyAccent } from '#lib/appearance.ts';
+	import { applyAccent, applyTextSize } from '#lib/appearance.ts';
 	import { applyTheme } from '#lib/theme.ts';
 	import { LiveTrip } from '#lib/sync/live.ts';
 	import type { LayoutProps } from './$types';
@@ -35,6 +35,7 @@
 	// The look chosen in Settings; "match my phone" follows the phone as it switches.
 	$effect(() => applyTheme(settings.theme));
 	$effect(() => applyAccent(settings.accent));
+	$effect(() => applyTextSize(settings.textSize));
 
 	// The photos of trips deleted when the app last closed, too soon to have gone already.
 	$effect(() => {

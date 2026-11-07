@@ -46,7 +46,8 @@
 		'Segoe UI',
 		Roboto,
 		sans-serif;
-	font-size: 17px;
+	/* --text-scale is the text size chosen in Settings › Appearance (src/lib/appearance.ts). */
+	font-size: calc(17px * var(--text-scale, 1));
 	line-height: 1.45;
 }
 
@@ -336,7 +337,8 @@ button {
 
 .form-row {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
+	/* The label takes what it needs up to half the row, so the value always has room. */
+	grid-template-columns: fit-content(50%) minmax(0, 1fr);
 	align-items: center;
 	column-gap: 12px;
 	min-height: 60px;
@@ -344,10 +346,10 @@ button {
 	border-bottom: 1px solid var(--border);
 }
 
+/* A label stays on one line while there's room, and wraps past half the row. */
 .form-row > label,
 .form-row > span {
 	color: var(--muted);
-	white-space: nowrap;
 }
 
 .form-row > :nth-child(2) {

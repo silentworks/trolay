@@ -135,10 +135,6 @@
 		color: var(--muted);
 	}
 
-	.form-row > .with-info > :is(label, span) {
-		white-space: nowrap;
-	}
-
 	.rate {
 		max-width: 7rem;
 		font-variant-numeric: tabular-nums;

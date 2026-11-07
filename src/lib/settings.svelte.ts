@@ -5,6 +5,7 @@ import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
 
 const INSTALL_NUDGE_KEY = 'trolley.installNudgeDismissed';
 const ONBOARDED_KEY = 'trolley.onboarded';
+const WHATS_NEW_KEY = 'trolley.whatsNewSeen';
 
 function read(key: string): string | null {
 	try {
@@ -28,6 +29,8 @@ class Settings {
 	theme = $state<Theme>(readTheme(read(THEME_KEY)));
 	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
+	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
+	whatsNewSeen = $state<string | null>(read(WHATS_NEW_KEY));
 
 	dismissInstallNudge(): void {
 		this.installNudgeDismissed = true;
@@ -42,6 +45,13 @@ class Settings {
 	markOnboarded(): void {
 		this.onboarded = true;
 		write(ONBOARDED_KEY, 'true');
+	}
+
+	/** Remembers the changelog as seen up to this entry; never goes back to an older one. */
+	markWhatsNewSeen(version: string): void {
+		if (this.whatsNewSeen !== null && this.whatsNewSeen >= version) return;
+		this.whatsNewSeen = version;
+		write(WHATS_NEW_KEY, version);
 	}
 }
 

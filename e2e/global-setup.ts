@@ -90,7 +90,11 @@ export default function globalSetup() {
 			origins: [
 				{
 					origin: BASE,
-					localStorage: [{ name: 'trolley.onboarded', value: 'true' }]
+					localStorage: [
+						{ name: 'trolley.onboarded', value: 'true' },
+						// What's new only where a test asks for it.
+						{ name: 'trolley.whatsNewSeen', value: '9999.12.31' }
+					]
 				}
 			]
 		})

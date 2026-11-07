@@ -1,16 +1,22 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { CHANGELOG } from '../src/lib/changelog.ts';
 
 // A new deploy is simulated by changing the version baked into the built service worker that
 // the preview server serves. Same length, so the server's cached file size still fits.
 const WORKER = '.svelte-kit/output/client/service-worker.js';
 const VERSION = /version:`(\d+)`/;
+// The newest changelog entry the worker carries (src/lib/changelog.ts).
+const NEWEST_ENTRY = /version:`\d{4}\.\d{2}\.\d{2}`/;
 
-function deploy(): () => void {
+/** With `news`, the new version's newest changelog entry is renamed as a later release. */
+function deploy({ news = false } = {}): () => void {
 	const original = readFileSync(WORKER, 'utf8');
 	const current = VERSION.exec(original)![1];
 	const next = String(Number(current) + 1).padStart(current.length, '0');
-	writeFileSync(WORKER, original.replace(VERSION, `version:\`${next}\``));
+	let built = original.replace(VERSION, `version:\`${next}\``);
+	if (news) built = built.replace(NEWEST_ENTRY, 'version:`2099.12.31`');
+	writeFileSync(WORKER, built);
 	return () => writeFileSync(WORKER, original);
 }
 
@@ -82,6 +88,29 @@ test('dismissed, the update applies the next time the app is opened', async ({ c
 		await expect(next.getByRole('button', { name: /^Milk / })).toBeVisible();
 		await expect.poll(() => cacheNames(next)).not.toContain(oldCache);
 		await expect(prompt(next)).toBeHidden();
+	} finally {
+		restore();
+	}
+});
+
+test('the banner shows what is new in the waiting version, and marks it seen', async ({ page }) => {
+	await startShop(page);
+	// Up to date with this version's changelog, so the banner's marking shows.
+	const seen = () => page.evaluate(() => localStorage.getItem('trolley.whatsNewSeen'));
+	await page.evaluate((v) => localStorage.setItem('trolley.whatsNewSeen', v), CHANGELOG[0].version);
+	await page.reload();
+	const restore = deploy({ news: true });
+	try {
+		await page.evaluate(async () => (await navigator.serviceWorker.ready).update());
+		await prompt(page).getByRole('button', { name: "See what's new" }).click({ timeout: 30_000 });
+		const news = page.getByRole('dialog', { name: "What's new" });
+		await expect(news.getByRole('heading', { level: 3 })).toHaveCount(1);
+		await expect(news.getByRole('heading', { level: 3 })).toContainText('2099.12.31');
+		await news.getByRole('button', { name: 'Got it' }).click();
+		await expect(news).toBeHidden();
+		// Read before updating: the new version won't show it again.
+		expect(await seen()).toBe('2099.12.31');
+		await expect(prompt(page).getByRole('button', { name: 'Refresh to update' })).toBeVisible();
 	} finally {
 		restore();
 	}

@@ -8,6 +8,7 @@
 	import { purgeDeletedPhotos } from '#lib/data/trips.ts';
 	import InstallNudge from '#lib/components/InstallNudge.svelte';
 	import ToastHost from '#lib/components/ToastHost.svelte';
+	import WhatsNew from '#lib/components/WhatsNew.svelte';
 	import UpdatePrompt from '#lib/components/UpdatePrompt.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
@@ -88,4 +89,5 @@
 {@render children()}
 <InstallNudge />
 <UpdatePrompt />
+<WhatsNew />
 <ToastHost />

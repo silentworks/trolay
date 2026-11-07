@@ -1,3 +1,4 @@
+import { ACCENT_KEY, readAccent, type Accent } from '#lib/appearance.ts';
 import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
 
 // Per-device preferences. Storage can be unavailable (private browsing, blocked site data),
@@ -27,6 +28,7 @@ class Settings {
 	installNudgeDismissed = $state(read(INSTALL_NUDGE_KEY) === 'true');
 	/** Light unless the shopper chose dark, or to match the phone. */
 	theme = $state<Theme>(readTheme(read(THEME_KEY)));
+	accent = $state<Accent>(readAccent(read(ACCENT_KEY)));
 	/** The first-run guide was finished or skipped, or this phone already had stores or trips. */
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
@@ -40,6 +42,11 @@ class Settings {
 	setTheme(theme: Theme): void {
 		this.theme = theme;
 		write(THEME_KEY, theme);
+	}
+
+	setAccent(accent: Accent): void {
+		this.accent = accent;
+		write(ACCENT_KEY, accent);
 	}
 
 	markOnboarded(): void {

@@ -97,7 +97,7 @@
 	.totals {
 		--line: rgb(255 255 255 / 0.12);
 		--link: #a9c1ff;
-		padding: 14px 18px 16px;
+		padding: calc(14px * var(--density)) 18px calc(16px * var(--density));
 		border-radius: 18px;
 		background: var(--total-bg);
 		color: var(--total-text);

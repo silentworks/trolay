@@ -36,8 +36,18 @@
 	--toast-error-text: #ffffff;
 
 	--radius: 14px;
+	/* Never less than 44px, whatever the density. */
 	--tap: 48px;
 	--gutter: 16px;
+	/* Spacing, scaled by the density chosen in Settings › Appearance (src/lib/appearance.ts):
+	   1 is Comfortable, the default. */
+	--density: 1;
+	--space-1: calc(4px * var(--density));
+	--space-2: calc(8px * var(--density));
+	--space-3: calc(12px * var(--density));
+	--space-4: calc(16px * var(--density));
+	/* A row of a list or a form: a tap's height, and room around it that follows the density. */
+	--row-min: calc(44px + 16px * var(--density));
 	--shadow: 0 -4px 16px rgb(17 24 39 / 0.06);
 
 	font-family:
@@ -86,6 +96,15 @@
 	--toast-error-bg: #f97066;
 	--toast-error-text: #0b0f17;
 	--shadow: 0 -4px 16px rgb(0 0 0 / 0.4);
+}
+
+/* Interface density, chosen in Settings › Appearance; src/lib/appearance.ts sets data-density. */
+:root[data-density='compact'] {
+	--density: 0.6;
+}
+
+:root[data-density='spacious'] {
+	--density: 1.4;
 }
 
 /* Accent colours, chosen in Settings › Appearance; src/lib/appearance.ts sets data-accent. Blue
@@ -341,8 +360,8 @@ button {
 	grid-template-columns: fit-content(50%) minmax(0, 1fr);
 	align-items: center;
 	column-gap: 12px;
-	min-height: 60px;
-	padding: 6px 0;
+	min-height: var(--row-min);
+	padding: calc(6px * var(--density)) 0;
 	border-bottom: 1px solid var(--border);
 }
 

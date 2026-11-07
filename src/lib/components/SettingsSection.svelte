@@ -21,15 +21,17 @@
 </section>
 
 <style>
+	/* A container, so what's inside can lay itself out by the room the card has. */
 	.section {
-		padding: 16px;
+		container-type: inline-size;
+		padding: var(--space-4);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		background: var(--surface);
 	}
 
 	.section + :global(.section) {
-		margin-top: 12px;
+		margin-top: var(--space-3);
 	}
 
 	h2 {

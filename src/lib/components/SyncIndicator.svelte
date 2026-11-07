@@ -239,20 +239,19 @@
 		color: #fff;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.sync[data-phase='spin'] .arrows {
-			animation: none;
-		}
+	/* Animations off (src/lib/appearance.ts). */
+	:global(:root[data-motion='reduce']) .sync[data-phase='spin'] .arrows {
+		animation: none;
+	}
 
-		.sync[data-phase='done'] .ring {
-			animation: none;
-		}
+	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .ring {
+		animation: none;
+	}
 
-		.sync[data-phase='done'] .disc,
-		.sync[data-phase='done'] .tick {
-			animation: none;
-			scale: 1;
-			stroke-dashoffset: 0;
-		}
+	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .disc,
+	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .tick {
+		animation: none;
+		scale: 1;
+		stroke-dashoffset: 0;
 	}
 </style>

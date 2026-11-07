@@ -206,6 +206,20 @@
 	box-sizing: border-box;
 }
 
+/* Animations off: chosen in Settings › Appearance, or the phone asking for less motion
+   (src/lib/appearance.ts sets data-motion). One rule for every animation and transition, so a
+   new one can't miss it: each jumps straight to how it ends. */
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+	animation-duration: 0s !important;
+	animation-delay: 0s !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0s !important;
+	transition-delay: 0s !important;
+	scroll-behavior: auto !important;
+}
+
 html,
 body {
 	margin: 0;

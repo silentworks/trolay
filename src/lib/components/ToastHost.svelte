@@ -127,11 +127,10 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.toast,
-		.toast:popover-open {
-			transform: none;
-		}
+	/* Animations off (src/lib/appearance.ts). */
+	:global(:root[data-motion='reduce']) .toast,
+	:global(:root[data-motion='reduce']) .toast:popover-open {
+		transform: none;
 	}
 
 	.toast[data-tone='error'] {

@@ -173,3 +173,48 @@ test('the density spaces lists and sheets closer or further apart, and is kept',
 	await page.goto('/');
 	expect(await height()).toBeGreaterThan(comfortable);
 });
+
+test('with animations off nothing moves, a toast still shows, and it is kept', async ({ page }) => {
+	await page.goto('/settings/appearance');
+	const motion = () => page.evaluate(() => document.documentElement.dataset.motion);
+	const animations = page.getByRole('switch', { name: 'Animations' });
+	await expect(animations).toBeChecked();
+	await expect(animations).toHaveAccessibleDescription('Enable smooth transitions and animations.');
+	expect(await motion()).toBe('full');
+
+	await animations.click();
+	await expect(animations).not.toBeChecked();
+	expect(await motion()).toBe('reduce');
+	await page.reload();
+	await expect(animations).not.toBeChecked();
+	expect(await motion()).toBe('reduce');
+
+	// Leaving an empty store says so in a toast: it shows, without sliding or fading in.
+	await page.goto('/');
+	await page.getByRole('button', { name: /^No stores yet/ }).click();
+	await page.getByLabel('Store name').fill('Tesco');
+	await page.getByRole('button', { name: 'Add store and start trip' }).click();
+	await page.getByRole('button', { name: 'Menu' }).click();
+	await page.getByRole('navigation', { name: 'Menu' }).getByText('Leave store').click();
+	const toast = page.getByRole('group', { name: 'Message' });
+	await expect(toast).toBeVisible();
+	expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+	expect(await toast.evaluate((el) => getComputedStyle(el).transitionDuration)).toMatch(/^0s/);
+});
+
+test.describe('on a phone that asks for less motion', () => {
+	test.use({ reducedMotion: 'reduce' });
+
+	test('animations start off, following the phone, until turned on', async ({ page }) => {
+		await page.goto('/settings/appearance');
+		const animations = page.getByRole('switch', { name: 'Animations' });
+		await expect(animations).not.toBeChecked();
+		await expect(page.getByText("Following your phone's setting.")).toBeVisible();
+		expect(await page.evaluate(() => document.documentElement.dataset.motion)).toBe('reduce');
+
+		await animations.click();
+		await expect(animations).toBeChecked();
+		await expect(page.getByText("Following your phone's setting.")).toBeHidden();
+		expect(await page.evaluate(() => document.documentElement.dataset.motion)).toBe('full');
+	});
+});

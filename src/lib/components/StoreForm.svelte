@@ -132,6 +132,9 @@
 <style>
 	.form-row > .with-info {
 		color: var(--muted);
+	}
+
+	.form-row > .with-info > :is(label, span) {
 		white-space: nowrap;
 	}
 
@@ -145,8 +148,10 @@
 		text-align-last: right;
 	}
 
+	/* Under the row, smaller, and read from the start like the label. */
 	.hint {
 		color: var(--muted);
-		font-size: 0.9rem;
+		font-size: 0.8rem;
+		text-align: left;
 	}
 </style>

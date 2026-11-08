@@ -20,6 +20,17 @@ const migrate = spawnSync(wrangler, ['d1', 'migrations', 'apply', 'DB', '--local
 });
 if (migrate.status !== 0) process.exit(1);
 
-const worker = spawn(wrangler, ['dev', '--port', port, ...persist], { stdio: 'inherit' });
+// Feedback, locally: Turnstile's test secret passes every token from its test site key (the
+// app's default), and the email binding only keeps what it is given, so these addresses are
+// never written to.
+const feedback = [
+	'TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA',
+	'FEEDBACK_TO:feedback@trolay.test',
+	'FEEDBACK_FROM:app@trolay.test'
+].flatMap((pair) => ['--var', pair]);
+
+const worker = spawn(wrangler, ['dev', '--port', port, ...persist, ...feedback], {
+	stdio: 'inherit'
+});
 worker.on('exit', (code) => process.exit(code ?? 0));
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => worker.kill(signal));

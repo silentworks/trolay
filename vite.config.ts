@@ -78,8 +78,10 @@ export default defineConfig({
 				mode: 'hash',
 				directives: {
 					'default-src': ['self'],
-					// The label reader and barcode reader run WebAssembly.
-					'script-src': ['self', 'wasm-unsafe-eval'],
+					// The label reader and barcode reader run WebAssembly. Turnstile, the feedback form's
+					// bot check, is a script and a frame from Cloudflare.
+					'script-src': ['self', 'wasm-unsafe-eval', 'https://challenges.cloudflare.com'],
+					'frame-src': ['https://challenges.cloudflare.com'],
 					'worker-src': ['self', 'blob:'],
 					// Svelte sets style attributes (style:width and the like).
 					'style-src': ['self', 'unsafe-inline'],

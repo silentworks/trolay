@@ -70,6 +70,11 @@
 					icon: ['M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2Z', 'M4 19V5', 'M18 19v2H6']
 				},
 				{
+					label: 'Send feedback',
+					href: resolve('/settings/feedback'),
+					icon: ['M4 5h16v11H10l-4.5 4v-4H4Z', 'M8 9.5h8', 'M8 12.5h5']
+				},
+				{
 					label: 'About Trolay',
 					href: resolve('/settings/about'),
 					icon: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z', 'M12 11v5', 'M12 8h.01']

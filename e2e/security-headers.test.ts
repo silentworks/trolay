@@ -28,7 +28,10 @@ test('the page refuses framing, and nothing the app does breaks its content poli
 	const built = readFileSync('build/index.html', 'utf8');
 	const meta = /<meta http-equiv="content-security-policy" content="([^"]+)"/.exec(built)?.[1];
 	for (const policy of [meta, headers['content-security-policy']]) {
-		expect(policy).toContain("script-src 'self' 'wasm-unsafe-eval' 'sha256-");
+		expect(policy).toContain(
+			"script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com 'sha256-"
+		);
+		expect(policy).toContain('frame-src https://challenges.cloudflare.com');
 		expect(policy).toContain("object-src 'none'");
 	}
 

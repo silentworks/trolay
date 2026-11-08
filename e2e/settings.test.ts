@@ -27,7 +27,11 @@ test('Settings lists its pages, with what each is set to', async ({ page }) => {
 		'Stores'
 	]);
 	const help = page.getByRole('region', { name: 'Help' });
-	await expect(help.getByRole('link')).toHaveText(['Getting started guide', 'About Trolay']);
+	await expect(help.getByRole('link')).toHaveText([
+		'Getting started guide',
+		'Send feedback',
+		'About Trolay'
+	]);
 
 	await page.getByRole('link', { name: 'Back to Trolley' }).click();
 	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
@@ -39,6 +43,7 @@ test('each row opens its page, and its back button returns to Settings', async (
 		['Account & sync', 'Account & sync'],
 		['Appearance', 'Appearance'],
 		['Backup & restore', 'Backup & restore'],
+		['Send feedback', 'Send feedback'],
 		['About Trolay', 'About Trolay']
 	]) {
 		await page.getByRole('link', { name: new RegExp(`^${row}`) }).click();

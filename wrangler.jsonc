@@ -25,6 +25,10 @@
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["TripRoom"] }],
 	// Label photos on a shared open trip (create it with `wrangler r2 bucket create trolay-photos`).
 	"r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "trolay-photos" }],
+	// Feedback from Settings is emailed (worker/feedback.ts) through Cloudflare Email Service. It
+	// also needs FEEDBACK_TO and FEEDBACK_FROM (vars) and TURNSTILE_SECRET_KEY (a secret); until
+	// they're set, /api/feedback answers 503. Local `wrangler dev` keeps each email, unsent.
+	"send_email": [{ "name": "EMAIL" }],
 	// Branch previews (`wrangler preview`, which Workers Builds runs for every branch but main) do
 	// NOT inherit anything above: a binding left out here does not exist in a preview, and the API
 	// answers 500 to anything that touches the database. So a preview gets the bindings below, and

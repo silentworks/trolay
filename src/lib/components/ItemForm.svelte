@@ -570,23 +570,6 @@
 		background: var(--warning-bg);
 	}
 
-	.lookup-hint {
-		color: var(--muted);
-		font-size: 0.9rem;
-	}
-
-	.checked-hint {
-		color: var(--accent);
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
-	.check-hint {
-		color: var(--warning-text);
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
 	.photo img {
 		display: block;
 		width: 100%;

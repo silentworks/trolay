@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { BASE } from './global-setup';
+import { menu } from './shared';
 
 const root = (page: Page, name: string) =>
 	page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
@@ -82,6 +83,20 @@ test.describe('at the largest text size on a narrow phone', () => {
 		expect(await root(page, 'font-size')).toBe('22.95px');
 		expect(await overflowing(page), 'start screen').toEqual([]);
 
+		// The getting started guide's form steps, left before it makes anything.
+		await page.goto('/welcome');
+		await page.getByRole('button', { name: 'Get started' }).click();
+		await page.getByLabel('Store name').fill('Sainsbury’s Local');
+		await page.getByLabel(/Branch or location/).fill('Watford High Street');
+		expect(await overflowing(page), 'guide: store').toEqual([]);
+		await page.getByRole('button', { name: 'Next' }).click();
+		await expect(page.getByLabel('Sales tax rate (%)')).toBeVisible();
+		expect(await overflowing(page), 'guide: sales tax').toEqual([]);
+		await page.getByRole('button', { name: 'Next' }).click();
+		await expect(page.getByLabel(/^Budget/)).toBeVisible();
+		expect(await overflowing(page), 'guide: budget').toEqual([]);
+		await page.goto('/');
+
 		await page.getByRole('button', { name: /^No stores yet/ }).click();
 		await page.getByLabel('Store name').fill('Sainsbury’s Local');
 		await page.getByLabel(/Branch or location/).fill('Watford High Street');
@@ -98,11 +113,30 @@ test.describe('at the largest text size on a narrow phone', () => {
 		await expect(add).toBeHidden();
 		expect(await overflowing(page), 'trolley').toEqual([]);
 
+		await page.getByRole('button', { name: 'Set a budget' }).click();
+		await expect(page.getByRole('dialog', { name: 'Trip budget' })).toBeVisible();
+		expect(await overflowing(page), 'budget sheet').toEqual([]);
+		await page.keyboard.press('Escape');
+		for (const [entry, sheet] of [
+			['Add discount', 'Discount'],
+			['Finish trip', 'Finish trip']
+		]) {
+			await menu(page, entry);
+			await expect(page.getByRole('dialog', { name: sheet })).toBeVisible();
+			expect(await overflowing(page), `${sheet} sheet`).toEqual([]);
+			await page.keyboard.press('Escape');
+			await expect(page.getByRole('dialog', { name: sheet })).toBeHidden();
+		}
+
 		for (const path of ['/settings', '/settings/appearance', '/stores', '/history']) {
 			await page.goto(path);
 			await page.waitForLoadState('networkidle');
 			expect(await overflowing(page), path).toEqual([]);
 		}
+		// Turnstile keeps talking on the feedback form, so the network is never quiet there.
+		await page.goto('/settings/feedback');
+		await expect(page.getByRole('heading', { name: 'Send feedback', level: 1 })).toBeVisible();
+		expect(await overflowing(page), 'feedback form').toEqual([]);
 	});
 });
 

@@ -131,10 +131,6 @@
 </form>
 
 <style>
-	.form-row > .with-info {
-		color: var(--muted);
-	}
-
 	.rate {
 		max-width: 7rem;
 		font-variant-numeric: tabular-nums;
@@ -143,12 +139,5 @@
 	/* A select's own text sits at the start; line it up with the other values. */
 	.form-row :global(.currency) {
 		text-align-last: right;
-	}
-
-	/* Under the row, smaller, and read from the start like the label. */
-	.hint {
-		color: var(--muted);
-		font-size: 0.8rem;
-		text-align: left;
 	}
 </style>

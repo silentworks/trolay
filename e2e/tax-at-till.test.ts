@@ -12,7 +12,9 @@ test.describe('on a US phone', () => {
 		await page.getByLabel('Store name').fill('Target');
 		await page.getByRole('button', { name: 'Next' }).click();
 
-		await expect(page.getByLabel('No, tax is added at the till')).toBeChecked();
+		await expect(
+			page.getByRole('switch', { name: 'Shelf prices include sales tax' })
+		).toHaveAttribute('aria-checked', 'false');
 		await expect(page.getByLabel('Sales tax rate (%)')).toHaveValue('0');
 		await expect(page.getByText('Sales tax depends on where you shop.')).toBeVisible();
 		await page.getByLabel('Sales tax rate (%)').fill('8');

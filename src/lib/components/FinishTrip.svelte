@@ -93,42 +93,46 @@
 		</div>
 	</dl>
 
-	<div class="field">
-		<div class="with-info">
-			<label for="{uid}-receipt">{amountLabel('Receipt total', currency)}</label>
-			<InfoTip title="Receipt total">
-				<p>
-					The total printed on the till receipt. You need it to finish the trip, and Trolay checks
-					it against its own total.
+	<div class="form-rows">
+		<div class="form-row">
+			<div class="with-info">
+				<label for="{uid}-receipt">{amountLabel('Receipt total', currency)}</label>
+				<InfoTip title="Receipt total">
+					<p>
+						The total printed on the till receipt. You need it to finish the trip, and Trolay checks
+						it against its own total.
+					</p>
+				</InfoTip>
+			</div>
+			<input
+				id="{uid}-receipt"
+				class="input form-value amount"
+				bind:value
+				oninput={() => (read = undefined)}
+				onchange={save}
+				inputmode="decimal"
+				autocomplete="off"
+				placeholder={minorToInput(0)}
+				aria-invalid={invalid}
+				aria-describedby="{uid}-difference"
+			/>
+			{#if read === 'reading'}
+				<p class="lookup-hint" role="status">Reading the receipt…</p>
+			{:else if read === 'confirmed'}
+				<p class="checked-hint" role="status">
+					✓ Read from the photo, and the card and cash lines add up to it. Check it matches.
 				</p>
-			</InfoTip>
+			{:else if read === 'filled'}
+				<p class="checked-hint" role="status">Read from the photo. Check it matches the receipt.</p>
+			{:else if read === 'unreadable'}
+				<p class="check-hint" role="status">Couldn't read the total. Please type it.</p>
+			{/if}
 		</div>
-		<input
-			id="{uid}-receipt"
-			class="input"
-			bind:value
-			oninput={() => (read = undefined)}
-			onchange={save}
-			inputmode="decimal"
-			autocomplete="off"
-			aria-invalid={invalid}
-			aria-describedby="{uid}-difference"
-		/>
-		{#if read === 'reading'}
-			<p class="read" role="status">Reading the receipt…</p>
-		{:else if read === 'confirmed'}
-			<p class="read" role="status">
-				✓ Read from the photo, and the card and cash lines add up to it. Check it matches.
-			</p>
-		{:else if read === 'filled'}
-			<p class="read" role="status">Read from the photo. Check it matches the receipt.</p>
-		{:else if read === 'unreadable'}
-			<p class="read unreadable" role="status">Couldn't read the total. Please type it.</p>
-		{/if}
-		<button class="btn" type="button" disabled={read === 'reading'} onclick={() => (camera = true)}>
-			📷 Read the receipt
-		</button>
 	</div>
+
+	<button class="btn" type="button" disabled={read === 'reading'} onclick={() => (camera = true)}>
+		📷 Read the receipt
+	</button>
 
 	<p class="difference" id="{uid}-difference" aria-live="polite" data-match={difference === 0}>
 		{#if invalid}
@@ -198,18 +202,14 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	.field {
+	/* The rows' own space below is taken by the form's gap. */
+	.form-rows {
 		margin: 0;
 	}
 
-	.read {
-		margin: 0;
-		color: var(--accent);
-		font-size: 0.9rem;
-	}
-
-	.read.unreadable {
-		color: var(--warning-text);
+	.amount {
+		max-width: 9rem;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.difference {

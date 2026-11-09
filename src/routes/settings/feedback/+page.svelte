@@ -216,62 +216,75 @@
 	<p class="intro">Tell us what you think: an idea, a problem, anything. We read every message.</p>
 
 	<form onsubmit={send} novalidate>
-		<fieldset class="field">
-			<legend class="label">What’s it about?</legend>
-			<div class="topics">
-				{#each TOPICS as value (value)}
-					<label class="topic">
-						<input type="radio" name="topic" {value} bind:group={topic} />
-						<span>{value}</span>
-					</label>
-				{/each}
+		<div class="form-rows">
+			<div class="form-row form-row-wide">
+				<span id="{uid}-topic">What’s it about?</span>
+				<div class="segmented" role="radiogroup" aria-labelledby="{uid}-topic">
+					{#each TOPICS as value (value)}
+						<label>
+							<input type="radio" name="topic" {value} bind:group={topic} />
+							{value}
+						</label>
+					{/each}
+				</div>
 			</div>
-		</fieldset>
 
-		<div class="field">
-			<label for="{uid}-message">Message</label>
-			<textarea
-				id="{uid}-message"
-				class="input"
-				rows="6"
-				maxlength={MAX_MESSAGE}
-				bind:value={message}
-				aria-invalid={tried && !!messageProblem}
-				aria-describedby="{uid}-message-note"></textarea>
-			<p class="note" id="{uid}-message-note">
+			<div class="form-row form-row-wide">
+				<label for="{uid}-message">Message</label>
+				<textarea
+					id="{uid}-message"
+					class="input"
+					rows="6"
+					maxlength={MAX_MESSAGE}
+					bind:value={message}
+					aria-invalid={tried && !!messageProblem}
+					aria-describedby="{uid}-message-note"></textarea>
 				{#if tried && messageProblem}
-					<span class="problem">{messageProblem}</span>
+					<p class="problem" id="{uid}-message-note">{messageProblem}</p>
 				{:else if length >= COUNT_FROM}
-					<span>{(MAX_MESSAGE - length).toLocaleString()} characters left</span>
+					<p class="count" id="{uid}-message-note">
+						{(MAX_MESSAGE - length).toLocaleString()} characters left
+					</p>
 				{/if}
-			</p>
-		</div>
+			</div>
 
-		<div class="field">
-			<label for="{uid}-email">Your email <span class="optional">(optional)</span></label>
-			<input
-				id="{uid}-email"
-				class="input"
-				type="email"
-				autocomplete="email"
-				inputmode="email"
-				bind:value={email}
-				aria-invalid={tried && !!emailProblem}
-				aria-describedby="{uid}-email-hint"
-			/>
-			<p class="hint" id="{uid}-email-hint">
+			<div class="form-row">
+				<label for="{uid}-email">Your email <span class="visually-hidden">(optional)</span></label>
+				<input
+					id="{uid}-email"
+					class="input form-value"
+					type="email"
+					autocomplete="email"
+					inputmode="email"
+					placeholder="Optional"
+					bind:value={email}
+					aria-invalid={tried && !!emailProblem}
+					aria-describedby="{uid}-email-hint"
+				/>
 				{#if tried && emailProblem}
-					<span class="problem">{emailProblem}</span>
+					<p class="problem" id="{uid}-email-hint">{emailProblem}</p>
 				{:else}
-					Only if you’d like a reply. It’s used to answer this message and nothing else.
+					<p class="hint" id="{uid}-email-hint">
+						Only if you’d like a reply. It’s used to answer this message and nothing else.
+					</p>
 				{/if}
-			</p>
+			</div>
+
+			<div class="form-row">
+				<span aria-hidden="true">Phone details</span>
+				<button
+					class="toggle-pill"
+					type="button"
+					role="switch"
+					aria-checked={includeDetails}
+					aria-label="Include details about my phone"
+					onclick={() => (includeDetails = !includeDetails)}
+				>
+					{includeDetails ? 'Included' : 'Left out'}
+				</button>
+			</div>
 		</div>
 
-		<label class="check">
-			<input type="checkbox" bind:checked={includeDetails} />
-			Include details about my phone
-		</label>
 		<details class="sent">
 			<summary>What’s sent</summary>
 			{#if includeDetails}
@@ -327,60 +340,6 @@
 		color: var(--muted);
 	}
 
-	fieldset {
-		margin: 0 0 16px;
-		padding: 0;
-		border: none;
-	}
-
-	legend {
-		margin-bottom: 6px;
-		padding: 0;
-	}
-
-	/* Three choices side by side; they wrap at large text sizes. */
-	.topics {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.topic {
-		position: relative;
-		flex: 1 1 auto;
-	}
-
-	.topic input {
-		position: absolute;
-		opacity: 0;
-		inset: 0;
-		margin: 0;
-	}
-
-	.topic span {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: var(--tap);
-		padding: 0 14px;
-		border: 1px solid var(--control-border);
-		border-radius: var(--radius);
-		background: var(--surface);
-		font-weight: 600;
-		text-align: center;
-	}
-
-	.topic input:checked + span {
-		border-color: var(--accent);
-		background: var(--accent-soft);
-		color: var(--accent-soft-text);
-	}
-
-	.topic input:focus-visible + span {
-		outline: 3px solid var(--focus);
-		outline-offset: 2px;
-	}
-
 	textarea.input {
 		padding: 10px 14px;
 		resize: vertical;
@@ -389,34 +348,13 @@
 		line-height: 1.4;
 	}
 
-	.note {
-		min-height: 1.2em;
-		margin: 0;
+	.count {
 		color: var(--muted);
-		font-size: 0.9rem;
-		text-align: right;
-	}
-
-	.hint {
-		margin: 0;
-	}
-
-	.problem {
-		color: var(--danger-text);
-	}
-
-	.note .problem {
-		display: block;
-		text-align: left;
-	}
-
-	.optional {
-		color: var(--muted);
-		font-weight: 400;
+		font-size: 0.85rem;
 	}
 
 	.sent {
-		margin: 4px 0 16px 36px;
+		margin: -8px 0 16px;
 		color: var(--muted);
 		font-size: 0.9rem;
 	}

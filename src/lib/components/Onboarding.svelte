@@ -5,7 +5,7 @@
 	import { addStore } from '#lib/data/stores.ts';
 	import { startTrip } from '#lib/data/trips.ts';
 	import {
-		currencySymbol,
+		amountLabel,
 		formatPercent,
 		minorToInput,
 		parsePercent,
@@ -150,67 +150,100 @@
 				Trips are kept per store, so you can see what you spent at each one and pick the store
 				quickly next time.
 			</p>
-			<div class="field">
-				<label for="{uid}-name">Store name</label>
-				<input
-					id="{uid}-name"
-					class="input"
-					bind:value={name}
-					required
-					autocomplete="off"
-					aria-invalid={error !== ''}
-				/>
-			</div>
-			<div class="field">
-				<label for="{uid}-branch">Branch or location <span class="hint">(optional)</span></label>
-				<input id="{uid}-branch" class="input" bind:value={branch} autocomplete="off" />
-			</div>
-			<div class="field">
-				<label for="{uid}-currency">Currency</label>
-				<CurrencySelect id="{uid}-currency" bind:value={currency} />
-				<span class="hint">Guessed from your phone's region. Prices show in it.</span>
+			<div class="form-rows">
+				<div class="form-row">
+					<label for="{uid}-name">Store name</label>
+					<input
+						id="{uid}-name"
+						class="input form-value"
+						bind:value={name}
+						required
+						autocomplete="off"
+						aria-invalid={error !== ''}
+					/>
+				</div>
+				<div class="form-row">
+					<label for="{uid}-branch"
+						>Branch or location <span class="visually-hidden">(optional)</span></label
+					>
+					<input
+						id="{uid}-branch"
+						class="input form-value"
+						bind:value={branch}
+						autocomplete="off"
+					/>
+				</div>
+				<div class="form-row">
+					<label for="{uid}-currency">Currency</label>
+					<CurrencySelect
+						id="{uid}-currency"
+						class="form-value currency"
+						bind:value={currency}
+						aria-describedby="{uid}-currency-hint"
+					/>
+					<p class="hint" id="{uid}-currency-hint">
+						Guessed from your phone's region. Prices show in it.
+					</p>
+				</div>
 			</div>
 		{:else if step === 'tax'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Sales tax at {name.trim()}</h2>
-			<fieldset class="choice">
-				<legend>Do shelf prices include sales tax?</legend>
-				<label class="check">
-					<input type="radio" name="{uid}-includes" bind:group={pricesIncludeTax} value={true} />
-					Yes, the price on the shelf is what I pay
-				</label>
-				<label class="check">
-					<input type="radio" name="{uid}-includes" bind:group={pricesIncludeTax} value={false} />
-					No, tax is added at the till
-				</label>
-			</fieldset>
-			<div class="field">
-				<label for="{uid}-rate">Sales tax rate (%)</label>
-				<input id="{uid}-rate" class="input" bind:value={rate} inputmode="decimal" />
-				<span class="hint">
-					{hint ?? "Guessed from your phone's region, so you can usually keep it."}
-				</span>
+			<div class="form-rows">
+				<div class="form-row">
+					<span aria-hidden="true">Shelf prices</span>
+					<button
+						class="toggle-pill"
+						type="button"
+						role="switch"
+						aria-checked={pricesIncludeTax}
+						aria-label="Shelf prices include sales tax"
+						aria-describedby="{uid}-includes-hint"
+						onclick={() => (pricesIncludeTax = !pricesIncludeTax)}
+					>
+						{pricesIncludeTax ? 'Include tax' : 'Tax at the till'}
+					</button>
+					<p class="hint" id="{uid}-includes-hint">
+						{pricesIncludeTax
+							? 'The price on the shelf is what you pay. Trolay works out how much of each price is tax, so you can see your total with and without it.'
+							: 'Tax is added at the till. Trolay adds it to your total, so it matches the receipt.'}
+					</p>
+				</div>
+				<div class="form-row">
+					<label for="{uid}-rate">Sales tax rate (%)</label>
+					<input
+						id="{uid}-rate"
+						class="input form-value rate"
+						bind:value={rate}
+						inputmode="decimal"
+						aria-invalid={error !== ''}
+						aria-describedby="{uid}-rate-hint"
+					/>
+					<p class="hint" id="{uid}-rate-hint">
+						{hint ?? "Guessed from your phone's region, so you can usually keep it."}
+					</p>
+				</div>
 			</div>
-			<p class="hint">
-				{pricesIncludeTax
-					? 'Trolay works out how much of each price is tax, so you can see your total with and without it.'
-					: 'Trolay adds the tax to your total, so it matches the receipt.'}
-			</p>
 		{:else if step === 'budget'}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>Set a budget for this trip?</h2>
 			<p class="hint">
 				Trolay shows how much of it is left as you add items. The total turns amber when you're
 				close and red once you go over. You can change it during the trip.
 			</p>
-			<div class="field">
-				<label for="{uid}-budget">Budget <span class="hint">(optional)</span></label>
-				<input
-					id="{uid}-budget"
-					class="input"
-					bind:value={budget}
-					inputmode="decimal"
-					placeholder={currencySymbol(currency || undefined) || undefined}
-					aria-invalid={readBudget() === null}
-				/>
+			<div class="form-rows">
+				<div class="form-row">
+					<label for="{uid}-budget"
+						>{amountLabel('Budget', currency || undefined)}
+						<span class="visually-hidden">(optional)</span></label
+					>
+					<input
+						id="{uid}-budget"
+						class="input form-value amount"
+						bind:value={budget}
+						inputmode="decimal"
+						placeholder={minorToInput(0)}
+						aria-invalid={readBudget() === null}
+					/>
+				</div>
 			</div>
 		{:else}
 			<h2 id="{uid}-heading" tabindex="-1" bind:this={heading}>How a trip works</h2>
@@ -319,16 +352,14 @@
 		justify-self: center;
 	}
 
-	.choice {
-		display: grid;
-		gap: 8px;
-		margin: 0 0 16px;
-		padding: 0;
-		border: none;
+	.rate,
+	.amount {
+		max-width: 9rem;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.choice legend {
-		margin-bottom: 8px;
-		font-weight: 600;
+	/* A select's own text sits at the start; line it up with the other values. */
+	.form-row :global(.currency) {
+		text-align-last: right;
 	}
 </style>

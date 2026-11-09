@@ -247,6 +247,17 @@ The app is served as Workers static assets, configured in `wrangler.jsonc`. The 
    different Cloudflare account needs its own: create one and replace the id.
 3. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
    HTTPS is required for the camera and the service worker.
+4. Feedback from Settings (`worker/feedback.ts`) needs, once:
+   - **Email Sending** turned on for `trolay.com` (SPF and DKIM), which `FEEDBACK_FROM` in
+     `wrangler.jsonc` sends from.
+   - A **Turnstile widget** (managed, for `shopping.trolay.com` and `localhost`). Its site key is
+     public and is in `src/lib/turnstile.ts`, used on that domain only; its secret key is a Worker secret:
+     `pnpm exec wrangler secret put TURNSTILE_SECRET_KEY`.
+   - **Where feedback goes**, also a secret so the address stays out of this repo:
+     `pnpm exec wrangler secret put FEEDBACK_TO`.
+
+   Until both secrets are set, sending feedback answers 503 and the form says it couldn't be
+   sent. Test only with our own real inbox: mail to made-up addresses bounces and harms delivery.
 
 To deploy by hand: `pnpm build && pnpm db:migrate:remote && pnpm exec wrangler deploy` (after `pnpm exec wrangler login`).
 
@@ -257,8 +268,9 @@ for a file.
 
 The page's Content-Security-Policy is a `<meta>` that SvelteKit writes into `index.html`
 (`kit.csp` in `vite.config.ts`, with the hash of its own start-up script): scripts from the site
-only, plus WebAssembly for the label and barcode readers; network calls to the site and Open Food
-Facts only; no plugins. `static/_headers` adds what a `<meta>` can't: `frame-ancestors 'none'`
+only, plus WebAssembly for the label and barcode readers and Turnstile's script and frame from
+`challenges.cloudflare.com` for the feedback form; network calls to the site and Open Food Facts
+only; no plugins. `static/_headers` adds what a `<meta>` can't: `frame-ancestors 'none'`
 and `X-Frame-Options: DENY`, so no other site can frame the app, with `nosniff` and
 `Referrer-Policy: same-origin`. The API's answers carry `nosniff` as well. Anything new the app
 loads from elsewhere needs adding to the policy; `e2e/security-headers.test.ts` fails on any

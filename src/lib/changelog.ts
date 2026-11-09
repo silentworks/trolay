@@ -22,6 +22,10 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.08',
+		added: ['Send feedback: tell us an idea or a problem, from Settings › Help.']
+	},
+	{
 		version: '2026.11.07',
 		added: [
 			"What's new: after an update, see what changed. It's in Settings › About too.",

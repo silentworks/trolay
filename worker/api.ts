@@ -8,6 +8,7 @@ import {
 	registrationVerify
 } from './auth/passkeys.ts';
 import type { Env } from './env.ts';
+import { sendFeedback } from './feedback.ts';
 import { BadRequest, error, json } from './http.ts';
 import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
@@ -33,6 +34,7 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/login/verify': { POST: loginVerify },
 	'/api/auth/logout': { POST: logout },
 	'/api/auth/logout-everywhere': { POST: logoutEverywhere },
+	'/api/feedback': { POST: sendFeedback },
 	'/api/sync/push': { POST: push },
 	'/api/sync/pull': { GET: pull },
 	'/api/trips/invite': { POST: createInvite },

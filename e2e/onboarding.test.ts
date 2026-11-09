@@ -22,7 +22,16 @@ test('the guide sets up the first store and trip, keeping what was typed on Back
 
 	await expect(page.getByRole('heading', { name: 'Sales tax at Lidl' })).toBeFocused();
 	await expect(page.getByLabel('Sales tax rate (%)')).toHaveValue('20');
-	await expect(page.getByLabel('Yes, the price on the shelf is what I pay')).toBeChecked();
+	await expect(
+		page.getByRole('switch', { name: 'Shelf prices include sales tax' })
+	).toHaveAttribute('aria-checked', 'true');
+	// The switch says which, and the line under it what Trolay will do.
+	const shelf = page.getByRole('switch', { name: 'Shelf prices include sales tax' });
+	await shelf.click();
+	await expect(shelf).toHaveText('Tax at the till');
+	await expect(page.getByText('Tax is added at the till.')).toBeVisible();
+	await shelf.click();
+	await expect(shelf).toHaveText('Include tax');
 	await page.getByRole('button', { name: 'Back' }).click();
 	await expect(page.getByLabel('Store name')).toHaveValue('Lidl');
 	await page.getByRole('button', { name: 'Next' }).click();

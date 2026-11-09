@@ -23,7 +23,7 @@ test('a discount comes off the trolley total, the receipt check and the history'
 	// 10% off.
 	await menu(page, 'Add discount');
 	const sheet = page.getByRole('dialog', { name: 'Discount' });
-	await sheet.getByRole('button', { name: 'Percent (%)' }).click();
+	await sheet.getByRole('radio', { name: 'Percent (%)' }).check();
 	await sheet.getByLabel('Discount (%)').fill('10');
 	await sheet.getByRole('button', { name: 'Save discount' }).click();
 	await expect(footer).toContainText('Discount (10%)');
@@ -32,7 +32,7 @@ test('a discount comes off the trolley total, the receipt check and the history'
 
 	// Changed to £1.50 off.
 	await menu(page, 'Change discount');
-	await sheet.getByRole('button', { name: 'Amount' }).click();
+	await sheet.getByRole('radio', { name: 'Amount' }).check();
 	await sheet.getByLabel('Discount', { exact: true }).fill('1.5');
 	await sheet.getByRole('button', { name: 'Save discount' }).click();
 	await expect(footer).toContainText('−1.50');
@@ -47,7 +47,7 @@ test('a discount comes off the trolley total, the receipt check and the history'
 
 	// Back to 10%, and the till agrees with the discounted total.
 	await menu(page, 'Change discount');
-	await sheet.getByRole('button', { name: 'Percent (%)' }).click();
+	await sheet.getByRole('radio', { name: 'Percent (%)' }).check();
 	await sheet.getByLabel('Discount (%)').fill('10');
 	await sheet.getByRole('button', { name: 'Save discount' }).click();
 	await menu(page, 'Finish trip');

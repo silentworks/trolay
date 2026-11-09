@@ -30,18 +30,28 @@
 
 <form onsubmit={submit} novalidate>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
-	<div class="field">
-		<div class="with-info">
-			<label for="{uid}-budget">{amountLabel('Budget', currency)}</label>
-			<InfoTip title="Budget">
-				<p>
-					Trolay shows how much of it is left as you add items, against your total incl. tax. The
-					bar turns amber when you're close and red once you go over.
-				</p>
-			</InfoTip>
+	<div class="form-rows">
+		<div class="form-row">
+			<div class="with-info">
+				<label for="{uid}-budget">{amountLabel('Budget', currency)}</label>
+				<InfoTip title="Budget">
+					<p>
+						Trolay shows how much of it is left as you add items, against your total incl. tax. The
+						bar turns amber when you're close and red once you go over.
+					</p>
+				</InfoTip>
+			</div>
+			<!-- svelte-ignore a11y_autofocus -->
+			<input
+				id="{uid}-budget"
+				class="input form-value amount"
+				bind:value
+				inputmode="decimal"
+				placeholder={minorToInput(0)}
+				aria-invalid={error !== ''}
+				autofocus
+			/>
 		</div>
-		<!-- svelte-ignore a11y_autofocus -->
-		<input id="{uid}-budget" class="input" bind:value inputmode="decimal" autofocus />
 	</div>
 	<button class="btn btn-primary btn-block" type="submit">Save budget</button>
 	{#if budgetMinor !== undefined}
@@ -52,6 +62,11 @@
 </form>
 
 <style>
+	.amount {
+		max-width: 9rem;
+		font-variant-numeric: tabular-nums;
+	}
+
 	.remove {
 		margin-top: 8px;
 	}

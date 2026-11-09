@@ -247,6 +247,17 @@ The app is served as Workers static assets, configured in `wrangler.jsonc`. The 
    different Cloudflare account needs its own: create one and replace the id.
 3. Buy the domain, move its DNS to Cloudflare, and add it as a custom domain on the Worker.
    HTTPS is required for the camera and the service worker.
+4. Feedback from Settings (`worker/feedback.ts`) needs, once:
+   - **Email Sending** turned on for `trolay.com` (SPF and DKIM), which `FEEDBACK_FROM` in
+     `wrangler.jsonc` sends from.
+   - A **Turnstile widget** (managed, for `shopping.trolay.com` and `localhost`). Its site key is
+     public and goes in `src/lib/turnstile.ts`; its secret key is a Worker secret:
+     `pnpm exec wrangler secret put TURNSTILE_SECRET_KEY`.
+   - **Where feedback goes**, also a secret so the address stays out of this repo:
+     `pnpm exec wrangler secret put FEEDBACK_TO`.
+
+   Until both secrets are set, sending feedback answers 503 and the form says it couldn't be
+   sent. Test only with our own real inbox: mail to made-up addresses bounces and harms delivery.
 
 To deploy by hand: `pnpm build && pnpm db:migrate:remote && pnpm exec wrangler deploy` (after `pnpm exec wrangler login`).
 

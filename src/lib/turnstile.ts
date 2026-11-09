@@ -2,13 +2,23 @@
 // form opens, from the one address Turnstile supports (allowed by the page's
 // Content-Security-Policy in vite.config.ts); the challenge runs in its own frame.
 
+/** The production widget ("Trolay feedback"), allowed on the app's domain. Public by design. */
+const PRODUCTION_KEY = '0x4AAAAAAF6Xkj4VbsG8335V';
+export const PRODUCTION_HOST = 'shopping.trolay.com';
 /**
- * The widget's site key, public by design. Without one set at build time this is Turnstile's
- * test key, whose every token passes Turnstile's test secret (used by local development and the
- * end-to-end tests) and fails a real one, so a build that forgot it sends nothing.
+ * Turnstile's test key: its every token passes Turnstile's test secret, which local development
+ * and the end-to-end tests run with (scripts/dev-api.js), and fails the real one. Branch previews
+ * use it too, and have no email set up, so they never send.
  */
-export const SITE_KEY: string =
-	import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+const TEST_KEY = '1x00000000000000000000AA';
+
+/** The real widget on the app's own domain; the test widget everywhere else. */
+export function siteKey(hostname: string): string {
+	return (
+		import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+		(hostname === PRODUCTION_HOST ? PRODUCTION_KEY : TEST_KEY)
+	);
+}
 
 const SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 

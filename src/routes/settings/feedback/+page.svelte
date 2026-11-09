@@ -21,7 +21,7 @@
 	import { install } from '#lib/install.svelte.ts';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { toast } from '#lib/toast.svelte.ts';
-	import { loadTurnstile, SITE_KEY, type Turnstile } from '#lib/turnstile.ts';
+	import { loadTurnstile, siteKey, type Turnstile } from '#lib/turnstile.ts';
 
 	const uid = $props.id();
 
@@ -126,7 +126,7 @@
 				if (gone) return;
 				turnstile = loaded;
 				widgetId = loaded.render(container, {
-					sitekey: SITE_KEY,
+					sitekey: siteKey(location.hostname),
 					theme,
 					size: 'flexible',
 					callback: (value) => {

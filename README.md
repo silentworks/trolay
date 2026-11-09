@@ -251,7 +251,7 @@ The app is served as Workers static assets, configured in `wrangler.jsonc`. The 
    - **Email Sending** turned on for `trolay.com` (SPF and DKIM), which `FEEDBACK_FROM` in
      `wrangler.jsonc` sends from.
    - A **Turnstile widget** (managed, for `shopping.trolay.com` and `localhost`). Its site key is
-     public and goes in `src/lib/turnstile.ts`; its secret key is a Worker secret:
+     public and is in `src/lib/turnstile.ts`, used on that domain only; its secret key is a Worker secret:
      `pnpm exec wrangler secret put TURNSTILE_SECRET_KEY`.
    - **Where feedback goes**, also a secret so the address stays out of this repo:
      `pnpm exec wrangler secret put FEEDBACK_TO`.

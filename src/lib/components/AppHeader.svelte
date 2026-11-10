@@ -199,6 +199,13 @@
 		justify-content: start;
 	}
 
+	/* A centred title keeps to the middle: as much room before it as the sync icon's slot after. */
+	.bar:not(.start) .heading:has(> :global(.sync))::before {
+		content: '';
+		flex: none;
+		width: 36px;
+	}
+
 	.title {
 		min-width: 0;
 		display: grid;

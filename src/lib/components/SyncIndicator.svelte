@@ -8,9 +8,14 @@
 	const MIN_SPIN_MS = 700;
 	// How long the green tick stays once a round has finished.
 	const DONE_MS = 2000;
+	// How long the tick takes to fade away (the opacity transition below).
+	const LEAVE_MS = 300;
 
-	/** spin: a round is running; done: one has just finished; rest: neither. */
-	let phase = $state<'rest' | 'spin' | 'done'>('rest');
+	/**
+	 * spin: a round is running; done: one has just finished, with a tick; leaving: the tick fading
+	 * away; rest: neither, and the icon is hidden unless the last round failed.
+	 */
+	let phase = $state<'rest' | 'spin' | 'done' | 'leaving'>('rest');
 	let spunAt = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -23,10 +28,16 @@
 				phase = 'spin';
 			} else if (phase === 'spin') {
 				const ok = status === 'synced';
+				// Only the latest ending counts, if the status moves on more than once.
+				clearTimeout(timer);
 				timer = setTimeout(
 					() => {
-						phase = ok ? 'done' : 'rest';
-						if (ok) timer = setTimeout(() => (phase = 'rest'), DONE_MS);
+						if (!ok) return (phase = 'rest');
+						phase = 'done';
+						timer = setTimeout(() => {
+							phase = 'leaving';
+							timer = setTimeout(() => (phase = 'rest'), LEAVE_MS);
+						}, DONE_MS);
 					},
 					Math.max(0, MIN_SPIN_MS - (Date.now() - spunAt))
 				);
@@ -36,15 +47,24 @@
 
 	$effect(() => () => clearTimeout(timer));
 
+	/** A failed round keeps the icon up, in red, until a round goes through (even with no signal). */
+	const failed = $derived(syncEngine.failed && phase === 'rest');
+	const shown = $derived((phase !== 'rest' && phase !== 'leaving') || failed);
+
 	const message = $derived(syncMessage(syncEngine));
 </script>
 
 {#if syncEngine.status !== 'off'}
+	<!--
+		Always in the header while signed in, so the title never moves; hidden (and out of reach of
+		taps, Tab and screen readers) while nothing is happening.
+	-->
 	<a
 		class="sync"
+		class:shown
 		href={resolve('/settings/account')}
 		data-phase={phase}
-		data-status={syncEngine.status}
+		data-failed={failed || undefined}
 		aria-label="Sync details"
 	>
 		<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -60,28 +80,47 @@
 			<circle class="disc" cx="12" cy="12" r="10" />
 			<path class="tick" d="m7.5 12.3 3 3 6-6.3" pathLength="1" />
 		</svg>
-		{#if syncEngine.status === 'pending' || syncEngine.status === 'error'}
-			<span class="badge" aria-hidden="true">{syncEngine.status === 'error' ? '!' : ''}</span>
-		{/if}
+		{#if failed}<span class="badge" aria-hidden="true">!</span>{/if}
 	</a>
+	<!-- Beside the icon, not in it, so changes are still read out while it's hidden. -->
 	<span class="visually-hidden" role="status">{message}</span>
 {/if}
 
 <style>
+	/*
+	 * A small icon, the size of the title's text, in a slot 36px wide; the tap reaches 4px either
+	 * side, to 44px, without crowding the title.
+	 */
 	.sync {
 		position: relative;
 		display: grid;
 		place-items: center;
 		flex: none;
 		width: 36px;
-		height: 36px;
-		border-radius: 50%;
+		height: var(--tap);
 		color: var(--muted);
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 0.3s ease,
+			visibility 0s 0.3s;
+	}
+
+	.sync::before {
+		content: '';
+		position: absolute;
+		inset: 0 -4px;
+	}
+
+	.sync.shown {
+		opacity: 1;
+		visibility: visible;
+		transition: opacity 0.15s ease;
 	}
 
 	svg {
-		width: 24px;
-		height: 24px;
+		width: 18px;
+		height: 18px;
 		overflow: visible;
 	}
 
@@ -99,7 +138,7 @@
 	.arrows path {
 		fill: none;
 		stroke: currentColor;
-		stroke-width: 2.2;
+		stroke-width: 2.4;
 		stroke-linecap: round;
 	}
 
@@ -118,7 +157,7 @@
 	.ring {
 		fill: none;
 		stroke: var(--accent);
-		stroke-width: 2.2;
+		stroke-width: 2.4;
 		opacity: 0;
 	}
 
@@ -130,7 +169,7 @@
 	.tick {
 		fill: none;
 		stroke: var(--on-success);
-		stroke-width: 2.4;
+		stroke-width: 2.8;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 		stroke-dasharray: 1;
@@ -152,21 +191,24 @@
 		}
 	}
 
-	/* Done: the arrows close into a ring that turns green, fills, and a tick is drawn on it. */
-	.sync[data-phase='done'] .arrows {
+	/*
+	 * Done: the arrows close into a ring that turns green, fills, and a tick is drawn on it; it then
+	 * fades away (leaving) as it is.
+	 */
+	.sync:is([data-phase='done'], [data-phase='leaving']) .arrows {
 		opacity: 0;
 		scale: 0.9;
 	}
 
-	.sync[data-phase='done'] .ring {
+	.sync:is([data-phase='done'], [data-phase='leaving']) .ring {
 		animation: close 0.45s ease forwards;
 	}
 
-	.sync[data-phase='done'] .disc {
+	.sync:is([data-phase='done'], [data-phase='leaving']) .disc {
 		animation: fill 0.25s 0.4s ease-out forwards;
 	}
 
-	.sync[data-phase='done'] .tick {
+	.sync:is([data-phase='done'], [data-phase='leaving']) .tick {
 		animation: draw 0.3s 0.6s ease-out forwards;
 	}
 
@@ -193,63 +235,43 @@
 		}
 	}
 
-	/* No signal: greyed and struck through. */
-	.sync[data-status='offline'] svg {
-		opacity: 0.45;
-	}
-
-	.sync[data-status='offline']::after {
-		content: '';
-		position: absolute;
-		width: 26px;
-		height: 2.2px;
-		border-radius: 2px;
-		background: var(--muted);
-		rotate: -45deg;
-	}
-
-	.sync[data-status='error'] {
+	/* The last round failed: red, with a "!", until one goes through. */
+	.sync[data-failed] {
 		color: var(--danger);
 	}
 
-	/* Changes waiting (a dot), or a round that failed (!). */
 	.badge {
 		position: absolute;
-		top: 4px;
-		right: 3px;
+		top: calc(50% - 15px);
+		right: 2px;
 		display: grid;
 		place-items: center;
-		min-width: 10px;
-		height: 10px;
+		min-width: 11px;
+		height: 11px;
 		border-radius: 999px;
 		border: 2px solid var(--bg);
 		box-sizing: content-box;
-		background: var(--accent);
-		color: var(--on-accent);
-		font-size: 9px;
+		background: var(--danger);
+		color: #fff;
+		font-size: 8px;
 		font-weight: 800;
 		line-height: 1;
 	}
 
-	.sync[data-status='error'] .badge {
-		min-width: 12px;
-		height: 12px;
-		top: 2px;
-		background: var(--danger);
-		color: #fff;
-	}
-
-	/* Animations off (src/lib/appearance.ts). */
+	/* Animations off (src/lib/appearance.ts): no turning, and the tick shows at once. */
 	:global(:root[data-motion='reduce']) .sync[data-phase='spin'] .arrows {
 		animation: none;
 	}
 
-	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .ring {
+	:global(:root[data-motion='reduce']) .sync:is([data-phase='done'], [data-phase='leaving']) .ring {
 		animation: none;
+		opacity: 1;
+		stroke: var(--success);
 	}
 
-	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .disc,
-	:global(:root[data-motion='reduce']) .sync[data-phase='done'] .tick {
+	:global(:root[data-motion='reduce'])
+		.sync:is([data-phase='done'], [data-phase='leaving'])
+		:is(.disc, .tick) {
 		animation: none;
 		scale: 1;
 		stroke-dashoffset: 0;

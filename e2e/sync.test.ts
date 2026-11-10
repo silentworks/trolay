@@ -78,23 +78,64 @@ test('changes made with no signal wait, and are sent when it returns', async ({ 
 	await expect(synced(page)).toBeVisible();
 });
 
-test('the header’s sync icon turns while syncing, shows a tick, then rests', async ({
+test('the header’s sync icon shows only while syncing: it turns, shows a tick, then goes', async ({
 	browser
 }) => {
 	const page = await ownerWithTrip(browser);
 	const icon = page.getByRole('link', { name: 'Sync details' });
-	await expect(icon).toBeVisible();
+	// Nothing happening: no icon, though the status is still there to be read out.
 	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
+	await expect(icon).toBeHidden();
 
+	// Slowed a little, so the icon can be tapped while it turns.
+	await page.route('**/api/sync/push', async (route) => {
+		await new Promise((resolve) => setTimeout(resolve, 1500));
+		await route.continue();
+	});
 	await addItem(page, 'Bread', '0.95');
+	await expect(icon).toBeVisible();
 	await expect(icon).toHaveAttribute('data-phase', 'spin');
 	await expect(icon).toHaveAttribute('data-phase', 'done', { timeout: 10_000 });
 	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
-	await expect(icon).toHaveAttribute('data-phase', 'rest', { timeout: 5000 });
+	// Hidden, it's out of reach of screen readers too, so it can't be found by its role.
+	await expect(icon).toBeHidden({ timeout: 5000 });
 
 	// A tap shows the details on the Account & sync page.
+	await addItem(page, 'Jam', '1.20');
+	await expect(icon).toHaveAttribute('data-phase', 'spin');
 	await icon.click();
 	await expect(page).toHaveURL(/\/settings\/account$/);
+});
+
+test('after a failed sync the icon stays, in red, until a sync goes through', async ({
+	browser
+}) => {
+	const page = await ownerWithTrip(browser);
+	const icon = page.getByRole('link', { name: 'Sync details' });
+	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced');
+
+	// The server has trouble.
+	await page.route('**/api/sync/push', (route) =>
+		route.fulfill({ status: 500, json: { error: 'internal' } })
+	);
+	await addItem(page, 'Bread', '0.95');
+	await expect(page.getByRole('banner').getByRole('status')).toHaveText(/Couldn.t sync/, {
+		timeout: 10_000
+	});
+	await expect(icon).toBeVisible();
+	await expect(icon).toHaveAttribute('data-failed', 'true');
+	// It doesn't go by itself.
+	await page.waitForTimeout(3000);
+	await expect(icon).toBeVisible();
+
+	// The trouble is over, and the next change goes through: the tick, then no icon.
+	await page.unroute('**/api/sync/push');
+	await addItem(page, 'Jam', '1.20');
+	await expect(page.getByRole('banner').getByRole('status')).toHaveText('✓ Synced', {
+		timeout: 10_000
+	});
+	await expect(icon).not.toHaveAttribute('data-failed');
+	await expect(icon).toBeHidden({ timeout: 5000 });
 });
 
 test('signed out, there is no sync icon', async ({ page }) => {

@@ -22,6 +22,12 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.10',
+		changed: [
+			'The sync icon beside the title is smaller, and shows only while syncing, or in red after a sync fails until one goes through.'
+		]
+	},
+	{
 		version: '2026.11.09',
 		changed: [
 			'The budget, discount, finish trip and feedback forms, and the getting started guide, are laid out like Add item: one row per thing, with switches in place of tick boxes.'

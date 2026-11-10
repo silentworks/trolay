@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { CHANGELOG } from '../src/lib/changelog.ts';
+import { CHANGELOG, SECTIONS } from '../src/lib/changelog.ts';
 import { BASE } from './global-setup';
 
 const sheet = (page: Page) => page.getByRole('dialog', { name: "What's new" });
@@ -23,7 +23,9 @@ test('after an update, what changed since last time shows once, skipped releases
 	await expect(news.getByRole('heading', { level: 3 })).toHaveCount(2);
 	await expect(news.getByRole('heading', { level: 3 }).first()).toContainText(CHANGELOG[0].version);
 	await expect(news).not.toContainText(CHANGELOG[2].version);
-	await expect(news.getByRole('heading', { name: 'Added', level: 4 }).first()).toBeVisible();
+	// The newest release's first section, whichever it is.
+	const section = SECTIONS.find(({ key }) => CHANGELOG[0][key]?.length)!.title;
+	await expect(news.getByRole('heading', { name: section, level: 4 }).first()).toBeVisible();
 
 	await news.getByRole('button', { name: 'Got it' }).click();
 	await expect(news).toBeHidden();

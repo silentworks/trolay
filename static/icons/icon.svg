@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b6b62"/>
-  <g transform="translate(-10 -17)" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M96 128h54l40 202h210l36-134H166"/>
-  </g>
-  <g transform="translate(-10 -17)" fill="#ffffff">
-    <circle cx="220" cy="392" r="28"/>
-    <circle cx="372" cy="392" r="28"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trolay">
+  <defs>
+    <linearGradient id="trolay-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4b7dff"/>
+      <stop offset="1" stop-color="#1b4fd8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#trolay-bg)"/>
+  <path fill="#ffffff" d="M17 17a3 3 0 0 1 3-3h24a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3h-7.5v11.5a4.5 4.5 0 0 1-9 0V23H20a3 3 0 0 1-3-3z"/>
+  <circle cx="26.5" cy="45.5" r="3.5" fill="#34d399"/>
+  <circle cx="37.5" cy="45.5" r="3.5" fill="#34d399"/>
 </svg>

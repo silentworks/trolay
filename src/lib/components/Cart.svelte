@@ -331,6 +331,7 @@
 				taxAddedAtTill={!store.pricesIncludeTax}
 				budgetMinor={trip.budgetMinor}
 				onbudget={() => (sheet = { kind: 'budget' })}
+				onfinish={items.length ? tapFinish : undefined}
 			/>
 			<div class="actions">
 				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>

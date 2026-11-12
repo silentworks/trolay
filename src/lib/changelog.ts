@@ -22,6 +22,17 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.12',
+		added: [
+			'A Finish trip button beside the total, ready for the till.',
+			"Back after a break with items in your trolley? Trolay asks if you're done shopping, so you can finish the trip and check your receipt."
+		],
+		changed: [
+			'A new app icon: a white T on two green wheels, in blue.',
+			'“Read the receipt” is now “Snap receipt total”, with the same camera as Snap price.'
+		]
+	},
+	{
 		version: '2026.11.10',
 		changed: [
 			'The sync icon beside the title is smaller, and shows only while syncing, or in red after a sync fails until one goes through.'

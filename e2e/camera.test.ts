@@ -234,7 +234,7 @@ test('reads the total of a receipt photographed on a phone', async ({ page }) =>
 
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	await finish.getByRole('button', { name: 'Snap receipt total' }).click();
 	// A Korean food shop receipt (fixtures/receipts/real/uk-korean-shop.png): "Total ( 7 items )"
 	// 7.84 £, paid by credit card.
 	await page
@@ -256,7 +256,7 @@ test('reads a "Total (incl VAT)" printed in white on black', async ({ page }) =>
 
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	await finish.getByRole('button', { name: 'Snap receipt total' }).click();
 	// A wholesale receipt (fixtures/receipts/real/uk-wholesale-incl-vat.png): the photo ends at
 	// "**** TOTAL(INCL VAT)  443.31".
 	await page
@@ -278,7 +278,7 @@ test('reads the receipt total and keeps the photos when it does not match', asyn
 
 	await menu(page, 'Finish trip');
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
-	await finish.getByRole('button', { name: 'Read the receipt' }).click();
+	await finish.getByRole('button', { name: 'Snap receipt total' }).click();
 	// A real Tesco receipt (fixtures/receipts/real/uk-tesco-1994.jpg): TOTAL 6.71, paid with £7.00
 	// cash and £0.29 change, which confirms it.
 	await page

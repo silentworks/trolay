@@ -37,7 +37,12 @@
 	import { TripMembers } from '#lib/sharing/members.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 	import { applyDiscount, tripTotals, type Discount } from '#lib/money.ts';
+	import { install } from '#lib/install.svelte.ts';
+	import { settings } from '#lib/settings.svelte.ts';
+	import { askDoneShopping } from '#lib/trip/done-shopping.ts';
+	import { appUpdate } from '#lib/update.svelte.ts';
 	import AppHeader, { type MenuEntry } from './AppHeader.svelte';
+	import Banner from './Banner.svelte';
 	import BudgetForm from './BudgetForm.svelte';
 	import DiscountForm from './DiscountForm.svelte';
 	import CameraCapture from './CameraCapture.svelte';
@@ -105,6 +110,31 @@
 	const discount = $derived(tripDiscount(trip));
 	const totals = $derived(applyDiscount(tripTotals(items, store?.taxRateBps ?? 0), discount));
 	const photoCount = $derived(items.filter((item) => item.photoId).length);
+
+	// Coming back to the trip after a break, the cart asks if the shop is done, so the receipt
+	// gets checked. The clock is read when the cart opens and each time the app comes back to the
+	// front, not while the shopper is using it.
+	let openedAt = $state(Date.now());
+	$effect(() => {
+		const back = () => {
+			if (document.visibilityState === 'visible') openedAt = Date.now();
+		};
+		document.addEventListener('visibilitychange', back);
+		return () => document.removeEventListener('visibilitychange', back);
+	});
+	const doneShopping = $derived(
+		askDoneShopping({
+			tripId,
+			items,
+			now: openedAt,
+			dismissedTripId: settings.doneShoppingDismissed
+		}) &&
+			!sheet &&
+			!camera &&
+			// One banner at a time: the app's own ones go first.
+			!appUpdate.available &&
+			!install.offered
+	);
 
 	// Load the label and barcode readers while the shopper picks up the first item, so the
 	// first capture is quick. Failures surface on first use instead.
@@ -360,6 +390,32 @@
 			</div>
 		</div>
 	</div>
+
+	{#if doneShopping}
+		<Banner label="Done shopping?">
+			{#snippet icon()}
+				<svg viewBox="0 0 24 24">
+					<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" />
+				</svg>
+			{/snippet}
+			Done shopping? Finish the trip and check your receipt.
+			{#snippet actions()}
+				<button
+					class="btn btn-primary"
+					type="button"
+					onclick={() => {
+						settings.dismissDoneShopping(tripId);
+						tapFinish();
+					}}>Finish trip</button
+				>
+				<button
+					class="btn btn-ghost"
+					type="button"
+					onclick={() => settings.dismissDoneShopping(tripId)}>Not yet</button
+				>
+			{/snippet}
+		</Banner>
+	{/if}
 
 	<CameraCapture open={camera} mode="label" oncapture={captured} onclose={() => (camera = false)} />
 

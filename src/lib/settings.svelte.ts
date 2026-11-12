@@ -19,6 +19,7 @@ import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
 const INSTALL_NUDGE_KEY = 'trolley.installNudgeDismissed';
 const ONBOARDED_KEY = 'trolley.onboarded';
 const WHATS_NEW_KEY = 'trolley.whatsNewSeen';
+const DONE_SHOPPING_KEY = 'trolley.doneShoppingDismissed';
 
 function read(key: string): string | null {
 	try {
@@ -50,6 +51,14 @@ class Settings {
 	onboarded = $state(read(ONBOARDED_KEY) === 'true');
 	/** The newest changelog entry this phone has been shown (or told of), e.g. "2026.11.07". */
 	whatsNewSeen = $state<string | null>(read(WHATS_NEW_KEY));
+	/** The trip the shopper said "Not yet" to when asked if they were done shopping. */
+	doneShoppingDismissed = $state<string | null>(read(DONE_SHOPPING_KEY));
+
+	/** Only the latest trip is kept: one trip is open at a time, and a new one asks afresh. */
+	dismissDoneShopping(tripId: string): void {
+		this.doneShoppingDismissed = tripId;
+		write(DONE_SHOPPING_KEY, tripId);
+	}
 
 	dismissInstallNudge(): void {
 		this.installNudgeDismissed = true;

@@ -225,6 +225,54 @@ test('history is empty before the first trip is finished', async ({ page }) => {
 	await expect(page.getByText("This trip isn't in your history.")).toBeVisible();
 });
 
+test('coming back to a trip after a break asks if the shop is done', async ({ page }) => {
+	const start = new Date('2026-11-12T10:00:00Z');
+	await page.clock.setFixedTime(start);
+	await startTripAtNewStore(page, 'Tesco');
+	const banner = page.getByRole('complementary', { name: 'Done shopping?' });
+	// Not on an empty trolley, even after a while.
+	await page.clock.setFixedTime(new Date(start.getTime() + 15 * 60_000));
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	await expect(banner).toHaveCount(0);
+
+	await addItem(page, 'Milk 2L', '1.45');
+	// Still shopping: five minutes later is too soon to ask.
+	await page.clock.setFixedTime(new Date(start.getTime() + 20 * 60_000));
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	await expect(banner).toHaveCount(0);
+
+	await page.clock.setFixedTime(new Date(start.getTime() + 26 * 60_000));
+	await page.reload();
+	await expect(banner).toContainText('Done shopping? Finish the trip and check your receipt.');
+	await banner.getByRole('button', { name: 'Finish trip' }).click();
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await expect(finish).toBeVisible();
+	await expect(banner).toHaveCount(0);
+
+	// Put away for this trip, even after the sheet is closed and the app opened again.
+	await finish.getByRole('button', { name: 'Close' }).click();
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	await expect(banner).toHaveCount(0);
+});
+
+test('"Not yet" puts the done-shopping question away for that trip', async ({ page }) => {
+	const start = new Date('2026-11-12T10:00:00Z');
+	await page.clock.setFixedTime(start);
+	await startTripAtNewStore(page, 'Aldi');
+	await addItem(page, 'Bread', '0.99');
+	await page.clock.setFixedTime(new Date(start.getTime() + 11 * 60_000));
+	await page.reload();
+	const banner = page.getByRole('complementary', { name: 'Done shopping?' });
+	await banner.getByRole('button', { name: 'Not yet' }).click();
+	await expect(banner).toHaveCount(0);
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Store: Aldi' })).toBeVisible();
+	await expect(banner).toHaveCount(0);
+});
+
 /** Finishing needs the receipt total, so any total will do for tests that are not about it. */
 async function finishTrip(page: Page, receipt = '10.00') {
 	await menu(page, 'Finish trip');

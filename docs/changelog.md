@@ -6,6 +6,8 @@ Trolay tells shoppers what changed after an update: a **What's new** sheet opens
 
 Add or extend an entry in the same PR as any change a shopper would notice: something new, something that works differently, something taken away, or a bug they may have hit. Internal changes (refactors, tests, tooling, security hardening with no visible effect) don't need one.
 
+The **Changelog** check on each PR ([`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml)) fails when the PR changes `src/` or `static/` (unit tests aside) without touching `src/lib/changelog.ts`. For an internal change, label the PR `no-changelog` and the check passes.
+
 ## How
 
 - **One entry per release day**, keyed by the short version About shows: the build's date in UTC, `YYYY.MM.DD`. If today's entry already exists, add your lines to it. Otherwise add a new entry at the **top** (the list is newest first).

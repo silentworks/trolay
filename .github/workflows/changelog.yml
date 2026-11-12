@@ -1,0 +1,44 @@
+# Fails a PR that changes the app without a line in the in-app changelog (docs/changelog.md).
+# Label the PR "no-changelog" when shoppers won't notice the change: refactors, tests, tooling.
+name: Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skipped by the no-changelog label
+        if: contains(github.event.pull_request.labels.*.name, 'no-changelog')
+        run: echo "Labelled no-changelog, so no changelog line is needed."
+
+      - uses: actions/checkout@v4
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        with:
+          fetch-depth: 0
+
+      - name: The app changed, so the changelog should too
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE...$HEAD")
+          # What ships to shoppers, leaving out unit tests.
+          app=$(printf '%s\n' "$changed" | grep -E '^(src|static)/' | grep -vE '\.spec\.ts$' || true)
+          if [ -z "$app" ]; then
+            echo "No app files changed."
+            exit 0
+          fi
+          if printf '%s\n' "$changed" | grep -qx 'src/lib/changelog.ts'; then
+            echo "The changelog was updated."
+            exit 0
+          fi
+          echo "::error file=src/lib/changelog.ts::This PR changes the app but not src/lib/changelog.ts. Add a line for shoppers (see docs/changelog.md), or label the PR no-changelog if they won't notice the change."
+          printf 'App files changed:\n%s\n' "$app"
+          exit 1

@@ -257,9 +257,9 @@
 					quantities.
 				</li>
 				<li>
-					<strong>Check your receipt.</strong> At the till, tap Finish trip and enter the total on your
-					receipt, or take a photo of it so Trolay reads it. Trolay tells you if the receipt doesn't match
-					your trolley, so you can spot a wrong price before you leave.
+					<strong>Check your receipt.</strong> At the till, tap Finish trip next to the total and enter
+					the total on your receipt, or take a photo of it so Trolay reads it. Trolay tells you if the
+					receipt doesn't match your trolley, so you can spot a wrong price before you leave.
 				</li>
 			</ol>
 			<p class="hint">Finished trips are kept in History.</p>

@@ -148,10 +148,13 @@ test('finishing a trip checks the receipt and starts afresh', async ({ page }) =
 	const nav = page.getByRole('navigation', { name: 'Menu' });
 	await expect(nav.getByText('Finish trip')).toHaveCount(0);
 	await page.keyboard.press('Escape');
+	const total = page.getByRole('region', { name: 'Trolley total' });
+	await expect(total.getByRole('button', { name: 'Finish trip' })).toHaveCount(0);
 
 	await addItem(page, 'Milk 2L', '1.45', 2);
 	await addItem(page, 'Bread', '0.99');
-	await menu(page, 'Finish trip');
+	// Beside the total, where the shopper looks at the till; the menu entry is the second way in.
+	await total.getByRole('button', { name: 'Finish trip' }).click();
 	const finish = page.getByRole('dialog', { name: 'Finish trip' });
 	await expect(finish).toContainText('3.89');
 	await expect(finish).toContainText('Enter the receipt total to finish the trip');

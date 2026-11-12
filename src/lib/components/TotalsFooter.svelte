@@ -12,6 +12,8 @@
 		discount?: Discount;
 		budgetMinor?: number;
 		onbudget: () => void;
+		/** Opens the Finish trip sheet; the button is left out when unset, as on an empty cart. */
+		onfinish?: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 		taxRateBps: number;
@@ -19,8 +21,16 @@
 		taxAddedAtTill?: boolean;
 	}
 
-	let { totals, discount, budgetMinor, onbudget, currency, taxRateBps, taxAddedAtTill }: Props =
-		$props();
+	let {
+		totals,
+		discount,
+		budgetMinor,
+		onbudget,
+		onfinish,
+		currency,
+		taxRateBps,
+		taxAddedAtTill
+	}: Props = $props();
 
 	// The headline is what is paid; the excl. total, tax and item count sit under it.
 	const headline = $derived(totals.inclMinor);
@@ -33,10 +43,21 @@
 	const money = (minor: number) => formatMoney(minor, currency);
 </script>
 
-<!-- The running total on a dark card: what is paid, then excl. tax, items and tax, then the budget. -->
+<!-- The running total on a dark card: what is paid, then excl. tax, items and tax, then the budget.
+     Finish trip sits beside the total, where the shopper looks at the till. -->
 <section class="totals" aria-label="Trolley total">
-	<p class="mode">Total incl. tax</p>
-	<p class="amount">{money(headline)}</p>
+	<div class="head">
+		<div>
+			<p class="mode">Total incl. tax</p>
+			<p class="amount">{money(headline)}</p>
+		</div>
+		{#if onfinish}
+			<button class="finish" type="button" onclick={onfinish}>
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+				Finish trip
+			</button>
+		{/if}
+	</div>
 	<dl class="under">
 		<div>
 			<dt class="visually-hidden">Excl. tax</dt>
@@ -101,6 +122,38 @@
 		border-radius: 18px;
 		background: var(--total-bg);
 		color: var(--total-text);
+	}
+
+	.head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.finish {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		gap: 6px;
+		min-height: 44px;
+		padding: 0 16px 0 12px;
+		border: none;
+		border-radius: 999px;
+		background: #fff;
+		color: #111827;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.finish svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 
 	.mode {

@@ -130,8 +130,18 @@
 		</div>
 	</div>
 
-	<button class="btn" type="button" disabled={read === 'reading'} onclick={() => (camera = true)}>
-		📷 Read the receipt
+	<button
+		class="btn snap"
+		type="button"
+		disabled={read === 'reading'}
+		onclick={() => (camera = true)}
+	>
+		<!-- The same camera as the cart's Snap price. -->
+		<svg viewBox="0 0 24 24" aria-hidden="true">
+			<path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+			<circle cx="12" cy="13" r="3.5" />
+		</svg>
+		Snap receipt total
 	</button>
 
 	<p class="difference" id="{uid}-difference" aria-live="polite" data-match={difference === 0}>
@@ -187,6 +197,16 @@
 
 	.sums {
 		margin: 0;
+	}
+
+	.snap svg {
+		width: 22px;
+		height: 22px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 
 	.sums div {

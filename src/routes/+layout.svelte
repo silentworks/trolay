@@ -80,7 +80,9 @@
 	const live = new LiveTrip({
 		sync: () => void syncEngine.syncNow(),
 		url: (tripId) =>
-			`${location.origin.replace(/^http/, 'ws')}/api/trips/live?trip=${encodeURIComponent(tripId)}`
+			`${location.origin.replace(/^http/, 'ws')}/api/trips/live?trip=${encodeURIComponent(tripId)}`,
+		// Shown on the page for the end-to-end tests, which wait for it rather than for a set time.
+		onstate: (state) => (document.documentElement.dataset.live = state)
 	});
 	$effect(() => {
 		const trip = openTrip.current;

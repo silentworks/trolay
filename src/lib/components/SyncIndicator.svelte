@@ -11,6 +11,13 @@
 	// How long the tick takes to fade away (the opacity transition below).
 	const LEAVE_MS = 300;
 
+	interface Props {
+		/** Offline: the header shows the offline icon in this slot, so this one stays out of sight. */
+		offline?: boolean;
+	}
+
+	let { offline = false }: Props = $props();
+
 	/**
 	 * spin: a round is running; done: one has just finished, with a tick; leaving: the tick fading
 	 * away; rest: neither, and the icon is hidden unless the last round failed.
@@ -49,7 +56,7 @@
 
 	/** A failed round keeps the icon up, in red, until a round goes through (even with no signal). */
 	const failed = $derived(syncEngine.failed && phase === 'rest');
-	const shown = $derived((phase !== 'rest' && phase !== 'leaving') || failed);
+	const shown = $derived(!offline && ((phase !== 'rest' && phase !== 'leaving') || failed));
 
 	const message = $derived(syncMessage(syncEngine));
 </script>

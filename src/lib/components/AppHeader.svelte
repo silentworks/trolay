@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { connection } from '#lib/connection.svelte.ts';
+	import { syncEngine } from '#lib/sync/engine.svelte.ts';
+	import OfflineIndicator from './OfflineIndicator.svelte';
 	import SyncIndicator from './SyncIndicator.svelte';
 
 	export interface MenuEntry {
@@ -53,6 +56,22 @@
 		if (!toggle?.contains(target) && !panel?.contains(target)) open = false;
 	}
 
+	/** The sync icon's slot is there while signed in, on headers that ask for it. */
+	const syncSlot = $derived(sync && syncEngine.status !== 'off');
+
+	/**
+	 * Read out going offline and coming back, unless the sync icon already says so. Empty at first,
+	 * so opening a page offline says nothing until the connection changes.
+	 */
+	let announced = $state('');
+	let wasOnline = connection.online;
+	$effect(() => {
+		const online = connection.online;
+		if (online === wasOnline) return;
+		wasOnline = online;
+		announced = syncSlot ? '' : online ? 'Back online.' : "You're offline.";
+	});
+
 	function pick(entry: MenuEntry) {
 		open = false;
 		entry.onclick?.();
@@ -88,7 +107,16 @@
 				{#if subtitle}<p class="sub">{subtitle}</p>{/if}
 			</div>
 		{/if}
-		{#if sync}<SyncIndicator />{/if}
+		<!-- The sync icon and, in its place while offline, the offline icon: one slot, one spot. -->
+		{#if syncSlot || !connection.online}
+			<span class="slot">
+				{#if sync}<SyncIndicator offline={!connection.online} />{/if}
+				{#if !connection.online}<OfflineIndicator />{/if}
+			</span>
+		{/if}
+		<!-- aria-live rather than role="status": it announces the same, and leaves the page's
+			status messages as the only ones with that role. -->
+		<span class="visually-hidden" aria-live="polite">{announced}</span>
 	</div>
 
 	{#if history || menu}
@@ -199,11 +227,21 @@
 		justify-content: start;
 	}
 
-	/* A centred title keeps to the middle: as much room before it as the sync icon's slot after. */
-	.bar:not(.start) .heading:has(> :global(.sync))::before {
+	/* A centred title keeps to the middle: as much room before it as the icon slot after. */
+	.bar:not(.start) .heading:has(> .slot)::before {
 		content: '';
 		flex: none;
 		width: 36px;
+	}
+
+	/* The sync and offline icons share one place, stacked. */
+	.slot {
+		display: grid;
+		flex: none;
+	}
+
+	.slot > :global(*) {
+		grid-area: 1 / 1;
 	}
 
 	.title {

@@ -22,6 +22,12 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.14',
+		added: [
+			'An offline icon beside the title when your phone has no signal. Tap it to see what still works.'
+		]
+	},
+	{
 		version: '2026.11.13',
 		changed: ['The × that closes a sheet, like Add item, is bigger and easier to tap.']
 	},

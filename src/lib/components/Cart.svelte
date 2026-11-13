@@ -229,6 +229,13 @@
 
 	/** Leaving or removing is about the trip's people, so the cart says what it will do first. */
 	const role = $derived(members.roleOf(account.userId));
+	/**
+	 * Leave store deletes the trip, so it's only offered on a trip of the shopper's own: not to a
+	 * partner, even before the trip's members have loaded (its owner is on the trip itself).
+	 */
+	const canLeave = $derived(
+		role !== 'partner' && (!trip?.ownerId || trip.ownerId === account.userId)
+	);
 	const menu = $derived.by(() => {
 		const entries: MenuEntry[] = [
 			{ label: 'Stores', href: resolve('/stores') },
@@ -362,6 +369,7 @@
 				budgetMinor={trip.budgetMinor}
 				onbudget={() => (sheet = { kind: 'budget' })}
 				onfinish={items.length ? tapFinish : undefined}
+				onleave={!items.length && canLeave ? leave : undefined}
 			/>
 			<div class="actions">
 				<button class="btn btn-primary snap" type="button" onclick={() => (camera = true)}>

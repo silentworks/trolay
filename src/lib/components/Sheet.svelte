@@ -31,9 +31,9 @@
 	<div class="sheet">
 		<header>
 			<h2 id={titleId}>{title}</h2>
-			<button class="btn btn-ghost" type="button" aria-label="Close" onclick={() => dialog.close()}
-				>✕</button
-			>
+			<button class="close" type="button" aria-label="Close" onclick={() => dialog.close()}>
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+			</button>
 		</header>
 		{#if open}
 			{@render children()}
@@ -73,5 +73,37 @@
 
 	h2 {
 		font-size: 1.25rem;
+	}
+
+	/* A filled circle the thumb can find, lined up with the content's edge; the hit area reaches
+	   8px further all round, 60px across. */
+	.close {
+		position: relative;
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: var(--surface-2);
+		color: var(--text);
+	}
+
+	.close::before {
+		content: '';
+		position: absolute;
+		inset: -8px;
+		border-radius: 50%;
+	}
+
+	.close svg {
+		width: 22px;
+		height: 22px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2.5;
+		stroke-linecap: round;
 	}
 </style>

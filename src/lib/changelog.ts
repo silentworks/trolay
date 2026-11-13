@@ -22,6 +22,10 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.13',
+		changed: ['The × that closes a sheet, like Add item, is bigger and easier to tap.']
+	},
+	{
 		version: '2026.11.12',
 		added: [
 			'A Finish trip button beside the total, ready for the till.',

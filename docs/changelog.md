@@ -10,14 +10,17 @@ The **Changelog** check on each PR ([`.github/workflows/changelog.yml`](../.gith
 
 ## How
 
-- **One entry per release day**, keyed by the short version About shows: the build's date in UTC, `YYYY.MM.DD`. If today's entry already exists, add your lines to it. Otherwise add a new entry at the **top** (the list is newest first).
+- **One entry per release**, keyed by the short version About shows: the build's date in UTC, `YYYY.MM.DD`. Each merge to `main` is a release.
+- **Never add lines to an entry that's already on `main`.** It has reached phones, and a phone only shows entries newer than the last one it saw, so the lines would never show as new. Add a new entry at the **top** instead (the list is newest first), newer than every entry already there:
+  - today's UTC date (`date -u +%Y.%m.%d`), if no entry has it yet;
+  - otherwise, the top entry's date with the next number: `2026.11.13` is followed by `2026.11.13-2`, then `2026.11.13-3`. What's new shows the date alone, "13 November 2026".
+  - If the top entry is dated later than today, as `2026.11.14` was on 13 November, number on from it (`2026.11.14-2`). An entry dated today would sort below it and never show.
+- Lines for an entry that isn't on `main` yet, such as one in your own open PR, can still go in it.
 - Put each line under `added`, `changed`, `removed` or `fixed`. Leave out sections you don't need.
 - Write for shoppers, not developers: one short sentence, in plain words, saying what they'll see or can do. No issue numbers, component names or jargon.
   - Good: "Undo after deleting a store or a trip."
   - Not: "Add undo toast to deleteStore (SIL-300)."
-- A phone shows every entry newer than the last one it saw, so lines added to an entry after that day's release has reached phones won't be shown to them as new. Put late additions in the next day's entry.
-
-`src/lib/changelog.spec.ts` checks the list is newest first, with one entry per version and no empty entries.
+    `src/lib/changelog.spec.ts` checks the list is newest first (`compareVersions`: by date, then number), with one entry per version, versions shaped `YYYY.MM.DD` or `YYYY.MM.DD-N`, and no empty entries.
 
 ## How it's shown
 

@@ -4,7 +4,10 @@ import { appLocale } from './locale.ts';
 // in Settings › About › What's new. How to write an entry: see docs/changelog.md.
 
 export interface ChangelogEntry {
-	/** The release's short version, as About shows it: "2026.11.07". */
+	/**
+	 * The release's short version, as About shows it: "2026.11.07". A later release the same day,
+	 * once that day's entry has reached phones, adds a number: "2026.11.07-2".
+	 */
 	version: string;
 	added?: string[];
 	changed?: string[];
@@ -128,12 +131,27 @@ export function shortVersion(version: string): string {
 	].join('.');
 }
 
+const VERSION = /^(\d{4}\.\d{2}\.\d{2})(?:-(\d+))?$/;
+
+/**
+ * Orders two versions, oldest first: by day, then by the day's release number, where a plain day
+ * is its first release. So "2026.11.07" < "2026.11.07-2" < "2026.11.07-10" < "2026.11.08".
+ */
+export function compareVersions(a: string, b: string): number {
+	const x = VERSION.exec(a);
+	const y = VERSION.exec(b);
+	// Anything else, such as "dev", sorts as text.
+	if (!x || !y) return a < b ? -1 : a > b ? 1 : 0;
+	if (x[1] !== y[1]) return x[1] < y[1] ? -1 : 1;
+	return Number(x[2] ?? 1) - Number(y[2] ?? 1);
+}
+
 /** The entries released after `seen` (a short version), newest first. */
 export function entriesAfter(
 	seen: string,
 	entries: ChangelogEntry[] = CHANGELOG
 ): ChangelogEntry[] {
-	return entries.filter((entry) => entry.version > seen);
+	return entries.filter((entry) => compareVersions(entry.version, seen) > 0);
 }
 
 /**
@@ -152,9 +170,9 @@ export function unseen(
 
 const formats = new Map<string, Intl.DateTimeFormat>();
 
-/** "7 November 2026" for "2026.11.07", in the phone's language. */
+/** "7 November 2026" for "2026.11.07" (or "2026.11.07-2"), in the phone's language. */
 export function releaseDate(version: string, locale = appLocale()): string {
-	const parts = /^(\d{4})\.(\d{2})\.(\d{2})$/.exec(version);
+	const parts = /^(\d{4})\.(\d{2})\.(\d{2})(?:-\d+)?$/.exec(version);
 	if (!parts) return version;
 	let format = formats.get(locale);
 	if (!format) {

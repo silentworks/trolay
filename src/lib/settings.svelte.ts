@@ -11,6 +11,7 @@ import {
 	type Density,
 	type TextSize
 } from '#lib/appearance.ts';
+import { compareVersions } from '#lib/changelog.ts';
 import { readTheme, THEME_KEY, type Theme } from '#lib/theme.ts';
 
 // Per-device preferences. Storage can be unavailable (private browsing, blocked site data),
@@ -97,7 +98,7 @@ class Settings {
 
 	/** Remembers the changelog as seen up to this entry; never goes back to an older one. */
 	markWhatsNewSeen(version: string): void {
-		if (this.whatsNewSeen !== null && this.whatsNewSeen >= version) return;
+		if (this.whatsNewSeen !== null && compareVersions(this.whatsNewSeen, version) >= 0) return;
 		this.whatsNewSeen = version;
 		write(WHATS_NEW_KEY, version);
 	}

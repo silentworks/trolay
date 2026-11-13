@@ -14,6 +14,8 @@
 		onbudget: () => void;
 		/** Opens the Finish trip sheet; the button is left out when unset, as on an empty cart. */
 		onfinish?: () => void;
+		/** Leaves the store, discarding the empty trip; shown in Finish trip's place while it's unset. */
+		onleave?: () => void;
 		/** The store's currency (ISO 4217); unset shows plain numbers. */
 		currency?: string;
 		taxRateBps: number;
@@ -27,6 +29,7 @@
 		budgetMinor,
 		onbudget,
 		onfinish,
+		onleave,
 		currency,
 		taxRateBps,
 		taxAddedAtTill
@@ -55,6 +58,13 @@
 			<button class="finish" type="button" onclick={onfinish}>
 				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
 				Finish trip
+			</button>
+		{:else if onleave}
+			<button class="leave" type="button" onclick={onleave}>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M14 5h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h9" />
+				</svg>
+				Leave store
 			</button>
 		{/if}
 	</div>
@@ -146,7 +156,24 @@
 		white-space: nowrap;
 	}
 
-	.finish svg {
+	/* Quieter than Finish trip: leaving isn't what a trip is for, but it's easy to find. */
+	.leave {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		gap: 6px;
+		min-height: 44px;
+		padding: 0 16px 0 12px;
+		border: 1.5px solid rgb(255 255 255 / 0.4);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--total-text);
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.finish svg,
+	.leave svg {
 		width: 20px;
 		height: 20px;
 		fill: none;

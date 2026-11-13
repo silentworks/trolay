@@ -141,6 +141,28 @@ test('leaving the store with an empty cart discards the trip', async ({ page }) 
 	await expect(page.getByText('Lidl')).toHaveCount(0);
 });
 
+test('an empty cart offers Leave store beside the total, and Finish trip once it has items', async ({
+	page
+}) => {
+	await startTripAtNewStore(page, 'Aldi');
+	const total = page.getByRole('region', { name: 'Trolley total' });
+	const leave = total.getByRole('button', { name: 'Leave store' });
+	await expect(leave).toBeVisible();
+	await expect(total.getByRole('button', { name: 'Finish trip' })).toHaveCount(0);
+
+	await addItem(page, 'Eggs', '2.10');
+	await expect(leave).toHaveCount(0);
+	await expect(total.getByRole('button', { name: 'Finish trip' })).toBeVisible();
+	await page.getByRole('button', { name: 'Delete Eggs' }).click();
+	await expect(leave).toBeVisible();
+
+	await leave.click();
+	await expect(page.getByText('You left the store. Nothing was saved.')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+	await page.goto('/history');
+	await expect(page.getByText('Aldi')).toHaveCount(0);
+});
+
 test('finishing a trip checks the receipt and starts afresh', async ({ page }) => {
 	await startTripAtNewStore(page, 'Asda');
 	// With nothing in the cart the menu offers to leave, not to finish.

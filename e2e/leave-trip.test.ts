@@ -111,3 +111,16 @@ test('a trip finished while shared stays in both histories', async ({ browser })
 	);
 	await expect(partner.getByRole('button', { name: /Tesco/ })).toBeVisible();
 });
+
+test("a partner isn't offered Leave store on an empty shared trip: it's the owner's", async ({
+	browser
+}) => {
+	const owner = await ownerWithTrip(browser);
+	const partner = await joinedPartner(browser, await inviteLink(owner));
+	await expect(partner.getByRole('button', { name: 'Store: Tesco' })).toBeVisible();
+	const total = (page: typeof owner) => page.getByRole('region', { name: 'Trolley total' });
+	await expect(total(partner)).toBeVisible();
+	await expect(total(partner).getByRole('button', { name: 'Leave store' })).toHaveCount(0);
+	// The owner can still leave their own empty trip from the dock.
+	await expect(total(owner).getByRole('button', { name: 'Leave store' })).toBeVisible();
+});

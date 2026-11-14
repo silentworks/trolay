@@ -8,22 +8,39 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+
+# A newer run for the same PR (say, the label just added) replaces one still going.
+concurrency:
+  group: changelog-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   changelog:
     runs-on: ubuntu-latest
     steps:
-      - name: Skipped by the no-changelog label
-        if: contains(github.event.pull_request.labels.*.name, 'no-changelog')
-        run: echo "Labelled no-changelog, so no changelog line is needed."
+      # The PR's labels as they are now, not as they were when this run's event happened: a PR
+      # opened and then labelled leaves a failed run from before the label, and re-running it
+      # should pass.
+      - name: Labelled no-changelog?
+        id: label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          labels=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name')
+          if printf '%s\n' "$labels" | grep -qx 'no-changelog'; then
+            echo "Labelled no-changelog, so no changelog line is needed."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/checkout@v4
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        if: steps.label.outputs.skip != 'true'
         with:
           fetch-depth: 0
 
       - name: The app changed, so the changelog should too
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        if: steps.label.outputs.skip != 'true'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}

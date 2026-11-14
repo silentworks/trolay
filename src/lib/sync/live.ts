@@ -18,7 +18,11 @@ export interface LiveOptions {
 	/** Waits before reconnecting (ms); defaults to backing off from 1 s to 30 s. */
 	delay?: (attempt: number) => number;
 	wait?: (ms: number, then: () => void) => () => void;
+	/** Told when the socket opens, and when it closes or is stopped. */
+	onstate?: (state: LiveState) => void;
 }
+
+export type LiveState = 'open' | 'closed';
 
 const BACKOFF = (attempt: number) => Math.min(30_000, 1000 * 2 ** attempt);
 
@@ -37,6 +41,7 @@ export class LiveTrip {
 				const timer = setTimeout(then, ms);
 				return () => clearTimeout(timer);
 			},
+			onstate: () => {},
 			...options
 		};
 	}
@@ -65,6 +70,7 @@ export class LiveTrip {
 			socket.onopen = () => {
 				opened = true;
 				attempt = 0;
+				this.options.onstate('open');
 				// Whatever changed while there was no connection is fetched now.
 				this.options.sync();
 			};
@@ -73,6 +79,7 @@ export class LiveTrip {
 				if (message?.type === 'over') {
 					// The trip finished: one last sync, and no more listening.
 					stopped = true;
+					this.options.onstate('closed');
 					this.options.sync();
 					return;
 				}
@@ -80,6 +87,7 @@ export class LiveTrip {
 			};
 			socket.onclose = () => {
 				socket = undefined;
+				if (opened) this.options.onstate('closed');
 				// A connection that never opened (the trip is not on the server yet, or there is no
 				// signal) is retried with a growing pause; one that opened, straight away.
 				if (opened) attempt = 0;
@@ -90,6 +98,7 @@ export class LiveTrip {
 
 		open();
 		return () => {
+			if (!stopped) this.options.onstate('closed');
 			stopped = true;
 			cancelWait?.();
 			const current = socket;

@@ -27,6 +27,7 @@ function setup() {
 	const sockets: FakeSocket[] = [];
 	const urls: string[] = [];
 	let syncs = 0;
+	const states: string[] = [];
 	const waits: { ms: number; then: () => void; cancelled: boolean }[] = [];
 	const live = new LiveTrip({
 		sync: () => syncs++,
@@ -42,12 +43,29 @@ function setup() {
 			const wait = { ms, then, cancelled: false };
 			waits.push(wait);
 			return () => (wait.cancelled = true);
-		}
+		},
+		onstate: (state) => states.push(state)
 	});
-	return { live, sockets, urls, waits, syncs: () => syncs };
+	return { live, sockets, urls, waits, states, syncs: () => syncs };
 }
 
 describe('LiveTrip', () => {
+	it('tells when the connection opens and closes', () => {
+		const t = setup();
+		const stop = t.live.connect('trip-1');
+		t.sockets[0].drop(); // never opened: nothing to tell
+		expect(t.states).toEqual([]);
+		t.waits[0].then();
+		t.sockets[1].open();
+		expect(t.states).toEqual(['open']);
+		t.sockets[1].drop();
+		expect(t.states).toEqual(['open', 'closed']);
+		t.waits[1].then();
+		t.sockets[2].open();
+		stop();
+		expect(t.states).toEqual(['open', 'closed', 'open', 'closed']);
+	});
+
 	it('connects for the trip, and syncs on connecting and on each nudge', () => {
 		const t = setup();
 		t.live.connect('trip-1');

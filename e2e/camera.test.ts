@@ -395,3 +395,96 @@ test('a deleted trip keeps its photos for Undo, and lets them go once the toast 
 	await toast.getByRole('button', { name: 'Dismiss' }).click();
 	await expect.poll(photos).toBe(0);
 });
+
+/** "Keep price tag photos in the cloud", in Settings › Account & sync. */
+async function keepPhotosSwitch(page: Page) {
+	await page.goto('/settings/account');
+	return page.getByRole('switch', { name: 'Keep price tag photos in the cloud' });
+}
+
+test('turning on Keep photos uploads at once; turning it off stops new ones and keeps the rest', async ({
+	browser
+}) => {
+	const phone = { ...devices['Pixel 7'], permissions: ['camera' as const] };
+	const page = await ownerWithTrip(browser, 'Tesco', 'Watford', phone);
+	await page.route(OPEN_FOOD_FACTS, (route) => route.fulfill({ status: 404, json: { status: 0 } }));
+	const review = await snapLabel(page);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(page.getByRole('button', { name: /^Cully & Sully/ })).toBeVisible();
+
+	// Off until the shopper turns it on.
+	const toggle = await keepPhotosSwitch(page);
+	await expect(toggle).toHaveAttribute('aria-checked', 'false');
+	const uploaded = page.waitForRequest(
+		(request) => request.method() === 'PUT' && request.url().includes('/api/kept-photos/')
+	);
+	await toggle.click();
+	await expect(toggle).toHaveAttribute('aria-checked', 'true');
+	await expect(page.getByText('Turning this off stops new photos from being kept.')).toBeVisible();
+	const first = new URL((await uploaded).url()).pathname;
+	await expect
+		.poll(async () => (await page.request.get(first)).status(), { timeout: 10_000 })
+		.toBe(200);
+
+	// Off: a new photo stays on the phone, and the one already kept stays in the cloud.
+	await toggle.click();
+	await expect(toggle).toHaveAttribute('aria-checked', 'false');
+	const later: string[] = [];
+	page.on('request', (request) => {
+		if (request.method() === 'PUT' && request.url().includes('/api/kept-photos/')) {
+			later.push(request.url());
+		}
+	});
+	await page.goto('/');
+	const again = await snapLabel(page);
+	await expect(again.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
+	await again.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(again).toBeHidden();
+	await expect(page.getByRole('button', { name: /^Cully & Sully/ })).toHaveCount(2);
+	await page.goto('/settings/account');
+	await expect(page.getByRole('status').filter({ hasText: '✓ Synced' })).toBeVisible();
+	expect(later).toEqual([]);
+	expect((await page.request.get(first)).status()).toBe(200);
+});
+
+test('a kept photo shows in History from the cloud once the phone has let go of it', async ({
+	browser
+}) => {
+	const phone = { ...devices['Pixel 7'], permissions: ['camera' as const] };
+	const page = await ownerWithTrip(browser, 'Tesco', 'Watford', phone);
+	await page.route(OPEN_FOOD_FACTS, (route) => route.fulfill({ status: 404, json: { status: 0 } }));
+	await (await keepPhotosSwitch(page)).click();
+	await page.goto('/');
+	const review = await snapLabel(page);
+	await expect(review.getByLabel('Unit price')).toHaveValue('1.99', READ_TIMEOUT);
+	await review.getByRole('button', { name: 'Add to cart' }).click();
+	await expect(page.getByRole('button', { name: /^Cully & Sully/ })).toBeVisible();
+
+	await menu(page, 'Finish trip');
+	const finish = page.getByRole('dialog', { name: 'Finish trip' });
+	await finish.getByLabel('Receipt total', { exact: true }).fill('1.99');
+	await expect(finish.getByText("once they're kept in the cloud")).toBeVisible();
+	await finish.getByRole('button', { name: 'Finish trip' }).click();
+	await expect(page.getByRole('heading', { name: 'Where are you shopping?' })).toBeVisible();
+
+	// Once kept, the phone's copy goes, and History shows the cloud's.
+	await page.goto('/history');
+	await page.getByRole('link', { name: /Tesco/ }).click();
+	await expect(page).toHaveURL(/\/history\/.+/);
+	const thumb = page.getByRole('button', { name: `Photo of ${DESCRIPTION}` });
+	await expect(async () => {
+		await page.reload();
+		await expect(thumb.locator('img')).toHaveAttribute('src', /^\/api\/kept-photos\//, {
+			timeout: 1500
+		});
+	}).toPass({ timeout: 20_000 });
+	await expect(thumb.locator('img')).toBeVisible();
+
+	await thumb.click();
+	const viewer = page.getByRole('dialog', { name: `Photo of ${DESCRIPTION}` });
+	await expect(viewer.getByRole('img')).toBeVisible();
+	const download = page.waitForEvent('download');
+	await viewer.getByRole('link', { name: 'Download' }).click();
+	expect((await download).suggestedFilename()).toBe(`Photo of ${DESCRIPTION}.jpg`);
+});

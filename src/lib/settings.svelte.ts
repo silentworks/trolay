@@ -21,6 +21,7 @@ const INSTALL_NUDGE_KEY = 'trolley.installNudgeDismissed';
 const ONBOARDED_KEY = 'trolley.onboarded';
 const WHATS_NEW_KEY = 'trolley.whatsNewSeen';
 const DONE_SHOPPING_KEY = 'trolley.doneShoppingDismissed';
+const KEEP_PHOTOS_KEY = 'trolley.keepPhotos';
 
 function read(key: string): string | null {
 	try {
@@ -54,11 +55,21 @@ class Settings {
 	whatsNewSeen = $state<string | null>(read(WHATS_NEW_KEY));
 	/** The trip the shopper said "Not yet" to when asked if they were done shopping. */
 	doneShoppingDismissed = $state<string | null>(read(DONE_SHOPPING_KEY));
+	/**
+	 * Keep a copy of every price tag photo in the cloud. Off until the shopper turns it on; this
+	 * phone only, like every setting.
+	 */
+	keepPhotos = $state(read(KEEP_PHOTOS_KEY) === 'true');
 
 	/** Only the latest trip is kept: one trip is open at a time, and a new one asks afresh. */
 	dismissDoneShopping(tripId: string): void {
 		this.doneShoppingDismissed = tripId;
 		write(DONE_SHOPPING_KEY, tripId);
+	}
+
+	setKeepPhotos(on: boolean): void {
+		this.keepPhotos = on;
+		write(KEEP_PHOTOS_KEY, on ? 'true' : 'false');
 	}
 
 	dismissInstallNudge(): void {

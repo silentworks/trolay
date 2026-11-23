@@ -7,10 +7,13 @@
 		photoId: string | undefined;
 		title: string;
 		onclose: () => void;
+		/** Show the copy kept in the cloud when this phone has none. */
+		cloud?: boolean;
 	}
 
-	let { photoId, title, onclose }: Props = $props();
+	let { photoId, title, onclose, cloud = false }: Props = $props();
 	let dialog: HTMLDialogElement;
+	let src = $state<string>();
 
 	$effect(() => {
 		if (photoId && !dialog.open) dialog.showModal();
@@ -29,7 +32,17 @@
 >
 	<button class="btn close" type="button" aria-label="Close photo">✕</button>
 	{#if photoId}
-		<PhotoImage {photoId} size="full" alt={title} />
+		<PhotoImage {photoId} size="full" alt={title} {cloud} onshown={(shown) => (src = shown)} />
+		{#if src}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- a photo, not a page -->
+			<a
+				class="btn download"
+				href={src}
+				download="{title}.jpg"
+				onclick={(event) => event.stopPropagation()}>Download</a
+			>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
+		{/if}
 		<ToastHost inDialog />
 	{/if}
 </dialog>
@@ -54,6 +67,16 @@
 
 	dialog::backdrop {
 		background: #000;
+	}
+
+	.download {
+		position: absolute;
+		bottom: calc(16px + env(safe-area-inset-bottom));
+		left: 50%;
+		transform: translateX(-50%);
+		background: rgb(0 0 0 / 0.5);
+		color: #fff;
+		border-color: rgb(255 255 255 / 0.4);
 	}
 
 	.close {

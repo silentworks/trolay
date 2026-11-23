@@ -304,7 +304,10 @@
 	}
 
 	async function finish() {
-		const { photosKept } = await finishTrip(tripId);
+		const { photosKept } = await finishTrip(tripId, {
+			keepPhotos: settings.keepPhotos,
+			userId: account.userId
+		});
 		sheet = null;
 		onfinished?.(photosKept);
 	}

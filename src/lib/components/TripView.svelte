@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
+	import { account } from '#lib/auth/account.svelte.ts';
+	import { settings } from '#lib/settings.svelte.ts';
 	import { resolve } from '$app/paths';
 	import { formatWhen } from '#lib/dates.ts';
 	import type { Item } from '#lib/data/db.ts';
@@ -38,6 +42,15 @@
 	});
 
 	let viewing = $state<Item>();
+	// Photos neither this phone nor the cloud has: their items show no thumbnail.
+	const missing = new SvelteSet<string>();
+	// Signed in, a photo this phone no longer has can come from the cloud, if it was kept there.
+	const signedIn = $derived(account.status === 'signedIn');
+	// Whether someone is signed in is only known a moment after the page opens: then the cloud is
+	// asked about the photos this phone had none of.
+	$effect(() => {
+		if (signedIn) untrack(() => missing.clear());
+	});
 	let confirming = $state(false);
 	let deleting = $state(false);
 
@@ -153,7 +166,7 @@
 			</p>
 		{/if}
 
-		{#if photoCount > 0}
+		{#if trip.photosKept && photoCount > 0}
 			<div class="kept">
 				<p>
 					The label photos are kept as evidence because the receipt did not match. Tap one to see
@@ -169,14 +182,21 @@
 				{@const line = lineTotals(item, totals.taxRateBps)}
 				{@const name = itemName(item)}
 				<li class="item">
-					{#if item.photoId}
+					{#if item.photoId && !missing.has(item.photoId)}
+						{@const photoId = item.photoId}
 						<button
 							class="thumb"
 							type="button"
 							aria-label="Photo of {name}"
 							onclick={() => (viewing = item)}
 						>
-							<PhotoImage photoId={item.photoId} size="thumb" alt="" />
+							<PhotoImage
+								{photoId}
+								size="thumb"
+								alt=""
+								cloud={signedIn}
+								onmissing={() => missing.add(photoId)}
+							/>
 						</button>
 					{/if}
 					<span class="name">{name}</span>
@@ -197,6 +217,7 @@
 </div>
 
 <PhotoViewer
+	cloud={signedIn}
 	photoId={viewing?.photoId}
 	title={viewing ? `Photo of ${itemName(viewing)}` : ''}
 	onclose={() => (viewing = undefined)}
@@ -217,6 +238,9 @@
 		This trip and its {totals?.itemCount === 1 ? 'item' : `${totals?.itemCount ?? 0} items`}, with
 		any photos, will be deleted from your history. You can undo this for a few seconds afterwards.
 	</p>
+	{#if settings.keepPhotos}
+		<p class="hint">Photos kept in the cloud stay there until you delete your account.</p>
+	{/if}
 	<button class="btn btn-danger btn-block" type="button" onclick={deleteThisTrip}>
 		Delete trip
 	</button>

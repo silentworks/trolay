@@ -8,10 +8,13 @@ import { notifyTrips } from './live.ts';
 // trip is open: finishing the trip deletes it, unless it was kept as receipt evidence.
 
 /** A photo is compressed to 1600 px on the long side, which is well under this. */
-const MAX_BYTES = 2 * 1024 * 1024;
-/** The most photos a trip may hold, so a member cannot fill the bucket. One per item and then some. */
-export const MAX_PHOTOS_PER_TRIP = 500;
-const ID = /^[\w-]{1,64}$/;
+export const MAX_BYTES = 2 * 1024 * 1024;
+/**
+ * The most photos a trip may hold, shared or kept in the cloud, so nobody can fill the bucket.
+ * One per item for a big shop, and then some.
+ */
+export const MAX_PHOTOS_PER_TRIP = 200;
+export const ID = /^[\w-]{1,64}$/;
 const TYPES = new Set(['image/jpeg', 'image/webp', 'image/png']);
 
 /** Whether the bytes open the way a file of this type does, so what is stored is that image. */
@@ -24,9 +27,42 @@ function looksLike(type: string, bytes: Uint8Array): boolean {
 	return starts(0, 0x52, 0x49, 0x46, 0x46) && starts(8, 0x57, 0x45, 0x42, 0x50);
 }
 
+/**
+ * The photo in an upload: a JPEG, WebP or PNG of up to 2 MB whose bytes are what its type says.
+ * Or the error to answer with.
+ */
+export async function readImage(
+	request: Request
+): Promise<{ type: string; bytes: ArrayBuffer } | Response> {
+	const type = request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ?? '';
+	if (!TYPES.has(type)) return error(415, 'unsupported_type');
+	const declared = Number(request.headers.get('Content-Length') ?? 0);
+	if (declared > MAX_BYTES) return error(413, 'too_large');
+	const bytes = await request.arrayBuffer();
+	if (bytes.byteLength > MAX_BYTES) return error(413, 'too_large');
+	if (!bytes.byteLength) return error(400, 'empty');
+	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
+	return { type, bytes };
+}
+
+/** How a stored photo is served: as the image it is, never as anything that could run. */
+export function servePhoto(object: R2ObjectBody): Response {
+	return new Response(object.body, {
+		headers: {
+			'Content-Type': object.httpMetadata?.contentType ?? 'image/jpeg',
+			// The bytes are an upload, served from the app's own origin: the browser must take them as
+			// the image they say they are, and never run anything in them.
+			'X-Content-Type-Options': 'nosniff',
+			'Content-Security-Policy': "sandbox; default-src 'none'",
+			// A photo's id is never reused for different bytes, so it can be kept.
+			'Cache-Control': 'private, max-age=86400, immutable'
+		}
+	});
+}
+
 export const photoKey = (tripId: string, photoId: string) => `trips/${tripId}/${photoId}`;
 
-async function membership(env: Env, userId: string, tripId: string) {
+export async function membership(env: Env, userId: string, tripId: string) {
 	return env.DB.prepare(
 		`SELECT trips.status FROM trips
 		 JOIN trip_members m ON m.trip_id = trips.id AND m.user_id = ? AND m.deleted_at IS NULL
@@ -53,29 +89,14 @@ export async function photo(
 	if (request.method === 'GET') {
 		const object = await env.PHOTOS.get(photoKey(tripId, photoId));
 		if (!object) return error(404, 'photo_not_found');
-		return new Response(object.body, {
-			headers: {
-				'Content-Type': object.httpMetadata?.contentType ?? 'image/jpeg',
-				// The bytes are a member's upload, served from the app's own origin: the browser must
-				// take them as the image they say they are, and never run anything in them.
-				'X-Content-Type-Options': 'nosniff',
-				'Content-Security-Policy': "sandbox; default-src 'none'",
-				// A photo's id is never reused for different bytes, so it can be kept.
-				'Cache-Control': 'private, max-age=86400, immutable'
-			}
-		});
+		return servePhoto(object);
 	}
 
 	// PUT: only while the trip is open, so a finished trip's photos are not brought back.
 	if (trip.status !== 'open') return error(409, 'trip_finished');
-	const type = request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ?? '';
-	if (!TYPES.has(type)) return error(415, 'unsupported_type');
-	const declared = Number(request.headers.get('Content-Length') ?? 0);
-	if (declared > MAX_BYTES) return error(413, 'too_large');
-	const bytes = await request.arrayBuffer();
-	if (bytes.byteLength > MAX_BYTES) return error(413, 'too_large');
-	if (!bytes.byteLength) return error(400, 'empty');
-	if (!looksLike(type, new Uint8Array(bytes))) return error(415, 'not_an_image');
+	const image = await readImage(request);
+	if (image instanceof Response) return image;
+	const { type, bytes } = image;
 	const key = photoKey(tripId, photoId);
 	const existing = await env.PHOTOS.head(key);
 	// A photo is its uploader's: the other member can see it, but not replace it. One uploaded

@@ -25,6 +25,12 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.23-2',
+		added: [
+			'Keep price tag photos in the cloud, in Settings › Account & sync: turn it on to see your photos in History after a trip, and download them.'
+		]
+	},
+	{
 		version: '2026.11.23',
 		added: [
 			'Delete account, in Settings › Account & sync: it deletes your account and everything synced to it, after you confirm with your passkey.'

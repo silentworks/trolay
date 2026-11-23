@@ -1,7 +1,9 @@
 import { liveQuery } from 'dexie';
 import { account } from '#lib/auth/account.svelte.ts';
 import { db } from '#lib/data/db.ts';
+import { settings } from '#lib/settings.svelte.ts';
 import { SignedOutError, SyncCore, type ArrivedItem } from './core.ts';
+import { KeptPhotos } from './kept.ts';
 import { PhotoSync } from './photos.ts';
 
 export type SyncStatus = 'off' | 'synced' | 'pending' | 'syncing' | 'offline' | 'error';
@@ -32,6 +34,11 @@ class SyncEngine {
 		(items) => this.arriving.push(...items)
 	);
 	private readonly photos = new PhotoSync(db);
+	private readonly kept = new KeptPhotos(
+		db,
+		() => settings.keepPhotos,
+		() => account.userId
+	);
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	private again = false;
 
@@ -129,7 +136,7 @@ class SyncEngine {
 	private running: Promise<void> = Promise.resolve();
 
 	/**
-	 * Photos on a shared trip, after the trip's records. Having no signal is passed on (the round
+	 * Photos on a shared trip, after the trip's records, then the ones kept in the cloud. Having no signal is passed on (the round
 	 * is retried when it returns); any other trouble with photos is not worth showing as a sync
 	 * failure, and they are tried again next round.
 	 */
@@ -139,6 +146,12 @@ class SyncEngine {
 		} catch (error) {
 			if (error instanceof TypeError) throw error;
 			console.warn('Photos on the shared trip:', error);
+		}
+		try {
+			await this.kept.run();
+		} catch (error) {
+			if (error instanceof TypeError) throw error;
+			console.warn('Photos kept in the cloud:', error);
 		}
 	}
 

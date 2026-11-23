@@ -1,4 +1,6 @@
 import {
+	deleteAccountOptions,
+	deleteAccountVerify,
 	logout,
 	logoutEverywhere,
 	loginOptions,
@@ -34,6 +36,8 @@ const routes: Record<string, Partial<Record<string, Handler>>> = {
 	'/api/auth/login/verify': { POST: loginVerify },
 	'/api/auth/logout': { POST: logout },
 	'/api/auth/logout-everywhere': { POST: logoutEverywhere },
+	'/api/account/delete/options': { POST: deleteAccountOptions },
+	'/api/account/delete': { POST: deleteAccountVerify },
 	'/api/feedback': { POST: sendFeedback },
 	'/api/sync/push': { POST: push },
 	'/api/sync/pull': { GET: pull },

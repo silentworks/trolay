@@ -25,6 +25,12 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.23',
+		added: [
+			'Delete account, in Settings › Account & sync: it deletes your account and everything synced to it, after you confirm with your passkey.'
+		]
+	},
+	{
 		version: '2026.11.14-2',
 		added: ['A Leave store button beside the total while your trolley is empty.']
 	},

@@ -183,3 +183,31 @@ export async function requestPersistentStorage(): Promise<boolean> {
 	if (await navigator.storage.persisted()) return true;
 	return navigator.storage.persist();
 }
+
+/**
+ * Removes every store, trip, item and photo from this phone, and what it knew about syncing, all
+ * at once. Settings stay. For a phone whose account was deleted, when asked to.
+ */
+export async function removeEverything(database: TrolleyDB = db): Promise<void> {
+	await database.transaction(
+		'rw',
+		[
+			database.stores,
+			database.trips,
+			database.items,
+			database.photos,
+			database.pendingLookups,
+			database.syncState
+		],
+		async () => {
+			await Promise.all([
+				database.stores.clear(),
+				database.trips.clear(),
+				database.items.clear(),
+				database.photos.clear(),
+				database.pendingLookups.clear(),
+				database.syncState.clear()
+			]);
+		}
+	);
+}

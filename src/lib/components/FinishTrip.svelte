@@ -1,6 +1,7 @@
 <script lang="ts">
 	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { untrack } from 'svelte';
+	import { settings } from '#lib/settings.svelte.ts';
 	import { readText } from '#lib/capture/ocr/browser.ts';
 	import { parseReceipt } from '#lib/capture/receipt/parse.ts';
 	import { isMismatch, looksLikeTaxAddedAtTill, receiptDifference } from '#lib/data/trips.ts';
@@ -167,6 +168,9 @@
 			{#if keepPhotos}
 				The {photos} will be kept as evidence, so you can check the difference. Delete them from History
 				when you are done.
+			{:else if settings.keepPhotos}
+				Label photos are deleted from this phone once they're kept in the cloud. You can see them in
+				History.
 			{:else}
 				The {photos} will be deleted. Descriptions, prices and barcodes are kept.
 			{/if}

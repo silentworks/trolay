@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
+	import KeepPhotosSetting from '#lib/components/KeepPhotosSetting.svelte';
 	import SyncStatus from '#lib/components/SyncStatus.svelte';
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { pendingInvite } from '#lib/sharing/invites.ts';
@@ -47,7 +48,6 @@
 				Sign out on all devices
 			</button>
 		</div>
-		<DeleteAccount />
 	{:else if account.status === 'unknown' && account.maybeSignedIn}
 		<p class="hint">
 			You were signed in here, and there is no signal to check right now. Everything you do is kept
@@ -76,6 +76,10 @@
 	{/if}
 
 	{#if account.error}<p class="error" role="alert">{account.error}</p>{/if}
+
+	<div class="photos"><KeepPhotosSetting /></div>
+
+	{#if account.status === 'signedIn'}<DeleteAccount />{/if}
 </div>
 
 <style>
@@ -92,6 +96,10 @@
 	.status {
 		font-weight: 700;
 		color: var(--accent);
+	}
+
+	.photos {
+		margin-top: 24px;
 	}
 
 	.actions {

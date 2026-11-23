@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import AppHeader, { type MenuEntry } from '#lib/components/AppHeader.svelte';
 	import Sheet from '#lib/components/Sheet.svelte';
+	import { settings } from '#lib/settings.svelte.ts';
 	import { formatWhen } from '#lib/dates.ts';
 	import {
 		deleteTrips,
@@ -123,6 +124,9 @@
 		Every finished trip, with its items and photos, will be deleted. Your stores stay. You can undo
 		this for a few seconds afterwards; export a CSV first if you want to keep a copy.
 	</p>
+	{#if settings.keepPhotos}
+		<p class="hint">Photos kept in the cloud stay there until you delete your account.</p>
+	{/if}
 	<button class="btn btn-danger btn-block" type="button" onclick={clearAll}>
 		Delete all history
 	</button>

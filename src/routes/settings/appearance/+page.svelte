@@ -278,46 +278,6 @@
 		border-radius: 50%;
 	}
 
-	/* An on/off switch: a track with a knob that sits right when on. */
-	.switch {
-		position: relative;
-		flex: none;
-		width: 56px;
-		height: var(--tap);
-		padding: 0;
-		border: none;
-		background: transparent;
-	}
-
-	.switch::before {
-		content: '';
-		position: absolute;
-		inset: 8px 0;
-		border-radius: 999px;
-		background: var(--control-border);
-		transition: background-color 0.2s;
-	}
-
-	.switch[aria-checked='true']::before {
-		background: var(--accent);
-	}
-
-	.knob {
-		position: absolute;
-		top: 11px;
-		left: 3px;
-		width: 26px;
-		height: 26px;
-		border-radius: 50%;
-		background: #fff;
-		box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
-		transition: translate 0.2s ease;
-	}
-
-	.switch[aria-checked='true'] .knob {
-		translate: 24px 0;
-	}
-
 	.hint {
 		margin: 0;
 		color: var(--muted);

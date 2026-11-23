@@ -2,7 +2,8 @@ import type { Env } from '../env.ts';
 import { dropFromTrip, notifyTrips } from '../trips/live.ts';
 import { deletePhotos } from '../trips/photos.ts';
 
-// Deleting an account: everything it synced goes, and it can never sign in again.
+// Deleting an account: everything it synced goes, its photos kept in the cloud too, and it can
+// never sign in again.
 //
 // A trip it owns that has a partner on it is the one exception. The partner's phone learns that a
 // trip is gone the way it does when they are taken off one: their membership row is ended and put
@@ -39,6 +40,8 @@ export async function eraseAccount(env: Env, userId: string): Promise<void> {
 			.all<{ id: string }>()
 	).results;
 	for (const trip of withPhotos) await deletePhotos(env, `trips/${trip.id}/`);
+	// And every price tag photo it kept in the cloud.
+	await deletePhotos(env, `users/${userId}/`);
 
 	// Who to tell, once it is done.
 	const partners = (
@@ -119,6 +122,7 @@ export async function eraseAccount(env: Env, userId: string): Promise<void> {
 			 AND record_id IN (SELECT trip_id || ':' || user_id FROM trip_members WHERE user_id = ?1 AND role = 'partner')`
 		),
 		run(`DELETE FROM trip_members WHERE user_id = ?1 AND role = 'partner'`),
+		run(`DELETE FROM kept_photos WHERE user_id = ?1`),
 		// Signing in, every way.
 		run(`DELETE FROM sessions WHERE user_id = ?1`),
 		run(`DELETE FROM passkeys WHERE user_id = ?1`),

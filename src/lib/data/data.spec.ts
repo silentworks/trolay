@@ -350,6 +350,32 @@ describe('finishing a trip', () => {
 		expect(items).toHaveLength(2);
 	});
 
+	it('keeps the photos linked when they are kept in the cloud, and lets go of copies already there', async () => {
+		const { trip } = await tripWithPhotos();
+		const items = await listTripItems(trip.id);
+		const [kept, waiting] = items.map((item) => item.photoId!);
+		await db.photos.update(kept, { kept: 'cloud' });
+		// A partner's item on a shared trip: its photo goes, as it always has.
+		const theirs = await addItem(trip.id, { ...milk, description: 'Eggs' }, { photo: photo() });
+		await db.items.update(theirs.id, { addedBy: 'partner' });
+		await setReceiptTotal(trip.id, 389 + 145);
+
+		expect(await finishTrip(trip.id, { keepPhotos: true, userId: 'me' })).toEqual({
+			photosKept: false,
+			difference: 0
+		});
+		// Both of the shopper's items still point at their photos, for History to show.
+		const after = await listTripItems(trip.id);
+		expect(after.filter((item) => item.photoId).map((item) => item.photoId)).toEqual(
+			expect.arrayContaining([kept, waiting])
+		);
+		expect((await db.items.get(theirs.id))?.photoId).toBeUndefined();
+		// The copy already in the cloud is gone from the phone; the other waits to be kept.
+		expect(await db.photos.get(kept)).toBeUndefined();
+		expect(await db.photos.get(waiting)).toMatchObject({ dropWhenKept: true });
+		expect(await db.photos.count()).toBe(1);
+	});
+
 	it('refuses to finish until the receipt total is entered, leaving the trip open', async () => {
 		const { trip } = await tripWithPhotos();
 		await expect(finishTrip(trip.id)).rejects.toThrow('Enter the receipt total');

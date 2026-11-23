@@ -16,6 +16,7 @@ import { pull } from './sync/pull.ts';
 import { acceptInvite, createInvite } from './trips/invite.ts';
 import { liveTrip } from './trips/live.ts';
 import { leaveTrip, removePartner } from './trips/membership.ts';
+import { keptPhoto } from './trips/kept.ts';
 import { members, photo } from './trips/photos.ts';
 import { push } from './sync/push.ts';
 
@@ -61,16 +62,24 @@ function crossSite(request: Request): boolean {
 
 /** A trip's photos are addressed by trip and photo: /api/trips/<trip>/photos/<photo>. */
 const PHOTO_PATH = /^\/api\/trips\/([^/]+)\/photos\/([^/]+)$/;
+/** A photo kept in the cloud, by its id: /api/kept-photos/<photo>. */
+const KEPT_PATH = /^\/api\/kept-photos\/([^/]+)$/;
 
 export async function handleApi(request: Request, env: Env): Promise<Response> {
 	const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
 	const photoPath = PHOTO_PATH.exec(path);
+	const keptPath = KEPT_PATH.exec(path);
 	const route: Partial<Record<string, Handler>> | undefined = photoPath
 		? {
 				GET: (req, e) => photo(req, e, photoPath[1], photoPath[2]),
 				PUT: (req, e) => photo(req, e, photoPath[1], photoPath[2])
 			}
-		: routes[path];
+		: keptPath
+			? {
+					GET: (req, e) => keptPhoto(req, e, keptPath[1]),
+					PUT: (req, e) => keptPhoto(req, e, keptPath[1])
+				}
+			: routes[path];
 	if (!route) return error(404, 'not_found');
 	const handler = route[request.method];
 	if (!handler) {

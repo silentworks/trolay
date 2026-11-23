@@ -93,6 +93,13 @@ export interface Photo extends SyncMeta {
 	createdAt: number;
 	/** The photo is on the server too, for the partner on a shared trip (src/lib/sync/photos.ts). */
 	uploaded?: boolean;
+	/**
+	 * Kept in the cloud (src/lib/sync/kept.ts): 'cloud' once it is, 'over-limit' when its trip
+	 * already had as many as the cloud keeps, so it is not tried again.
+	 */
+	kept?: 'cloud' | 'over-limit';
+	/** Its trip finished: once it is kept in the cloud, this phone's copy can go. */
+	dropWhenKept?: boolean;
 }
 
 export interface ProductCacheEntry {

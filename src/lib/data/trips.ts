@@ -156,6 +156,33 @@ async function removePhotos(items: Item[], now: number): Promise<void> {
 	}
 }
 
+/**
+ * At the end of a trip, with photos kept in the cloud: the shopper's own photos stay linked to
+ * their items, so History can show them from the cloud. This phone's copy of one already kept
+ * goes now, and of one not kept yet once it is. A partner's photos go as they always have.
+ */
+async function releasePhotos(items: Item[], me: string | undefined, now: number): Promise<void> {
+	const theirs: Item[] = [];
+	for (const item of items) {
+		if (!item.photoId) continue;
+		if (item.addedBy && item.addedBy !== me) {
+			theirs.push(item);
+			continue;
+		}
+		const photo = await db.photos.get(item.photoId);
+		if (photo?.kept === 'cloud') await db.photos.delete(photo.id);
+		else if (photo) await db.photos.update(photo.id, { dropWhenKept: true });
+	}
+	await removePhotos(theirs, now);
+}
+
+export interface FinishOptions {
+	/** "Keep price tag photos in the cloud" is on. */
+	keepPhotos?: boolean;
+	/** Who is signed in, to tell the shopper's own photos from a partner's. */
+	userId?: string;
+}
+
 export interface FinishResult {
 	photosKept: boolean;
 	difference?: number;
@@ -164,9 +191,13 @@ export interface FinishResult {
 /**
  * Closes the trip and moves it to history, with its totals as they stand now. The receipt total
  * must have been entered: it is what the trip is checked against. The label photos
- * are deleted unless the receipt total differs from the app's, when they are kept as evidence.
+ * are deleted unless the receipt total differs from the app's, when they are kept as evidence, or
+ * they are kept in the cloud (see releasePhotos).
  */
-export async function finishTrip(tripId: string): Promise<FinishResult> {
+export async function finishTrip(
+	tripId: string,
+	{ keepPhotos = false, userId }: FinishOptions = {}
+): Promise<FinishResult> {
 	return db.transaction('rw', [db.trips, db.stores, db.items, db.photos], async () => {
 		const trip = await db.trips.get(tripId);
 		if (!isLive(trip) || trip.status !== 'open') throw new Error('This trip is not open.');
@@ -185,7 +216,10 @@ export async function finishTrip(tripId: string): Promise<FinishResult> {
 		const difference = receiptDifference(trip.receiptTotalMinor, inclMinor);
 		const photosKept = isMismatch(difference) && items.some((item) => item.photoId);
 		const now = Date.now();
-		if (!photosKept) await removePhotos(items, now);
+		if (!photosKept) {
+			if (keepPhotos) await releasePhotos(items, userId, now);
+			else await removePhotos(items, now);
+		}
 		await db.trips.update(tripId, {
 			status: 'finished',
 			finishedAt: now,

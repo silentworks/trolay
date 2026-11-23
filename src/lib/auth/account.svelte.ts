@@ -1,4 +1,5 @@
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
+import { removeEverything } from '#lib/data/db.ts';
 
 // Signing in is optional: the app is complete without an account. An account only adds sync
 // between your own devices, and this module is the only part of the app that talks to /api/auth.
@@ -10,7 +11,8 @@ const MESSAGES: Record<string, string> = {
 	challenge_expired: 'That took too long. Try again.',
 	already_registered: 'This passkey is already registered.',
 	wrong_account: 'That passkey belongs to a different account.',
-	too_many_requests: 'Too many tries. Wait a while and try again.'
+	too_many_requests: 'Too many tries. Wait a while and try again.',
+	unauthorized: 'You were signed out. Sign in and try again.'
 };
 
 function explain(cause: unknown): string {
@@ -160,12 +162,58 @@ class Account {
 		});
 	}
 
+	/**
+	 * Deletes the account, after the shopper confirms with one of its passkeys, and everything
+	 * synced to it. This phone is signed out, and keeps its trips and stores unless asked to remove
+	 * them. Resolves true once the account is gone; false, with `error` set, when it is not.
+	 */
+	async deleteAccount(removeFromPhone: boolean): Promise<boolean> {
+		let deleted = false;
+		await this.attempt(async () => {
+			const { challengeId, options } = await api<{
+				challengeId: string;
+				options: Parameters<typeof startAuthentication>[0]['optionsJSON'];
+			}>('/api/account/delete/options', {});
+			const credential = await startAuthentication({ optionsJSON: options });
+			const { passkeys } = await api<{ passkeys: string[] }>('/api/account/delete', {
+				challengeId,
+				credential
+			});
+			deleted = true;
+			this.setSignedIn(undefined);
+			forgetPasskeys(options.rpId ?? location.hostname, passkeys);
+			if (removeFromPhone) await removeEverything();
+		});
+		return deleted;
+	}
+
 	/** Signs this account out on every device, this one included: for a lost or sold phone. */
 	signOutEverywhere(): Promise<void> {
 		return this.attempt(async () => {
 			await api('/api/auth/logout-everywhere', {});
 			this.setSignedIn(undefined);
 		});
+	}
+}
+
+/**
+ * Tells the passkey manager these passkeys no longer work, so it can offer to remove them. Only
+ * some browsers can be told (the WebAuthn Signal API); elsewhere the shopper removes it themselves.
+ */
+function forgetPasskeys(rpId: string, credentialIds: string[]): void {
+	const signal = (
+		globalThis.PublicKeyCredential as
+			| {
+					signalUnknownCredential?: (options: {
+						rpId: string;
+						credentialId: string;
+					}) => Promise<void>;
+			  }
+			| undefined
+	)?.signalUnknownCredential;
+	if (!signal) return;
+	for (const credentialId of credentialIds) {
+		signal.call(PublicKeyCredential, { rpId, credentialId }).catch(() => {});
 	}
 }
 

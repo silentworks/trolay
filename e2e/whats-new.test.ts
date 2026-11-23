@@ -22,7 +22,10 @@ test('after an update, what changed since last time shows once, skipped releases
 	await expect(news).toBeVisible();
 	await expect(news.getByRole('heading', { level: 3 })).toHaveCount(2);
 	await expect(news.getByRole('heading', { level: 3 }).first()).toContainText(CHANGELOG[0].version);
-	await expect(news).not.toContainText(CHANGELOG[2].version);
+	// Not as part of a later one of the same day, either: "2026.11.14" is in "2026.11.14-2".
+	await expect(news).not.toContainText(
+		new RegExp(`${CHANGELOG[2].version.replaceAll('.', '\\.')}(?![-\\d])`)
+	);
 	// The newest release's first section, whichever it is.
 	const section = SECTIONS.find(({ key }) => CHANGELOG[0][key]?.length)!.title;
 	await expect(news.getByRole('heading', { name: section, level: 4 }).first()).toBeVisible();

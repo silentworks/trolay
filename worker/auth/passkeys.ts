@@ -8,6 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import type { Env } from '../env.ts';
 import { BadRequest, error, json, readJson } from '../http.ts';
+import { eraseAccount } from './erase.ts';
 import { endAllSessions, endSession, sessionUser, startSession } from './session.ts';
 import { base64url, randomToken } from './tokens.ts';
 import { HOUR, source, withinLimits } from '../rate.ts';
@@ -209,11 +210,19 @@ export async function loginOptions(request: Request, env: Env): Promise<Response
 	return json({ challengeId, options });
 }
 
-/** Step two: the passkey's signature over the challenge, then a session. */
-export async function loginVerify(request: Request, env: Env): Promise<Response> {
-	const body = await readJson(request);
-	const { challenge } = await takeChallenge(env, body.challengeId, 'login');
-	const credentialJson = credentialResponse(body);
+/**
+ * Checks a passkey's signature over a challenge. Returns the passkey's account, or undefined when
+ * it is unknown (or its account is), or the signature is not good. `owner` limits it to one
+ * account's passkeys.
+ */
+async function assertion(
+	request: Request,
+	env: Env,
+	challenge: string,
+	credentialJson: Record<string, unknown>,
+	step: string,
+	owner?: string
+): Promise<string | undefined> {
 	if (typeof credentialJson.id !== 'string') throw new BadRequest('missing_credential');
 	const { rpID, origin } = relyingParty(request);
 
@@ -230,8 +239,7 @@ export async function loginVerify(request: Request, env: Env): Promise<Response>
 			counter: number;
 			transports: string | null;
 		}>();
-	// The same answer for an unknown passkey as for a bad signature.
-	if (!key) return error(401, 'verification_failed');
+	if (!key || (owner !== undefined && key.user_id !== owner)) return undefined;
 
 	let verification;
 	try {
@@ -249,18 +257,79 @@ export async function loginVerify(request: Request, env: Env): Promise<Response>
 			}
 		});
 	} catch (cause) {
-		refused('sign-in', cause);
-		return error(401, 'verification_failed');
+		refused(step, cause);
+		return undefined;
 	}
-	if (!verification.verified) return error(401, 'verification_failed');
+	if (!verification.verified) return undefined;
 
 	await env.DB.prepare('UPDATE passkeys SET counter = ?, last_used_at = ? WHERE id = ?')
 		.bind(verification.authenticationInfo.newCounter, Date.now(), key.id)
 		.run();
-	return withCookie(
-		json({ user: { id: key.user_id } }),
-		await startSession(request, env, key.user_id)
+	return key.user_id;
+}
+
+/** Step two: the passkey's signature over the challenge, then a session. */
+export async function loginVerify(request: Request, env: Env): Promise<Response> {
+	const body = await readJson(request);
+	const { challenge } = await takeChallenge(env, body.challengeId, 'login');
+	const userId = await assertion(request, env, challenge, credentialResponse(body), 'sign-in');
+	// The same answer for an unknown passkey as for a bad signature.
+	if (!userId) return error(401, 'verification_failed');
+	return withCookie(json({ user: { id: userId } }), await startSession(request, env, userId));
+}
+
+/**
+ * Step one of deleting the account: a challenge that only this account's own passkeys can
+ * answer, so a phone left signed in is not enough to delete it. It is a sign-in challenge tied
+ * to the account; answered here, it signs nobody in.
+ */
+export async function deleteAccountOptions(request: Request, env: Env): Promise<Response> {
+	const userId = await sessionUser(request, env);
+	if (!userId) return error(401, 'unauthorized');
+	if (!(await ceremonyAllowed(request, env))) return error(429, 'too_many_requests');
+	const { rpID } = relyingParty(request);
+	const keys = (
+		await env.DB.prepare('SELECT id, transports FROM passkeys WHERE user_id = ?')
+			.bind(userId)
+			.all<{ id: string; transports: string | null }>()
+	).results;
+	const options = await generateAuthenticationOptions({
+		rpID,
+		userVerification: 'preferred',
+		allowCredentials: keys.map((key) => ({
+			id: key.id,
+			transports: key.transports ? JSON.parse(key.transports) : undefined
+		}))
+	});
+	const challengeId = await saveChallenge(env, options.challenge, 'login', userId);
+	return json({ challengeId, options });
+}
+
+/** Step two: one of the account's passkeys signed the challenge, so the account is deleted. */
+export async function deleteAccountVerify(request: Request, env: Env): Promise<Response> {
+	const userId = await sessionUser(request, env);
+	if (!userId) return error(401, 'unauthorized');
+	const body = await readJson(request);
+	const taken = await takeChallenge(env, body.challengeId, 'login');
+	// A plain sign-in challenge, or one made for another account, never deletes anything.
+	if (taken.userId !== userId) throw new BadRequest('challenge_expired');
+	const signer = await assertion(
+		request,
+		env,
+		taken.challenge,
+		credentialResponse(body),
+		'account deletion',
+		userId
 	);
+	if (signer !== userId) return error(401, 'verification_failed');
+	// The phone is told every passkey that no longer works, so it can tell the passkey manager.
+	const passkeys = (
+		await env.DB.prepare('SELECT id FROM passkeys WHERE user_id = ?')
+			.bind(userId)
+			.all<{ id: string }>()
+	).results.map((key) => key.id);
+	await eraseAccount(env, userId);
+	return withCookie(json({ deleted: true, passkeys }), await endSession(request, env));
 }
 
 export async function me(request: Request, env: Env): Promise<Response> {

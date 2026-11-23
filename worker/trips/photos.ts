@@ -110,9 +110,15 @@ export async function cleanUpPhotos(env: Env, tripId: string): Promise<void> {
 	if (!trip) return;
 	const gone = trip.deleted_at !== null;
 	if (!gone && (trip.status !== 'finished' || trip.photos_kept === 1)) return;
+	await deletePhotos(env, `trips/${tripId}/`);
+}
+
+/** Deletes every photo whose key starts with the prefix. Safe to repeat. */
+export async function deletePhotos(env: Env, prefix: string): Promise<void> {
+	if (!env.PHOTOS) return;
 	let cursor: string | undefined;
 	do {
-		const page = await env.PHOTOS.list({ prefix: `trips/${tripId}/`, cursor });
+		const page = await env.PHOTOS.list({ prefix, cursor });
 		if (page.objects.length) await env.PHOTOS.delete(page.objects.map((object) => object.key));
 		cursor = page.truncated ? page.cursor : undefined;
 	} while (cursor);

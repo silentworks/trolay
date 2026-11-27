@@ -65,29 +65,38 @@ function withoutPending<T extends Pending>({
 }
 
 export async function createBackup(): Promise<Backup> {
-	return db.transaction('r', db.stores, db.trips, db.items, db.photos, async () => {
-		const [stores, trips, items, photos] = await Promise.all([
-			db.stores.toArray(),
-			db.trips.toArray(),
-			db.items.toArray(),
-			db.photos.toArray()
-		]);
-		return {
-			app: 'trolay' as const,
-			format: BACKUP_FORMAT,
-			exportedAt: new Date().toISOString(),
-			stores: stores.map(withoutPending),
-			trips: trips.map(withoutPending),
-			items: items.map(withoutPending),
-			photos: await Promise.all(
-				photos.map(async ({ blob, thumbBlob, ...rest }) => ({
-					...rest,
-					blob: await encode(blob),
-					thumbBlob: await encode(thumbBlob)
-				}))
-			)
-		};
-	});
+	// Only the reads happen in the transaction. Turning photos into text waits on reading their
+	// bytes, which isn't the database, and Safari commits a transaction left waiting on anything
+	// else ("Transaction committed too early").
+	const [stores, trips, items, photos] = await db.transaction(
+		'r',
+		db.stores,
+		db.trips,
+		db.items,
+		db.photos,
+		() =>
+			Promise.all([
+				db.stores.toArray(),
+				db.trips.toArray(),
+				db.items.toArray(),
+				db.photos.toArray()
+			])
+	);
+	return {
+		app: 'trolay',
+		format: BACKUP_FORMAT,
+		exportedAt: new Date().toISOString(),
+		stores: stores.map(withoutPending),
+		trips: trips.map(withoutPending),
+		items: items.map(withoutPending),
+		photos: await Promise.all(
+			photos.map(async ({ blob, thumbBlob, ...rest }) => ({
+				...rest,
+				blob: await encode(blob),
+				thumbBlob: await encode(thumbBlob)
+			}))
+		)
+	};
 }
 
 // ---------------------------------------------------------------------------------------------

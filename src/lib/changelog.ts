@@ -25,6 +25,10 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.27-2',
+		fixed: ['Downloading a backup on an iPhone works again when your trips have price tag photos.']
+	},
+	{
 		version: '2026.11.27',
 		changed: [
 			'Every page in Settings now looks like Settings itself: grouped lists, with a short note under each group saying what it does.'

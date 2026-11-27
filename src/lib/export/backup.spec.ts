@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '#lib/data/db.ts';
 import { addItem, deleteItem } from '#lib/data/items.ts';
 import { addStore } from '#lib/data/stores.ts';
@@ -84,6 +84,23 @@ describe('JSON backup', () => {
 
 		await restoreBackup(readBackup(file));
 		expect(await snapshot()).toEqual(before);
+	});
+
+	it('backs up photos when reading them takes a while, as on iPhones', async () => {
+		// Safari commits a transaction once it is waiting on anything but the database, such as
+		// reading a photo's bytes. Reading them a macrotask later does the same here.
+		await fillDatabase();
+		const read = Blob.prototype.arrayBuffer;
+		const slow = vi.spyOn(Blob.prototype, 'arrayBuffer').mockImplementation(function (this: Blob) {
+			return new Promise((done) => setTimeout(() => done(read.call(this)), 0));
+		});
+		try {
+			const backup = await createBackup();
+			expect(backup.photos).toHaveLength(1);
+			expect(backup.photos[0].blob.base64).not.toBe('');
+		} finally {
+			slow.mockRestore();
+		}
 	});
 
 	it('queues what it restores to sync, and leaves that bookkeeping out of the file', async () => {

@@ -17,6 +17,19 @@ async function ownSource(page: Page) {
 
 const send = (page: Page) => page.getByRole('button', { name: 'Send', exact: true });
 
+/**
+ * Presses Send. The form is taller than the screen, and just after a scroll Chromium's phone
+ * emulation can hit-test a tap against where things were, sending it into the bot check's frame
+ * above Send. So Send is scrolled to first, and the page given a frame to settle.
+ */
+async function pressSend(page: Page) {
+	await send(page).scrollIntoViewIfNeeded();
+	await page.evaluate(
+		() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
+	);
+	await send(page).click();
+}
+
 async function openForm(page: Page) {
 	await page.goto('/settings');
 	await page.getByRole('link', { name: 'Send feedback' }).click();
@@ -47,7 +60,7 @@ test('feedback is sent once the bot check passes, and the draft is cleared', asy
 	// Send waits for Turnstile's token.
 	await expect(send(page)).toBeEnabled({ timeout: 20_000 });
 	const request = page.waitForRequest('**/api/feedback');
-	await send(page).click();
+	await pressSend(page);
 	const body = (await request).postDataJSON();
 	expect(body).toMatchObject({
 		topic: 'Problem',
@@ -67,7 +80,7 @@ test('a message the server refuses shows why, and keeps what was typed', async (
 	await page.getByRole('textbox', { name: 'Message' }).fill('Short');
 	await page.getByLabel('Your email').fill('not an address');
 	await expect(send(page)).toBeEnabled({ timeout: 20_000 });
-	await send(page).click();
+	await pressSend(page);
 	// Checked here first: nothing is sent.
 	await expect(page.getByText('Write at least 10 characters.')).toBeVisible();
 	await expect(page.getByText('That doesn’t look like an email address.')).toBeVisible();
@@ -81,7 +94,7 @@ test('a message the server refuses shows why, and keeps what was typed', async (
 		const body = { ...route.request().postDataJSON(), email: 'two@a.test, b@c.test' };
 		return route.continue({ postData: JSON.stringify(body) });
 	});
-	await send(page).click();
+	await pressSend(page);
 	await expect(page.getByRole('alert')).toHaveText('That doesn’t look like an email address.');
 	await expect(page.getByRole('textbox', { name: 'Message' })).toHaveValue(
 		'Please add a dark mode for the receipt view.'

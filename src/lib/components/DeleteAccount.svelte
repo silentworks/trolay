@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { toast } from '#lib/toast.svelte.ts';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 	import Sheet from './Sheet.svelte';
 
 	// Deleting the account: a sheet says what goes, and the shopper confirms with their passkey.
 	let open = $state(false);
 	let removeFromPhone = $state(false);
+
+	const TRASH = ['M5 7h14', 'M9 7V4h6v3', 'M7 7l1 13h8l1-13'];
 
 	async function confirm() {
 		if (!(await account.deleteAccount(removeFromPhone))) return;
@@ -14,18 +18,19 @@
 	}
 </script>
 
-<button
-	class="btn btn-danger btn-block delete"
-	type="button"
-	disabled={account.busy}
-	onclick={() => {
-		account.error = undefined;
-		removeFromPhone = false;
-		open = true;
-	}}
->
-	Delete account
-</button>
+<SettingsGroup>
+	<SettingsRow
+		label="Delete account"
+		icon={TRASH}
+		tone="danger"
+		disabled={account.busy}
+		onclick={() => {
+			account.error = undefined;
+			removeFromPhone = false;
+			open = true;
+		}}
+	/>
+</SettingsGroup>
 
 <Sheet
 	{open}
@@ -80,10 +85,6 @@
 </Sheet>
 
 <style>
-	.delete {
-		margin-top: 32px;
-	}
-
 	.notes {
 		padding-left: 1.25em;
 	}

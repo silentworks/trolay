@@ -5,6 +5,8 @@
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { shortVersion } from '#lib/changelog.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
+	import SettingsGroup from '#lib/components/SettingsGroup.svelte';
+	import SettingsRow from '#lib/components/SettingsRow.svelte';
 	import {
 		COUNT_FROM,
 		DETAIL_LABELS,
@@ -213,12 +215,14 @@
 <div class="page">
 	<AppHeader title="Send feedback" back={{ href: resolve('/settings'), label: 'Settings' }} />
 
-	<p class="intro">Tell us what you think: an idea, a problem, anything. We read every message.</p>
-
 	<form onsubmit={send} novalidate>
-		<div class="form-rows">
-			<div class="form-row form-row-wide">
-				<span id="{uid}-topic">What’s it about?</span>
+		<SettingsGroup
+			title="Your message"
+			note="Tell us what you think: an idea, a problem, anything. We read every message."
+			padded
+		>
+			<div class="field">
+				<span class="field-label" id="{uid}-topic">What’s it about?</span>
 				<div class="segmented" role="radiogroup" aria-labelledby="{uid}-topic">
 					{#each TOPICS as value (value)}
 						<label>
@@ -228,9 +232,8 @@
 					{/each}
 				</div>
 			</div>
-
-			<div class="form-row form-row-wide">
-				<label for="{uid}-message">Message</label>
+			<div class="field">
+				<label class="field-label" for="{uid}-message">Message</label>
 				<textarea
 					id="{uid}-message"
 					class="input"
@@ -247,65 +250,73 @@
 					</p>
 				{/if}
 			</div>
+		</SettingsGroup>
 
-			<div class="form-row">
-				<label for="{uid}-email">Your email <span class="visually-hidden">(optional)</span></label>
-				<input
-					id="{uid}-email"
-					class="input form-value"
-					type="email"
-					autocomplete="email"
-					inputmode="email"
-					placeholder="Optional"
-					bind:value={email}
-					aria-invalid={tried && !!emailProblem}
-					aria-describedby="{uid}-email-hint"
-				/>
-				{#if tried && emailProblem}
-					<p class="problem" id="{uid}-email-hint">{emailProblem}</p>
-				{:else}
-					<p class="hint" id="{uid}-email-hint">
-						Only if you’d like a reply. It’s used to answer this message and nothing else.
-					</p>
-				{/if}
-			</div>
+		{#snippet emailProblemLine()}
+			<span class="problem">{emailProblem}</span>
+		{/snippet}
 
-			<div class="form-row">
-				<span aria-hidden="true">Phone details</span>
-				<button
-					class="toggle-pill"
-					type="button"
-					role="switch"
-					aria-checked={includeDetails}
-					aria-label="Include details about my phone"
-					onclick={() => (includeDetails = !includeDetails)}
+		<SettingsGroup
+			title="Reply and details"
+			note="Your email is only for a reply. It’s used to answer this message and nothing else."
+		>
+			{#snippet children(ids)}
+				<SettingsRow
+					label="Your email"
+					labelFor="{uid}-email"
+					sub={tried && emailProblem ? emailProblemLine : undefined}
+					subId="{uid}-email-problem"
 				>
-					{includeDetails ? 'Included' : 'Left out'}
-				</button>
-			</div>
-		</div>
-
-		<details class="sent">
-			<summary>What’s sent</summary>
-			{#if includeDetails}
-				<dl>
-					{#each Object.entries(DETAIL_LABELS) as [key, label] (key)}
-						<div>
-							<dt>{label}</dt>
-							<dd>{details[key as DetailKey]}</dd>
+					<input
+						id="{uid}-email"
+						class="input form-value email"
+						type="email"
+						autocomplete="email"
+						inputmode="email"
+						placeholder="Optional"
+						bind:value={email}
+						aria-invalid={tried && !!emailProblem}
+						aria-describedby="{tried && emailProblem ? `${uid}-email-problem ` : ''}{ids.note}"
+					/>
+				</SettingsRow>
+				<SettingsRow
+					label="Include details about my phone"
+					checked={includeDetails}
+					onclick={() => (includeDetails = !includeDetails)}
+				/>
+				<li>
+					<details class="sent">
+						<summary class="settings-row">
+							<span class="text"><span class="label">What’s sent</span></span>
+							<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+								<path d="m9.5 6 6 6-6 6" />
+							</svg>
+						</summary>
+						<div class="sent-body">
+							{#if includeDetails}
+								<dl>
+									{#each Object.entries(DETAIL_LABELS) as [key, label] (key)}
+										<div>
+											<dt>{label}</dt>
+											<dd>{details[key as DetailKey]}</dd>
+										</div>
+									{/each}
+								</dl>
+							{:else}
+								<p>No details about your phone.</p>
+							{/if}
+							<p>
+								{#if account.status === 'signedIn'}
+									Your account id goes too, because you’re signed in, so we can look into sync
+									problems.
+								{/if}
+								Your trips, items and stores are never sent.
+							</p>
 						</div>
-					{/each}
-				</dl>
-			{:else}
-				<p>No details about your phone.</p>
-			{/if}
-			<p>
-				{#if account.status === 'signedIn'}
-					Your account id goes too, because you’re signed in, so we can look into sync problems.
-				{/if}
-				Your trips, items and stores are never sent.
-			</p>
-		</details>
+					</details>
+				</li>
+			{/snippet}
+		</SettingsGroup>
 
 		{#if !online}
 			<p class="offline" role="status">Sending feedback needs a connection.</p>
@@ -335,9 +346,23 @@
 		padding: 0 var(--gutter) var(--gutter);
 	}
 
-	.intro {
-		margin: 0 0 20px;
-		color: var(--muted);
+	.field {
+		display: grid;
+		gap: 8px;
+	}
+
+	.field + .field {
+		margin-top: var(--space-4);
+	}
+
+	.field-label {
+		font-weight: 600;
+	}
+
+	/* The pills start at the left, their clear border outside the line of the label. */
+	.segmented {
+		justify-content: flex-start;
+		margin-left: -4px;
 	}
 
 	textarea.input {
@@ -348,24 +373,47 @@
 		line-height: 1.4;
 	}
 
-	.count {
-		color: var(--muted);
+	.field p {
+		margin: 0;
 		font-size: 0.85rem;
 	}
 
-	.sent {
-		margin: -8px 0 16px;
+	.count {
 		color: var(--muted);
-		font-size: 0.9rem;
 	}
 
+	.problem {
+		color: var(--danger-text);
+	}
+
+	/* Half the row at most, so the label keeps its line. */
+	.email {
+		flex: 0 1 50%;
+		min-width: 0;
+	}
+
+	/* The chevron turns down while it's open. */
 	summary {
-		min-height: var(--tap);
-		display: flex;
-		align-items: center;
-		color: var(--accent);
-		font-weight: 600;
+		list-style: none;
 		cursor: pointer;
+	}
+
+	summary::-webkit-details-marker {
+		display: none;
+	}
+
+	summary .chevron {
+		transition: rotate 0.2s;
+	}
+
+	.sent[open] summary .chevron {
+		rotate: 90deg;
+	}
+
+	.sent-body {
+		padding: 0 16px 12px;
+		color: var(--muted);
+		font-size: 0.9rem;
 	}
 
 	.sent dl {
@@ -394,11 +442,11 @@
 	/* Room for the widget before it draws, so the button doesn't jump down under the finger. */
 	.widget {
 		min-height: 65px;
-		margin-bottom: 16px;
+		margin: 24px 0 16px;
 	}
 
 	.offline {
-		margin: 0 0 16px;
+		margin: 24px 0 16px;
 		padding: 10px 14px;
 		border-radius: var(--radius);
 		background: var(--warning-bg);

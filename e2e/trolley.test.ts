@@ -371,18 +371,14 @@ test('a backup restores everything on a new phone', async ({ page, browser }) =>
 	await fresh.goto('/settings/backup');
 
 	// Something that is not a backup is refused, and nothing changes.
-	await fresh
-		.getByRole('region', { name: 'Backup' })
-		.locator('input[type=file]')
-		.setInputFiles({
-			name: 'notes.json',
-			mimeType: 'application/json',
-			buffer: Buffer.from('{"a":1}')
-		});
+	await fresh.locator('input[type=file]').setInputFiles({
+		name: 'notes.json',
+		mimeType: 'application/json',
+		buffer: Buffer.from('{"a":1}')
+	});
 	await expect(fresh.getByRole('alert')).toHaveText('This is not a Trolay backup.');
 
 	await fresh
-		.getByRole('region', { name: 'Backup' })
 		.locator('input[type=file]')
 		.setInputFiles({ name: backup.name, mimeType: 'application/json', buffer: backup.bytes });
 	const confirm = fresh.getByRole('dialog', { name: 'Restore this backup?' });

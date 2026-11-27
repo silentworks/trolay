@@ -61,12 +61,12 @@ test('each row opens its page, and its back button returns to Settings', async (
 
 test('About shows the version and links to the guide', async ({ page }) => {
 	await page.goto('/settings/about');
-	await expect(page.getByText('Version')).toBeVisible();
+	await expect(page.getByText('Version', { exact: true })).toBeVisible();
 	// The short version is the build's date, with the full build number under it.
 	await expect(page.getByText(/^\d{4}\.\d{2}\.\d{2}/)).toBeVisible();
 	await expect(page.getByText(/^\d{13}$/)).toBeVisible();
 	await expect(page.getByText('kept on this phone')).toBeVisible();
-	await page.getByRole('link', { name: 'Show the getting started guide' }).click();
+	await page.getByRole('link', { name: 'Getting started guide' }).click();
 	await expect(page.getByRole('heading', { name: 'Welcome to Trolay' })).toBeVisible();
 });
 

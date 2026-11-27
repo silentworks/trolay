@@ -25,6 +25,12 @@ export const SECTIONS = [
 /** Newest first. */
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		version: '2026.11.27',
+		changed: [
+			'Every page in Settings now looks like Settings itself: grouped lists, with a short note under each group saying what it does.'
+		]
+	},
+	{
 		version: '2026.11.23-2',
 		added: [
 			'Keep price tag photos in the cloud, in Settings › Account & sync: turn it on to see your photos in History after a trip, and download them.'

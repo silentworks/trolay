@@ -2,7 +2,8 @@
 	import { account } from '#lib/auth/account.svelte.ts';
 	import { settings } from '#lib/settings.svelte.ts';
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
-	import SettingsSection from './SettingsSection.svelte';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 
 	// "Keep price tag photos in the cloud": off until the shopper turns it on, and only signed in.
 	// Turning it on uploads straight away; turning it off only stops new uploads.
@@ -14,27 +15,16 @@
 		settings.setKeepPhotos(next);
 		if (next) void syncEngine.syncNow();
 	}
+
+	const CLOUD = ['M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.5 1.5A3.5 3.5 0 0 1 17.5 18Z'];
 </script>
 
-<SettingsSection
-	title="Keep price tag photos in the cloud"
-	lead="Copies of your price tag photos are kept in Trolay's cloud storage. You can see and download them from History. They stay there until you delete your account."
->
-	{#snippet control(ids)}
-		<button
-			class="switch"
-			type="button"
-			role="switch"
-			aria-checked={on}
-			aria-labelledby={ids.title}
-			aria-describedby="{ids.lead} keep-photos-note"
-			disabled={!signedIn && !on}
-			onclick={toggle}
-		>
-			<span class="knob"></span>
-		</button>
-	{/snippet}
-	<p class="hint" id="keep-photos-note">
+{#snippet note()}
+	<p>
+		Copies of your price tag photos are kept in Trolay's cloud storage. You can see and download
+		them from History. They stay there until you delete your account.
+	</p>
+	<p>
 		{#if !signedIn && !on}
 			Sign in to keep your photos in the cloud.
 		{:else if on}
@@ -44,16 +34,17 @@
 			Turning this on keeps the photos still on this phone straight away, and every new one after.
 		{/if}
 	</p>
-</SettingsSection>
+{/snippet}
 
-<style>
-	.hint {
-		margin: 0;
-		color: var(--muted);
-		font-size: 0.88rem;
-	}
-
-	.switch:disabled {
-		opacity: 0.5;
-	}
-</style>
+<SettingsGroup title="Photos" {note}>
+	{#snippet children(ids)}
+		<SettingsRow
+			label="Keep price tag photos in the cloud"
+			icon={CLOUD}
+			checked={on}
+			disabled={!signedIn && !on}
+			describedby={ids.note}
+			onclick={toggle}
+		/>
+	{/snippet}
+</SettingsGroup>

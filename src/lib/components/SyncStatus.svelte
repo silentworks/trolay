@@ -3,15 +3,14 @@
 	import { syncEngine } from '#lib/sync/engine.svelte.ts';
 </script>
 
+<!-- A line of text, so it can sit under a settings row's label. -->
 {#if syncEngine.status !== 'off'}
-	<p class="sync" data-status={syncEngine.status} role="status">{syncMessage(syncEngine)}</p>
+	<span class="sync" data-status={syncEngine.status} role="status">{syncMessage(syncEngine)}</span>
 {/if}
 
 <style>
 	.sync {
-		margin: 0 0 12px;
-		color: var(--muted);
-		font-size: 0.9rem;
+		display: block;
 	}
 
 	.sync[data-status='synced'] {

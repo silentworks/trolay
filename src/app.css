@@ -586,3 +586,151 @@ button {
 	padding: 10px 14px;
 	margin: 0 0 16px;
 }
+
+/* Settings, every page of it: a muted title over a card of rows, and a note under it saying what
+   the group does (SettingsGroup.svelte, SettingsRow.svelte). */
+.settings-title {
+	margin: calc(20px * var(--density)) 4px calc(6px * var(--density));
+	color: var(--muted);
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.settings-card {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	overflow: hidden;
+}
+
+/* A group with no title still stands apart from the one above. */
+.settings-group:not(:has(> .settings-title)) {
+	margin-top: calc(24px * var(--density));
+}
+
+/* Something other than rows (a picker, a slider, a form), with room round it. A container, so
+   what's inside can lay itself out by the room the card has. */
+.settings-card.padded {
+	container-type: inline-size;
+	padding: var(--space-4);
+}
+
+.settings-note {
+	margin: 6px 4px 0;
+	color: var(--muted);
+	font-size: 0.85rem;
+}
+
+.settings-note p {
+	margin: 0;
+}
+
+.settings-note p + p {
+	margin-top: 4px;
+}
+
+.settings-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: var(--tap);
+	margin: 0;
+	padding: calc(10px * var(--density)) 10px calc(10px * var(--density)) 16px;
+	border: none;
+	border-radius: 0;
+	background: none;
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	text-decoration: none;
+}
+
+/* A hairline between rows, starting after the icon as on iOS. */
+li + li > .settings-row::before,
+li + li > details > .settings-row::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 16px;
+	right: 0;
+	border-top: 1px solid var(--border);
+}
+
+li + li > .settings-row.with-icon::before {
+	left: 52px;
+}
+
+/* Only where there's a pointer to hover with: on a touch screen it would stay lit after a tap. */
+@media (hover: hover) {
+	a.settings-row:hover,
+	button.settings-row:hover:not(:disabled),
+	label.settings-row:hover,
+	summary.settings-row:hover {
+		background: var(--surface-2);
+	}
+}
+
+button.settings-row:disabled {
+	opacity: 0.5;
+}
+
+.settings-row .text {
+	display: grid;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.settings-row .label {
+	font-weight: 600;
+}
+
+.settings-row .sub {
+	color: var(--muted);
+	font-size: 0.88rem;
+}
+
+.settings-row.action {
+	color: var(--accent);
+}
+
+.settings-row.danger {
+	color: var(--danger);
+}
+
+/* On a narrow phone the value gives way, so the label stays on one line. */
+.settings-row .value {
+	flex: 0 1 auto;
+	min-width: 0;
+	color: var(--muted);
+	font-size: 0.92rem;
+	text-align: right;
+}
+
+.settings-row svg {
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.settings-row .icon {
+	width: 24px;
+	height: 24px;
+}
+
+.settings-row .chevron {
+	width: 18px;
+	height: 18px;
+	color: var(--muted);
+}
+
+.settings-row .switch:disabled {
+	opacity: 0.5;
+}

@@ -3,6 +3,7 @@
 	import { CHANGELOG } from '#lib/changelog.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
 	import ChangelogEntries from '#lib/components/ChangelogEntries.svelte';
+	import SettingsGroup from '#lib/components/SettingsGroup.svelte';
 </script>
 
 <svelte:head>
@@ -11,9 +12,9 @@
 
 <div class="page">
 	<AppHeader title="What's new" back={{ href: resolve('/settings/about'), label: 'About' }} />
-	<div class="card">
+	<SettingsGroup padded>
 		<ChangelogEntries entries={CHANGELOG} level={2} />
-	</div>
+	</SettingsGroup>
 </div>
 
 <style>
@@ -21,12 +22,5 @@
 		max-width: 560px;
 		margin: 0 auto;
 		padding: 0 var(--gutter) var(--gutter);
-	}
-
-	.card {
-		padding: 16px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--surface);
 	}
 </style>

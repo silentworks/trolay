@@ -1,5 +1,4 @@
 <script lang="ts">
-	import InfoTip from '#lib/components/InfoTip.svelte';
 	import { formatWhen } from '#lib/dates.ts';
 	import { db, isLive } from '#lib/data/db.ts';
 	import {
@@ -12,6 +11,8 @@
 	} from '#lib/export/backup.ts';
 	import { localDate, saveFile } from '#lib/export/download.ts';
 	import { toast } from '#lib/toast.svelte.ts';
+	import SettingsGroup from './SettingsGroup.svelte';
+	import SettingsRow from './SettingsRow.svelte';
 	import Sheet from './Sheet.svelte';
 
 	let fileInput = $state<HTMLInputElement>();
@@ -19,6 +20,9 @@
 	let pending = $state.raw<{ backup: Backup; summary: BackupSummary; current: number }>();
 	let problem = $state<string>();
 	let busy = $state(false);
+
+	const DOWNLOAD = ['M12 4v11', 'M7 10l5 5 5-5', 'M5 20h14'];
+	const UPLOAD = ['M12 15V4', 'M7 9l5-5 5 5', 'M5 20h14'];
 
 	const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -63,31 +67,23 @@
 	}
 </script>
 
-<section class="backup" aria-labelledby="backup-heading">
-	<div class="with-info">
-		<h2 id="backup-heading">Backup</h2>
-		<InfoTip title="Backups">
-			<p>
-				Your stores, trips and items live only on this phone. Keep a backup file somewhere safe, or
-				use it to move to a new phone.
-			</p>
-		</InfoTip>
-	</div>
-	<div class="actions">
-		<button class="btn" type="button" onclick={download}>Download backup</button>
-		<button class="btn" type="button" onclick={() => fileInput?.click()}>Restore a backup</button>
-	</div>
-	{#if problem}<p class="error" role="alert">{problem}</p>{/if}
-	<input
-		bind:this={fileInput}
-		class="visually-hidden"
-		type="file"
-		accept="application/json,.json"
-		tabindex="-1"
-		aria-hidden="true"
-		onchange={picked}
-	/>
-</section>
+<SettingsGroup
+	title="Backup"
+	note="Your stores, trips and items live only on this phone. Keep a backup file somewhere safe, or use it to move to a new phone. Restoring one replaces what's on this phone."
+>
+	<SettingsRow label="Download backup" icon={DOWNLOAD} onclick={download} />
+	<SettingsRow label="Restore a backup" icon={UPLOAD} onclick={() => fileInput?.click()} />
+</SettingsGroup>
+{#if problem}<p class="error" role="alert">{problem}</p>{/if}
+<input
+	bind:this={fileInput}
+	class="visually-hidden"
+	type="file"
+	accept="application/json,.json"
+	tabindex="-1"
+	aria-hidden="true"
+	onchange={picked}
+/>
 
 <Sheet
 	open={pending !== undefined}
@@ -114,18 +110,8 @@
 </Sheet>
 
 <style>
-	h2 {
-		margin: 0;
-		font-size: 1.15rem;
-	}
-
-	.with-info {
-		margin-bottom: 12px;
-	}
-
-	.actions {
-		display: grid;
-		gap: 8px;
+	.error {
+		margin: 12px 0 0;
 	}
 
 	.warning {

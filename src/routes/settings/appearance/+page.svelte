@@ -2,7 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { ACCENTS, DENSITIES, TEXT_SIZES, watchPhoneMotion } from '#lib/appearance.ts';
 	import AppHeader from '#lib/components/AppHeader.svelte';
-	import SettingsSection from '#lib/components/SettingsSection.svelte';
+	import SettingsGroup from '#lib/components/SettingsGroup.svelte';
+	import SettingsRow from '#lib/components/SettingsRow.svelte';
 	import { settings } from '#lib/settings.svelte.ts';
 	import type { Theme } from '#lib/theme.ts';
 
@@ -12,6 +13,7 @@
 	let phoneReduces = $state(false);
 	$effect(() => watchPhoneMotion((reduce) => (phoneReduces = reduce)));
 	const animationsOn = $derived(settings.animations ?? !phoneReduces);
+	const following = $derived(settings.animations === null && phoneReduces);
 
 	const looks: { value: Theme; label: string; hint?: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -27,9 +29,9 @@
 <div class="page">
 	<AppHeader title="Appearance" back={{ href: resolve('/settings'), label: 'Settings' }} />
 
-	<SettingsSection title="Theme" lead="Choose how Trolay looks and feels.">
+	<SettingsGroup title="Theme" note="Choose how Trolay looks and feels." padded>
 		{#snippet children(ids)}
-			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.lead}>
+			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.note}>
 				{#each looks as look (look.value)}
 					<label class="look">
 						<input
@@ -65,15 +67,15 @@
 				{/if}
 			{/each}
 		{/snippet}
-	</SettingsSection>
+	</SettingsGroup>
 
-	<SettingsSection title="Accent colour" lead="Choose a colour that matches your style.">
+	<SettingsGroup title="Accent colour" note="Choose a colour that matches your style." padded>
 		{#snippet children(ids)}
 			<div
 				class="swatches"
 				role="radiogroup"
 				aria-labelledby={ids.title}
-				aria-describedby={ids.lead}
+				aria-describedby={ids.note}
 			>
 				{#each ACCENTS as accent (accent.value)}
 					<label class="swatch" style:--light={accent.light} style:--dark={accent.dark}>
@@ -90,8 +92,8 @@
 				{/each}
 			</div>
 		{/snippet}
-	</SettingsSection>
-	<SettingsSection title="Text size" lead="Adjust the size of text across the app.">
+	</SettingsGroup>
+	<SettingsGroup title="Text size" note="Adjust the size of text across the app." padded>
 		{#snippet children(ids)}
 			<div class="size">
 				<span class="small" aria-hidden="true">A</span>
@@ -103,7 +105,7 @@
 					value={TEXT_SIZES.indexOf(settings.textSize)}
 					oninput={(event) => settings.setTextSize(TEXT_SIZES[event.currentTarget.valueAsNumber])}
 					aria-labelledby={ids.title}
-					aria-describedby={ids.lead}
+					aria-describedby={ids.note}
 					aria-valuetext="{settings.textSize}%"
 				/>
 				<span class="large" aria-hidden="true">A</span>
@@ -115,13 +117,14 @@
 				<span class="sample-meta">1.45 each · incl. tax</span>
 			</div>
 		{/snippet}
-	</SettingsSection>
-	<SettingsSection
+	</SettingsGroup>
+	<SettingsGroup
 		title="Interface density"
-		lead="Control spacing for a more compact or spacious view."
+		note="Control spacing for a more compact or spacious view."
+		padded
 	>
 		{#snippet children(ids)}
-			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.lead}>
+			<div class="looks" role="radiogroup" aria-labelledby={ids.title} aria-describedby={ids.note}>
 				{#each DENSITIES as density, i (density.value)}
 					<label class="look">
 						<input
@@ -143,28 +146,20 @@
 				{/each}
 			</div>
 		{/snippet}
-	</SettingsSection>
-	<SettingsSection title="Animations" lead="Enable smooth transitions and animations.">
-		{#snippet control(ids)}
-			<button
-				class="switch"
-				type="button"
-				role="switch"
-				aria-checked={animationsOn}
-				aria-labelledby={ids.title}
-				aria-describedby="{ids.lead}{settings.animations === null && phoneReduces
-					? ` ${uid}-motion-hint`
-					: ''}"
-				onclick={() => settings.setAnimations(!animationsOn)}
-			>
-				<span class="knob"></span>
-			</button>
-		{/snippet}
-		{#if settings.animations === null && phoneReduces}
-			<p class="hint" id="{uid}-motion-hint">Following your phone's setting.</p>
-		{/if}
-	</SettingsSection>
-	<p class="note">Kept on this phone.</p>
+	</SettingsGroup>
+	<SettingsGroup title="Motion">
+		<SettingsRow
+			label="Animations"
+			sub="Enable smooth transitions and animations."
+			checked={animationsOn}
+			describedby={following ? `${uid}-motion-hint` : undefined}
+			onclick={() => settings.setAnimations(!animationsOn)}
+		/>
+	</SettingsGroup>
+	{#if following}
+		<p class="settings-note" id="{uid}-motion-hint">Following your phone's setting.</p>
+	{/if}
+	<p class="settings-note kept">Kept on this phone.</p>
 </div>
 
 <style>
@@ -174,10 +169,8 @@
 		padding: 0 var(--gutter) var(--gutter);
 	}
 
-	.note {
-		margin: 8px 4px 0;
-		color: var(--muted);
-		font-size: 0.88rem;
+	.kept {
+		margin-top: 16px;
 	}
 
 	/* Three cards of the same width, each an icon over its label. */
@@ -276,12 +269,6 @@
 
 	.swatch .pick {
 		border-radius: 50%;
-	}
-
-	.hint {
-		margin: 0;
-		color: var(--muted);
-		font-size: 0.88rem;
 	}
 
 	.size {
